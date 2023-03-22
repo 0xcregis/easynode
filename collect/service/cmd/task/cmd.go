@@ -1,7 +1,6 @@
 package task
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/segmentio/kafka-go"
@@ -15,7 +14,6 @@ import (
 	"github.com/uduncloud/easynode/collect/service/cmd/task/ether"
 	"github.com/uduncloud/easynode/collect/service/cmd/task/tron"
 	"github.com/uduncloud/easynode/collect/util"
-	clientv3 "go.etcd.io/etcd/client/v3"
 	"time"
 )
 
@@ -25,8 +23,6 @@ type Cmd struct {
 	task       *db.Service
 	chain      *config.Chain
 	kafka      *kafkaClient.EasyKafka
-	etcdClient *clientv3.Client
-	leaseID    clientv3.LeaseID
 }
 
 func GetBlockChainService(c *config.Chain, db *config.TaskDb, sourceDb *config.SourceDb, logConfig *config.LogConfig) service.BlockChainInterface {
@@ -47,14 +43,6 @@ func NewService(c *config.Chain, taskDb *config.TaskDb, sourceDb *config.SourceD
 	t := db.NewTaskService(taskDb, sourceDb, x)
 	client := kafkaClient.NewEasyKafka(x)
 
-	etcdClient, err := clientv3.New(clientv3.Config{
-		Endpoints:   []string{c.Etcd.Host},
-		DialTimeout: time.Duration(30 * time.Second),
-	})
-	if err != nil {
-		panic(err)
-	}
-
 	block := GetBlockChainService(c, taskDb, sourceDb, logConfig)
 
 	return &Cmd{
@@ -62,7 +50,6 @@ func NewService(c *config.Chain, taskDb *config.TaskDb, sourceDb *config.SourceD
 		task:       t,
 		chain:      c,
 		kafka:      client,
-		etcdClient: etcdClient,
 		blockChain: block,
 	}
 }
@@ -76,14 +63,6 @@ func (c *Cmd) Start() {
 	blockChan := make(chan *service.NodeTask, 10)
 	kafkaCh := make(chan []*kafka.Message, 100)
 	kafkaRespCh := make(chan []*kafka.Message, 30)
-
-	//开启分布式锁
-	go func() {
-		for true {
-			c.startClusterLock()
-			<-time.After(15 * time.Second)
-		}
-	}()
 
 	//配置了区块执行计划
 	if c.chain.BlockTask != nil {
@@ -612,124 +591,6 @@ func (c *Cmd) getBlockTask(nodeId string, blockChain int, blockCh chan *service.
 	}
 }
 
-func (c *Cmd) unlock() bool {
-	p, err := c.etcdClient.Get(context.Background(), c.chain.Etcd.Key)
-	if err != nil {
-		c.log.Println("unlock|error=", err)
-		return false
-	}
-	if p.Count > 0 && len(p.Kvs) > 0 {
-		//k := string(p.Kvs[0].Key)
-		kv := p.Kvs[0]
-		if kv.Lease > 1 {
-			v := string(kv.Value)
-			c.leaseID = clientv3.LeaseID(kv.Lease)
-			if v == "on" {
-				//已经被解锁
-				return true
-			}
-			//else{
-			//未被锁定
-			//}
-		} else {
-			return true
-		}
-
-	} else {
-		//已过期了
-		return true
-	}
-
-	pr, err := c.etcdClient.Put(context.Background(), c.chain.Etcd.Key, "on", clientv3.WithLease(c.leaseID))
-	if err != nil {
-		c.log.Printf("unlock|设置 key 失败:%v\\n", err)
-		return false
-	}
-	c.log.Println("unlock|写入成功,当前revision是:", pr.Header.Revision)
-	return true
-}
-
-func (c *Cmd) lock() bool {
-	p, err := c.etcdClient.Get(context.Background(), c.chain.Etcd.Key)
-	if err != nil {
-		c.log.Println("lock|error=", err)
-		return false
-	}
-	if p.Count > 0 && len(p.Kvs) > 0 {
-		//k := string(p.Kvs[0].Key)
-		kv := p.Kvs[0]
-		if kv.Lease > 1 {
-			c.leaseID = clientv3.LeaseID(kv.Lease)
-			v := string(kv.Value)
-			if v == "off" {
-				//已经被锁定
-				return false
-			}
-			//else{
-			//未被锁定
-			//	return true
-			//}
-		} else {
-			return false
-		}
-
-	} else {
-		//已过期了
-		return false
-	}
-
-	pr, err := c.etcdClient.Put(context.Background(), c.chain.Etcd.Key, "off", clientv3.WithLease(c.leaseID))
-	if err != nil {
-		c.log.Printf("lock|设置 key 失败:%v\\n", err)
-		return false
-	}
-	c.log.Println("lock|写入成功,当前revision是:", pr.Header.Revision)
-	return true
-}
-
-func (c *Cmd) startClusterLock() {
-	p, err := c.etcdClient.Get(context.Background(), c.chain.Etcd.Key)
-	if err != nil {
-		c.log.Printf("startClusterLock|error=%v", err)
-		return
-	}
-
-	//判断是否存在kv,即 锁是否已经存在,不存在则 新建，
-	if p.Count > 0 && len(p.Kvs) > 0 {
-		//锁已经存在
-		//检查kv的租约
-		if p.Kvs[0].Lease > 1 {
-			c.leaseID = clientv3.LeaseID(p.Kvs[0].Lease)
-			return
-		}
-	}
-
-	//重置：重新生成租约并绑定kv
-	{
-		ls := clientv3.NewLease(c.etcdClient)
-		if c.chain.Etcd.Ttl < 60 {
-			c.chain.Etcd.Ttl = 200
-		}
-
-		lgr, err := ls.Grant(context.Background(), c.chain.Etcd.Ttl)
-		if err != nil {
-			c.log.Printf("startClusterLock|设置 租约 失败:%v\\n", err)
-		}
-		c.leaseID = lgr.ID
-		//pr, err := s.etcdClient.Put(context.Background(), fmt.Sprintf("%v_id", s.chain.Etcd.Key), fmt.Sprintf("%v", lgr.ID), clientv3.WithLease(s.leaseID))
-		//if err != nil {
-		//	fmt.Printf("设置 key 失败:%v\\n", err)
-		//	return
-		//}
-		pr, err := c.etcdClient.Put(context.Background(), c.chain.Etcd.Key, "on", clientv3.WithLease(c.leaseID))
-		if err != nil {
-			c.log.Printf("startClusterLock|设置 key 失败:%v\\n", err)
-			return
-		}
-
-		c.log.Println("startClusterLock|写入成功,当前revision是:", pr.Header.Revision)
-	}
-}
 func (c *Cmd) HandlerBlock(block *service.Block) (*kafka.Message, error) {
 	k := c.chain.BlockTask.Kafka
 	nodeId := util.GetLocalNodeId()
@@ -761,5 +622,4 @@ func (c *Cmd) HandlerReceipt(receipt *service.Receipt) (*kafka.Message, error) {
 }
 
 func (c *Cmd) Stop() {
-	c.etcdClient.Close()
 }

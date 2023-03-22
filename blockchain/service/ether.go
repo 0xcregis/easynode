@@ -174,15 +174,25 @@ func (e *Ether) BalanceCluster(blockChain int64) *config.NodeCluster {
 		//不存在节点
 		return nil
 	}
-	//todo 后期重构节点筛选算法
-	//根据 采集节点、任务节点的节点使用数据，综合判断出最佳节点
-	//目前暂使用随机算法 找到节点
-	if len(cluster) > 1 {
-		l := len(cluster)
-		return cluster[rand.Intn(l)]
-	} else if len(cluster) == 1 {
-		return cluster[0]
+
+	//todo 后期重新设计和优化
+	var resultCluster *config.NodeCluster
+	//temps := make([]*config.NodeCluster, 0, 10)
+	//for _, v := range cluster {
+	//	if v.ErrorCount < 50 {
+	//		temps = append(temps, v)
+	//	}
+	//}
+
+	l := len(cluster)
+	if l > 1 {
+		m := rand.Intn(l)
+		resultCluster = cluster[m]
+	} else if l == 1 {
+		resultCluster = cluster[0]
 	} else {
 		return nil
 	}
+	return resultCluster
+
 }

@@ -1,11 +1,12 @@
 package config
 
 type Config struct {
-	NodeErrorDb  *NodeSourceDb  `json:"NodeErrorDb"`
-	NodeSourceDb *NodeSourceDb  `json:"NodeSourceDb"`
-	NodeInfoDb   *NodeInfoDb    `json:"NodeInfoDb"`
-	NodeTaskDb   *NodeTaskDb    `json:"NodeTaskDb"`
-	BlockConfigs []*BlockConfig `json:"Chains"`
+	NodeErrorDb         *NodeSourceDb  `json:"NodeErrorDb"`
+	NodeSourceDb        *NodeSourceDb  `json:"NodeSourceDb"`
+	NodeInfoDb          *NodeInfoDb    `json:"NodeInfoDb"`
+	NodeTaskDb          *NodeTaskDb    `json:"NodeTaskDb"`
+	AutoCreateBlockTask bool           `json:"AutoCreateBlockTask"`
+	BlockConfigs        []*BlockConfig `json:"Chains"`
 }
 
 type NodeSourceDb struct {

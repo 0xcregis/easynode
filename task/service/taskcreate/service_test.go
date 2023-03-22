@@ -7,7 +7,7 @@ import (
 )
 
 func Init() *Service {
-	cfg := config.LoadConfig("./../../config.json")
+	cfg := config.LoadConfig("./cmd/task/config.json")
 	return NewService(&cfg)
 }
 

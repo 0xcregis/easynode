@@ -26,7 +26,9 @@ func main() {
 	log.Printf("%+v\n", cfg)
 
 	//生产任务 服务
-	taskcreate.NewService(&cfg).Start()
+	if cfg.AutoCreateBlockTask {
+		taskcreate.NewService(&cfg).Start()
+	}
 
 	//分配任务
 	taskhandler.NewService(&cfg).Start()

@@ -32,7 +32,6 @@ func (s *Service) Start() {
 			<-time.After(10 * time.Second)
 		}
 	}()
-
 }
 
 func (s *Service) CreateBlockTask() {

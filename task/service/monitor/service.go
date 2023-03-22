@@ -8,7 +8,6 @@ import (
 	"github.com/uduncloud/easynode/task/config"
 	"github.com/uduncloud/easynode/task/service"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 	"time"
 )
 
@@ -108,18 +107,17 @@ func (s *Service) createNodeTaskTable() {
 		<-time.After(next.Sub(time.Now()))
 
 		//cp data from pre table to current table
-		cpSql := `
-INSERT IGNORE INTO %v (id, node_id, block_number, block_hash, tx_hash, task_type, block_chain, task_status ) SELECT
-id,
-node_id,
-block_number,
-block_hash,
-tx_hash,
-task_type,
-block_chain,
-task_status 
-FROM %v where task_status in (0,2,3,4)
-`
+		cpSql := `INSERT IGNORE INTO %v (id, node_id, block_number, block_hash, tx_hash, task_type, block_chain, task_status )
+				SELECT
+				id,
+				node_id,
+				block_number,
+				block_hash,
+				tx_hash,
+				task_type,
+				block_chain,
+				task_status 
+				FROM %v where task_status in (0,2,3,4)`
 		cpSql = fmt.Sprintf(cpSql, dayTable, preTable)
 
 		err = s.taskDb.Exec(cpSql).Error
@@ -136,7 +134,6 @@ FROM %v where task_status in (0,2,3,4)
 		}
 		//delete binlog
 		s.taskDb.Exec("RESET MASTER")
-
 	}
 }
 
@@ -161,17 +158,15 @@ func (s *Service) RetryTaskForFail() {
 
 	if len(ids) > 0 {
 
-		sqlStr := `
- INSERT IGNORE INTO %v(block_chain,tx_hash,block_hash,block_number,source_type)
-SELECT block_chain,tx_hash,block_hash,block_number,CASE 
-	WHEN task_type=1 THEN
-		1
-	WHEN task_type=2 THEN
-	2
-	ELSE
-		3
-END as source_type FROM %v WHERE task_status=2 and id in (?)
-`
+		sqlStr := `INSERT IGNORE INTO %v(block_chain,tx_hash,block_hash,block_number,source_type)
+					SELECT block_chain,tx_hash,block_hash,block_number,CASE 
+					WHEN task_type=1 THEN
+						1
+					WHEN task_type=2 THEN
+						2
+					ELSE
+						3
+					END as source_type FROM %v WHERE task_status=2 and id in (?)`
 		sqlStr = fmt.Sprintf(sqlStr, s.config.NodeSourceDb.Table, s.getNodeTaskTable())
 		err = s.nodeSourceDb.Exec(sqlStr, ids).Error
 		if err != nil {
@@ -206,9 +201,7 @@ func (s *Service) HandlerManyFailTask() {
 	})
 
 	//如果任务多次重试，仍然失败，则放弃
-	str := `
-SELECT block_chain, block_number,block_hash,tx_hash,task_type,count(1) as c FROM %v WHERE task_status in (2,5) GROUP BY block_chain, block_number,block_hash,tx_hash,task_type HAVING c>?
-`
+	str := `SELECT block_chain, block_number,block_hash,tx_hash,task_type,count(1) as c FROM %v WHERE task_status in (2,5) GROUP BY block_chain, block_number,block_hash,tx_hash,task_type HAVING c>?`
 	str = fmt.Sprintf(str, s.getNodeTaskTable())
 	var list []*service.NodeTask
 	err := s.taskDb.Raw(str, 5).Scan(&list).Error
@@ -224,35 +217,4 @@ SELECT block_chain, block_number,block_hash,tx_hash,task_type,count(1) as c FROM
 			continue
 		}
 	}
-}
-
-func (s *Service) AddNodeError(list []*service.NodeSource) error {
-	err := s.nodeErrorDb.Table(s.config.NodeErrorDb.Table).Clauses(clause.Insert{Modifier: "IGNORE"}).Omit("id,create_time").CreateInBatches(&list, 10).Error
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Service) DelNodeErrorWithBlockByBlockNumber(number string, chain *config.BlockConfig) error {
-
-	delSql := "delete from %v where block_chain=? and block_number=? and source_type=?"
-	delSql = fmt.Sprintf(delSql, s.config.NodeErrorDb.Table)
-	err := s.nodeSourceDb.Exec(delSql, chain.BlockChainCode, number, 2).Error
-	//err := s.nodeErrorDb.Table().Where("block_chain=? and block_number=? and source_type=?", chain.BlockChainCode, number, 2).Delete(s.config.NodeErrorDb.Table).Error
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Service) DelNodeErrorWithReceiptByBlockNumber(number string, chain *config.BlockConfig) error {
-	delSql := "delete from %v where block_chain=? and block_number=? and source_type=?"
-	delSql = fmt.Sprintf(delSql, s.config.NodeErrorDb.Table)
-	err := s.nodeSourceDb.Exec(delSql, chain.BlockChainCode, number, 3).Error
-	//err := s.nodeErrorDb.Where("block_chain=? and block_number=? and source_type=?", chain.BlockChainCode, number, 3).Delete(s.config.NodeErrorDb.Table).Error
-	if err != nil {
-		return err
-	}
-	return nil
 }

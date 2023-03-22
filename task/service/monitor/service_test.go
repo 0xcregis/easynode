@@ -22,8 +22,3 @@ func TestService_HandlerManyFailTask(t *testing.T) {
 	s.HandlerManyFailTask()
 	//s.createNodeTaskTable()
 }
-
-func TestService_DelNodeErrorWithReceiptByBlockNumber(t *testing.T) {
-	s := Init()
-	_ = s.DelNodeErrorWithReceiptByBlockNumber("16045911", s.config.BlockConfigs[0])
-}

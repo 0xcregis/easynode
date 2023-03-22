@@ -53,6 +53,7 @@ easynode_task是easynode系统的基础和核心服务，是其他服务的运�
     "DbName": "easy_node",
     "Table": "node_error"
   },
+  "AutoCreateBlockTask": true, //是否开启自动生产区块任务
   "Chains": [ //公链配置
     {
       "NodeHost": "https://eth-mainnet.g.alchemy.com/v2",//三方区块链节点的地址

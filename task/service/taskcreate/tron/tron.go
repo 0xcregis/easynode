@@ -30,11 +30,7 @@ func (e *Tron) GetLastBlockNumber(v *config.BlockConfig) (int64, error) {
 	var lastNumber int64
 	clusters := map[int64][]*blockChainConfig.NodeCluster{205: {{NodeUrl: v.NodeHost, NodeToken: v.NodeKey}}}
 	/**
-	{
-	    "code": 0,
-	    "data": "{\"blockId\":\"0000000002f52f21275a4e244b191f29dc289bfc66bce08a18c3d5051fcf7203\",\"number\":49622817}"
-	}
-
+	  {\"blockId\":\"0000000002f52f21275a4e244b191f29dc289bfc66bce08a18c3d5051fcf7203\",\"number\":49622817}
 	*/
 	jsonResult, err := service.NewTron(clusters, e.log).LatestBlock(205)
 	if err != nil {
@@ -44,15 +40,7 @@ func (e *Tron) GetLastBlockNumber(v *config.BlockConfig) (int64, error) {
 		log.Printf("Eth_GetBlockNumber|resp=%v", jsonResult)
 	}
 
-	//获取链的最新区块高度
-	code := gjson.Parse(jsonResult).Get("code").Int()
-	data := gjson.Parse(jsonResult).Get("data").String()
-	if code != 0 {
-		log.Errorf("Eth_GetBlockNumber|err=%v", data)
-		return 0, errors.New(data)
-	}
-
-	number := gjson.Parse(data).Get("number").String()
+	number := gjson.Parse(jsonResult).Get("number").String()
 	lastNumber, err = strconv.ParseInt(number, 0, 64)
 	//lastNumber, err = util.HexToInt(number)
 	if err != nil {

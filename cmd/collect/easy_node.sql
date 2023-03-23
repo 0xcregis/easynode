@@ -14,11 +14,12 @@
  Date: 13/02/2023 18:23:53
 */
 
-CREATE DATABASE easynode;
+CREATE DATABASE easy_node;
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
+USE easy_node;
 -- ----------------------------
 -- Table structure for block_number
 -- ----------------------------
@@ -106,6 +107,6 @@ CREATE TABLE `node_task_20230213` (
   KEY `block_hash` (`block_hash`) USING BTREE,
   KEY `block_chain` (`block_chain`) USING BTREE,
   KEY `node_id` (`node_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=173770503 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='节点任务表';
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='节点任务表';
 
 SET FOREIGN_KEY_CHECKS = 1;

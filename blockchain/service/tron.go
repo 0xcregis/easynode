@@ -19,6 +19,21 @@ type Tron struct {
 	blockChainClient chain.BlockChain
 }
 
+func (t *Tron) GetBlockReceiptByBlockNumber(chainCode int64, number string) (string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t *Tron) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t *Tron) GetTransactionReceiptByHash(chainCode int64, hash string) (string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func NewTron(cluster map[int64][]*config.NodeCluster, xlog *xlog.XLog) API {
 	var blockChainClient chain.BlockChain
 	for k, _ := range cluster {

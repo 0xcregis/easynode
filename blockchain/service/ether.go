@@ -17,6 +17,46 @@ type Ether struct {
 	blockChainClient chain.BlockChain
 }
 
+func (e *Ether) GetBlockReceiptByBlockNumber(chainCode int64, number string) (string, error) {
+	query := `{
+				"id": 1,
+				"jsonrpc": "2.0",
+				"method": "eth_getBlockReceipts",
+				"params": [
+					"%v"
+				]
+			}`
+	query = fmt.Sprintf(query, number)
+	return e.SendEthReq(chainCode, query)
+}
+
+func (e *Ether) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string, error) {
+	query := `{
+				"id": 1,
+				"jsonrpc": "2.0",
+				"method": "eth_getBlockReceipts",
+				"params": [
+					"%v"
+				]
+			}`
+
+	query = fmt.Sprintf(query, hash)
+	return e.SendEthReq(chainCode, query)
+}
+
+func (e *Ether) GetTransactionReceiptByHash(chainCode int64, hash string) (string, error) {
+	query := `{
+				"id": 1,
+				"jsonrpc": "2.0",
+				"method": "eth_getTransactionReceipt",
+				"params": [
+					"%v"
+				]
+			}`
+	query = fmt.Sprintf(query, hash)
+	return e.SendEthReq(chainCode, query)
+}
+
 func (e *Ether) GetBlockByHash(chainCode int64, hash string) (string, error) {
 	req := `
 		{

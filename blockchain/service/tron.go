@@ -30,8 +30,9 @@ func (t *Tron) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string,
 }
 
 func (t *Tron) GetTransactionReceiptByHash(chainCode int64, hash string) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	req := `{ "value": "%v"}`
+	req = fmt.Sprintf(req, hash)
+	return t.SendReq(chainCode, req, "wallet/gettransactioninfobyid")
 }
 
 func NewTron(cluster map[int64][]*config.NodeCluster, xlog *xlog.XLog) API {

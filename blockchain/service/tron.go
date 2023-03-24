@@ -106,7 +106,7 @@ func (t *Tron) SendJsonRpc(chainCode int64, req string) (string, error) {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
 	}
-	url := fmt.Sprintf("%v/%v", cluster.NodeUrl, "/jsonrpc")
+	url := fmt.Sprintf("%v/%v", cluster.NodeUrl, "jsonrpc")
 	return t.blockChainClient.EthSendRequestToChain(url, cluster.NodeToken, req)
 }
 

@@ -204,9 +204,9 @@ func NewService(c *config.Chain, taskDb *config.TaskDb, sourceDb *config.SourceD
 		receiptNodeCluster[205] = list
 	}
 
-	txClient := chainService.NewEth(txNodeCluster, x)
-	blockClient := chainService.NewEth(blockNodeCluster, x)
-	receiptClient := chainService.NewEth(receiptNodeCluster, x)
+	txClient := chainService.NewTron(txNodeCluster, x)
+	blockClient := chainService.NewTron(blockNodeCluster, x)
+	receiptClient := chainService.NewTron(receiptNodeCluster, x)
 	return &Service{
 		log:                x,
 		task:               t,

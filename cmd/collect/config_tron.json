@@ -46,7 +46,7 @@
       "BlockTask": {
         "FromCluster": [
           {
-            "Host": "https://api.trongrid.io/jsonrpc",
+            "Host": "https://api.trongrid.io",
             "Key": "244f918d-56b5-4a16-9665-9637598b1223"
           }
         ],
@@ -58,12 +58,24 @@
       "TxTask": {
         "FromCluster": [
           {
-            "Host": "https://api.trongrid.io/jsonrpc",
+            "Host": "https://api.trongrid.io",
             "Key": "244f918d-56b5-4a16-9665-9637598b1223"
           }
         ],
         "Kafka": {
           "Topic": "tron_tx",
+          "Partition": 0
+        }
+      },
+      "ReceiptTask": {
+        "FromCluster": [
+          {
+            "Host": "https://api.trongrid.io",
+            "Key": "244f918d-56b5-4a16-9665-9637598b1223"
+          }
+        ],
+        "Kafka": {
+          "Topic": "tron_receipt",
           "Partition": 0
         }
       }

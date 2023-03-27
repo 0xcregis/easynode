@@ -42,7 +42,7 @@
       "BlockMax":16125881
     },
     {
-      "NodeHost": "https://api.trongrid.io/jsonrpc",
+      "NodeHost": "https://api.trongrid.io",
       "NodeKey": "*********************",
       "BlockChainName": "tron",
       "BlockChainCode": 205,

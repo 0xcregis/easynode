@@ -19,6 +19,21 @@ type Tron struct {
 	blockChainClient chain.BlockChain
 }
 
+func (t *Tron) SubscribePendingTx(chainCode int64, receiverCh chan string) (string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t *Tron) SubscribeLogs(chainCode int64, address string, topics []string, receiverCh chan string) (string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t *Tron) UnSubscribe(chainCode int64, subId string) (string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (t *Tron) GetBlockReceiptByBlockNumber(chainCode int64, number string) (string, error) {
 	//TODO implement me
 	panic("implement me")

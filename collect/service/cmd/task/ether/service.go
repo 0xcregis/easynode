@@ -18,7 +18,6 @@ type Service struct {
 	log                *xlog.XLog
 	task               *db.Service
 	chain              *config.Chain
-	originChain        config.Chain
 	txChainClient      chainService.API
 	blockChainClient   chainService.API
 	receiptChainClient chainService.API
@@ -209,7 +208,6 @@ func NewService(c *config.Chain, taskDb *config.TaskDb, sourceDb *config.SourceD
 		log:                x,
 		task:               t,
 		chain:              c,
-		originChain:        c.CopyChain(),
 		txChainClient:      txClient,
 		blockChainClient:   blockClient,
 		receiptChainClient: receiptClient,

@@ -29,10 +29,10 @@ import (
 func main() {
 
 	//start collect service
-	startCollect()
+	go startCollect()
 
 	//start task service
-	startTask()
+	go startTask()
 
 	//start blockchain service
 	go startBlockchain()
@@ -58,7 +58,7 @@ func main() {
 
 func startTaskApi() {
 	var configPath string
-	flag.StringVar(&configPath, "config", "../cmd/easynode/taskapi_config.json", "The system file of config")
+	flag.StringVar(&configPath, "taskapi_config", "./cmd/easynode/taskapi_config.json", "The system file of config")
 	flag.Parse()
 	if len(configPath) < 1 {
 		panic("can not find config file")
@@ -95,7 +95,7 @@ func startTaskApi() {
 
 func startBlockchain() {
 	var configPath string
-	flag.StringVar(&configPath, "config", "./cmd/easynode/blockchain_config.json", "The system file of config")
+	flag.StringVar(&configPath, "blockchain_config", "./cmd/easynode/blockchain_config.json", "The system file of config")
 	flag.Parse()
 	if len(configPath) < 1 {
 		panic("can not find config file")
@@ -141,7 +141,7 @@ func startBlockchain() {
 
 func startTask() {
 	var configPath string
-	flag.StringVar(&configPath, "config", "./cmd/easynode/task_config.json", "The system file of config")
+	flag.StringVar(&configPath, "task_config", "./cmd/easynode/task_config.json", "The system file of config")
 	flag.Parse()
 	if len(configPath) < 1 {
 		panic("can not find config file")

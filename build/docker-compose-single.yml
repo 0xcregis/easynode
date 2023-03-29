@@ -1,0 +1,61 @@
+version: "2"
+
+services:
+  zookeeper:
+    image: docker.io/bitnami/zookeeper:3.8
+    restart: always
+    networks:
+      - easynode_net
+    ports:
+      - "2181:2181"
+    volumes:
+      - "zookeeper_data:/bitnami"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+  kafka:
+    image: docker.io/bitnami/kafka:3.3
+    restart: always
+    networks:
+      - easynode_net
+    ports:
+      - "9092:9092"
+    volumes:
+      - "kafka_data:/bitnami"
+    environment:
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper
+  kafka_manager:
+    image: hlebalbau/kafka-manager:stable
+    restart: always
+    networks:
+      - easynode_net
+    ports:
+      - "9003:9000"
+    environment:
+      - ZK_HOSTS=zookeeper:2181
+    depends_on:
+      - kafka
+  mysql:
+    image: 'bitnami/mysql:8.0'
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql:/bitnami/mysql/data
+    environment:
+      - MYSQL_CHARACTER_SET=utf8mb4
+      - MYSQL_COLLATE=utf8mb4_general_ci
+      - MYSQL_DATABASE=easynode
+      - MYSQL_ROOT_USER=root
+      - MYSQL_ROOT_PASSWORD=test12345678
+volumes:
+  zookeeper_data:
+    driver: local
+  kafka_data:
+    driver: local
+networks:
+   easynode_net:
+     driver: bridge  

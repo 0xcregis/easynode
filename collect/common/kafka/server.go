@@ -2,9 +2,11 @@ package kafka
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/segmentio/kafka-go"
 	"github.com/sunjiangjun/xlog"
+	"time"
 )
 
 type Config struct {
@@ -81,11 +83,12 @@ func (easy *EasyKafka) Write(c Config, ch chan []*kafka.Message, resp chan []*ka
 	w := &kafka.Writer{
 		Addr: kafka.TCP(c.Brokers...),
 		//Topic:       c.Topic,
-		Balancer:    &kafka.LeastBytes{},
-		Logger:      kafka.LoggerFunc(easy.Logf),
-		ErrorLogger: kafka.LoggerFunc(easy.Logf),
-		BatchBytes:  70e6,
-		BatchSize:   20,
+		Balancer:               &kafka.LeastBytes{},
+		Logger:                 kafka.LoggerFunc(easy.Logf),
+		ErrorLogger:            kafka.LoggerFunc(easy.Logf),
+		BatchBytes:             70e6,
+		BatchSize:              20,
+		AllowAutoTopicCreation: true,
 	}
 
 	defer func() {
@@ -124,11 +127,22 @@ func (easy *EasyKafka) sendToKafka(w *kafka.Writer, ms []*kafka.Message, resp ch
 		temp = append(temp, *v)
 	}
 
-	err := w.WriteMessages(context.Background(), temp...)
-	if err != nil {
-		easy.log.Errorf("kafka|sendToKafka|failed to write messages:%v", err)
-		return err
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	const retries = 5
+	for i := 0; i < retries; i++ {
+		err := w.WriteMessages(ctx, temp...)
+		if errors.Is(err, kafka.LeaderNotAvailable) || errors.Is(err, context.DeadlineExceeded) {
+			time.Sleep(time.Millisecond * 500)
+			continue
+		}
+
+		if err != nil {
+			easy.log.Errorf("kafka|sendToKafka|failed to write messages:%v", err)
+			return err
+		}
 	}
+
 	resp <- ms
 	return nil
 }

@@ -6,8 +6,13 @@ import (
 )
 
 func Init() *Service {
-	cfg := config.LoadConfig("./../../config.json")
+	cfg := config.LoadConfig("./../../../cmd/task/config.json")
 	return NewService(&cfg)
+}
+
+func TestService_CheckTable(t *testing.T) {
+	s := Init()
+	s.CheckTable()
 }
 
 func TestService_HandlerDeadTask(t *testing.T) {

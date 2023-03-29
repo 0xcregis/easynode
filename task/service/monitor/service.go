@@ -17,12 +17,13 @@ import (
 */
 
 type Service struct {
-	config       *config.Config
-	nodeSourceDb *gorm.DB
-	taskDb       *gorm.DB
-	nodeInfoDb   *gorm.DB
-	nodeErrorDb  *gorm.DB
-	log          *xlog.XLog
+	config        *config.Config
+	nodeSourceDb  *gorm.DB
+	taskDb        *gorm.DB
+	nodeInfoDb    *gorm.DB
+	nodeErrorDb   *gorm.DB
+	blockNumberDb *gorm.DB
+	log           *xlog.XLog
 }
 
 func NewService(config *config.Config) *Service {
@@ -47,17 +48,26 @@ func NewService(config *config.Config) *Service {
 		panic(err)
 	}
 
+	blockNumber, err := sql.Open(config.BlockNumberDb.User, config.BlockNumberDb.Password, config.BlockNumberDb.Addr, config.BlockNumberDb.DbName, config.BlockNumberDb.Port, xg)
+	if err != nil {
+		panic(err)
+	}
+
 	return &Service{
-		config:       config,
-		nodeSourceDb: s,
-		nodeErrorDb:  nodeErr,
-		nodeInfoDb:   info,
-		taskDb:       task,
-		log:          xg,
+		config:        config,
+		nodeSourceDb:  s,
+		nodeErrorDb:   nodeErr,
+		nodeInfoDb:    info,
+		taskDb:        task,
+		blockNumberDb: blockNumber,
+		log:           xg,
 	}
 }
 
 func (s *Service) Start() {
+
+	//检查数据表 是否完备
+	s.CheckTable()
 
 	//每日分表
 	go s.createNodeTaskTable()
@@ -77,6 +87,80 @@ func (s *Service) Start() {
 
 		}
 	}()
+}
+
+func (s *Service) CheckTable() {
+
+	//node_task
+	tableName := fmt.Sprintf("%v_%v", s.config.NodeTaskDb.Table, time.Now().Format(service.DayFormat))
+	createSql := fmt.Sprintf(NodeTaskTable, s.config.NodeTaskDb.DbName, s.config.NodeTaskDb.DbName, tableName)
+	err := s.taskDb.Exec(createSql).Error
+	if err != nil {
+		panic(err)
+	}
+
+	//node_info
+	createSql = fmt.Sprintf(NodeInfoTable, s.config.NodeInfoDb.DbName, s.config.NodeInfoDb.DbName, s.config.NodeInfoDb.Table)
+	err = s.nodeInfoDb.Exec(createSql).Error
+	if err != nil {
+		panic(err)
+	}
+
+	//node_source
+	createSql = fmt.Sprintf(NodeSourceTable, s.config.NodeSourceDb.DbName, s.config.NodeSourceDb.DbName, s.config.NodeSourceDb.Table)
+	err = s.nodeSourceDb.Exec(createSql).Error
+	if err != nil {
+		panic(err)
+	}
+
+	//block_number
+	createSql = fmt.Sprintf(BlockNumberTable, s.config.BlockNumberDb.DbName, s.config.BlockNumberDb.DbName, s.config.BlockNumberDb.Table)
+	err = s.blockNumberDb.Exec(createSql).Error
+	if err != nil {
+		panic(err)
+	}
+
+	//node_error
+	createSql = fmt.Sprintf(NodeErrorTable, s.config.NodeErrorDb.DbName, s.config.NodeErrorDb.DbName, s.config.NodeErrorDb.Table)
+	err = s.nodeErrorDb.Exec(createSql).Error
+	if err != nil {
+		panic(err)
+	}
+
+	//NodeTaskTable check
+	var TaskNum int64
+	err = s.taskDb.Raw("SELECT count(1) as task_num FROM information_schema.`TABLES` WHERE TABLE_SCHEMA=? and TABLE_NAME=?", s.config.NodeTaskDb.DbName, tableName).Pluck("task_num", &TaskNum).Error
+	if err != nil || TaskNum < 1 {
+		panic("not found NodeTaskTable")
+	}
+
+	//NodeSourceTable check
+	var SourceNum int64
+	err = s.nodeSourceDb.Raw("SELECT count(1) as source_num FROM information_schema.`TABLES` WHERE TABLE_SCHEMA=? and TABLE_NAME=?", s.config.NodeSourceDb.DbName, s.config.NodeSourceDb.Table).Pluck("source_num", &SourceNum).Error
+	if err != nil || SourceNum < 1 {
+		panic("not found NodeSourceTable")
+	}
+
+	//NodeInfoTable check
+	var InfoNum int64
+	err = s.nodeInfoDb.Raw("SELECT count(1) as info_num FROM information_schema.`TABLES` WHERE TABLE_SCHEMA=? and TABLE_NAME=?", s.config.NodeInfoDb.DbName, s.config.NodeInfoDb.Table).Pluck("info_num", &InfoNum).Error
+	if err != nil || InfoNum < 1 {
+		panic("not found NodeInfoTable")
+	}
+
+	//blockNumberTable check
+	var blockNum int64
+	err = s.blockNumberDb.Raw("SELECT count(1) as block_num FROM information_schema.`TABLES` WHERE TABLE_SCHEMA=? and TABLE_NAME=?", s.config.BlockNumberDb.DbName, s.config.BlockNumberDb.Table).Pluck("block_num", &blockNum).Error
+	if err != nil || blockNum < 1 {
+		panic("not found BlockNumberTable")
+	}
+
+	//errorTable check
+	var ErrorNum int64
+	err = s.nodeErrorDb.Raw("SELECT count(1) as error_num FROM information_schema.`TABLES` WHERE TABLE_SCHEMA=? and TABLE_NAME=?", s.config.BlockNumberDb.DbName, s.config.BlockNumberDb.Table).Pluck("error_num", &ErrorNum).Error
+	if err != nil || ErrorNum < 1 {
+		panic("not found nodeErrorTable")
+	}
 }
 
 func (s *Service) createNodeTaskTable() {

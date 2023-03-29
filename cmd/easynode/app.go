@@ -150,6 +150,9 @@ func startTask() {
 
 	log.Printf("%+v\n", cfg)
 
+	//系统监控服务
+	taskMonitor.NewService(&cfg).Start()
+
 	//生产任务 服务
 	if cfg.AutoCreateBlockTask {
 		taskcreate.NewService(&cfg).Start()
@@ -158,8 +161,6 @@ func startTask() {
 	//分配任务
 	taskhandler.NewService(&cfg).Start()
 
-	//系统监控服务
-	taskMonitor.NewService(&cfg).Start()
 }
 
 func startCollect() {
@@ -178,11 +179,13 @@ func startCollect() {
 
 	log.Printf("%+v\n", cfg)
 
-	//上传节点信息 服务
-	nodeinfo.NewService(cfg.NodeInfoDb, cfg.Chains, cfg.LogConfig).Start()
+	x := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/node_info", cfg.LogConfig.Path), 24*time.Hour)
 
 	//启动处理日志服务
-	collectMonitor.NewService(cfg.LogConfig).Start()
+	collectMonitor.NewService(&cfg, cfg.LogConfig, x).Start()
+
+	//上传节点信息 服务
+	nodeinfo.NewService(cfg.NodeInfoDb, cfg.Chains, cfg.LogConfig, x).Start()
 
 	//启动公链服务
 	for _, v := range cfg.Chains {

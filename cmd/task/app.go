@@ -25,6 +25,9 @@ func main() {
 
 	log.Printf("%+v\n", cfg)
 
+	//系统监控服务
+	monitor.NewService(&cfg).Start()
+
 	//生产任务 服务
 	if cfg.AutoCreateBlockTask {
 		taskcreate.NewService(&cfg).Start()
@@ -32,9 +35,6 @@ func main() {
 
 	//分配任务
 	taskhandler.NewService(&cfg).Start()
-
-	//系统监控服务
-	monitor.NewService(&cfg).Start()
 
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.

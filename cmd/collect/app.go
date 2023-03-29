@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
+	"github.com/sunjiangjun/xlog"
 	"github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service/cmd/task"
 	"github.com/uduncloud/easynode/collect/service/monitor"
@@ -29,12 +31,13 @@ func main() {
 	}
 
 	log.Printf("%+v\n", cfg)
-
-	//上传节点信息 服务
-	nodeinfo.NewService(cfg.NodeInfoDb, cfg.Chains, cfg.LogConfig).Start()
+	x := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/node_info", cfg.LogConfig.Path), 24*time.Hour)
 
 	//启动处理日志服务
-	monitor.NewService(cfg.LogConfig).Start()
+	monitor.NewService(&cfg, cfg.LogConfig, x).Start()
+
+	//上传节点信息 服务
+	nodeinfo.NewService(cfg.NodeInfoDb, cfg.Chains, cfg.LogConfig, x).Start()
 
 	//启动公链服务
 	for _, v := range cfg.Chains {

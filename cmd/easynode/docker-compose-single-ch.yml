@@ -75,6 +75,19 @@ services:
       - easynode_net
     depends_on:
       - zookeeper
+  easynode:
+    build:
+      context: .
+      dockerfile: ./docker-compose-single.yml
+    ports:
+      - "9001:9001"
+      - "9002:9002"
+    volumes:
+      - ./easynode:/app
+    depends_on:
+      - kafka
+      - mysql
+      - clickhouse
 
 volumes:
   zookeeper_data:

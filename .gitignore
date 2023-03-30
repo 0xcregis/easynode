@@ -20,8 +20,5 @@
 
 # Go workspace file
 go.work
-
+.idea
 /cmd/blockchain/config.json
-/cmd/collect/config.json
-/cmd/collect/config_tron.json
-/cmd/task/config.json

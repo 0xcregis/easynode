@@ -1,4 +1,4 @@
-FROM golang:1.20 AS builder
+FROM golang:1.18 AS builder
 
 LABEL stage=gobuilder
 
@@ -26,5 +26,7 @@ COPY blockchain_config.json .
 COPY collect_config.json .
 COPY task_config.json .
 COPY taskapi_config.json .
+
+EXPOSE 9001 9002
 
 CMD ["./easynode","-collect_config","./collect_config.json","-task_config","./task_config.json","-blockchain_config","./blockchain_config.json","-taskapi_config","./taskapi_config.json"]

@@ -8,6 +8,7 @@ import (
 	"github.com/uduncloud/easynode/task/config"
 	"github.com/uduncloud/easynode/task/service"
 	"gorm.io/gorm"
+	"strings"
 	"time"
 )
 
@@ -94,42 +95,58 @@ func (s *Service) CheckTable() {
 	//node_task
 	tableName := fmt.Sprintf("%v_%v", s.config.NodeTaskDb.Table, time.Now().Format(service.DayFormat))
 	createSql := fmt.Sprintf(NodeTaskTable, s.config.NodeTaskDb.DbName, s.config.NodeTaskDb.DbName, tableName)
-	err := s.taskDb.Exec(createSql).Error
-	if err != nil {
-		panic(err)
+
+	sqlList := strings.Split(createSql, ";")
+	for _, sql := range sqlList {
+		err := s.taskDb.Exec(sql).Error
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	//node_info
 	createSql = fmt.Sprintf(NodeInfoTable, s.config.NodeInfoDb.DbName, s.config.NodeInfoDb.DbName, s.config.NodeInfoDb.Table)
-	err = s.nodeInfoDb.Exec(createSql).Error
-	if err != nil {
-		panic(err)
+	sqlList = strings.Split(createSql, ";")
+	for _, sql := range sqlList {
+		err := s.taskDb.Exec(sql).Error
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	//node_source
 	createSql = fmt.Sprintf(NodeSourceTable, s.config.NodeSourceDb.DbName, s.config.NodeSourceDb.DbName, s.config.NodeSourceDb.Table)
-	err = s.nodeSourceDb.Exec(createSql).Error
-	if err != nil {
-		panic(err)
+	sqlList = strings.Split(createSql, ";")
+	for _, sql := range sqlList {
+		err := s.taskDb.Exec(sql).Error
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	//block_number
 	createSql = fmt.Sprintf(BlockNumberTable, s.config.BlockNumberDb.DbName, s.config.BlockNumberDb.DbName, s.config.BlockNumberDb.Table)
-	err = s.blockNumberDb.Exec(createSql).Error
-	if err != nil {
-		panic(err)
+	sqlList = strings.Split(createSql, ";")
+	for _, sql := range sqlList {
+		err := s.taskDb.Exec(sql).Error
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	//node_error
 	createSql = fmt.Sprintf(NodeErrorTable, s.config.NodeErrorDb.DbName, s.config.NodeErrorDb.DbName, s.config.NodeErrorDb.Table)
-	err = s.nodeErrorDb.Exec(createSql).Error
-	if err != nil {
-		panic(err)
+	sqlList = strings.Split(createSql, ";")
+	for _, sql := range sqlList {
+		err := s.taskDb.Exec(sql).Error
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	//NodeTaskTable check
 	var TaskNum int64
-	err = s.taskDb.Raw("SELECT count(1) as task_num FROM information_schema.`TABLES` WHERE TABLE_SCHEMA=? and TABLE_NAME=?", s.config.NodeTaskDb.DbName, tableName).Pluck("task_num", &TaskNum).Error
+	err := s.taskDb.Raw("SELECT count(1) as task_num FROM information_schema.`TABLES` WHERE TABLE_SCHEMA=? and TABLE_NAME=?", s.config.NodeTaskDb.DbName, tableName).Pluck("task_num", &TaskNum).Error
 	if err != nil || TaskNum < 1 {
 		panic("not found NodeTaskTable")
 	}

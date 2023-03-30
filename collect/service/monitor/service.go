@@ -9,6 +9,7 @@ import (
 	"github.com/uduncloud/easynode/collect/util"
 	"gorm.io/gorm"
 	"path"
+	"strings"
 	"time"
 )
 
@@ -25,28 +26,37 @@ func (s *Service) CheckTable() {
 	//node_task
 	tableName := fmt.Sprintf("%v_%v", s.config.TaskDb.Table, time.Now().Format(service.DateFormat))
 	createSql := fmt.Sprintf(NodeTaskTable, s.config.TaskDb.DbName, s.config.TaskDb.DbName, tableName)
-	err := s.taskDb.Exec(createSql).Error
-	if err != nil {
-		panic(err)
+	sqlList := strings.Split(createSql, ";")
+	for _, sql := range sqlList {
+		err := s.taskDb.Exec(sql).Error
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	//node_info
 	createSql = fmt.Sprintf(NodeInfoTable, s.config.NodeInfoDb.DbName, s.config.NodeInfoDb.DbName, s.config.NodeInfoDb.Table)
-	err = s.nodeInfoDb.Exec(createSql).Error
-	if err != nil {
-		panic(err)
+	sqlList = strings.Split(createSql, ";")
+	for _, sql := range sqlList {
+		err := s.taskDb.Exec(sql).Error
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	//node_source
 	createSql = fmt.Sprintf(NodeSourceTable, s.config.SourceDb.DbName, s.config.SourceDb.DbName, s.config.SourceDb.Table)
-	err = s.nodeSourceDb.Exec(createSql).Error
-	if err != nil {
-		panic(err)
+	sqlList = strings.Split(createSql, ";")
+	for _, sql := range sqlList {
+		err := s.taskDb.Exec(sql).Error
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	//NodeTaskTable check
 	var TaskNum int64
-	err = s.taskDb.Raw("SELECT count(1) as task_num FROM information_schema.`TABLES` WHERE TABLE_SCHEMA=? and TABLE_NAME=?", s.config.TaskDb.DbName, tableName).Pluck("task_num", &TaskNum).Error
+	err := s.taskDb.Raw("SELECT count(1) as task_num FROM information_schema.`TABLES` WHERE TABLE_SCHEMA=? and TABLE_NAME=?", s.config.TaskDb.DbName, tableName).Pluck("task_num", &TaskNum).Error
 	if err != nil || TaskNum < 1 {
 		panic("not found NodeTaskTable")
 	}

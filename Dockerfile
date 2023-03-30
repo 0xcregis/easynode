@@ -7,11 +7,12 @@ ENV GOPROXY https://goproxy.cn,direct
 
 WORKDIR /build
 
-ADD go.mod .
-ADD go.sum .
+COPY ./go.mod .
+COPY ./go.sum .
+
 RUN go mod download
 COPY . .
-RUN go build -ldflags '-s -w' -o /app/easynode .
+RUN go build -ldflags '-s -w' -o /app/easynode ./cmd/easynode/app.go
 
 
 FROM alpine
@@ -22,10 +23,10 @@ ENV TZ Asia/Shanghai
 
 WORKDIR /app
 COPY --from=builder /app/easynode /app/easynode
-COPY blockchain_config.json .
-COPY collect_config.json .
-COPY task_config.json .
-COPY taskapi_config.json .
+COPY ./cmd/easynode/blockchain_config.json .
+COPY ./cmd/easynode/collect_config.json .
+COPY ./cmd/easynode/task_config.json .
+COPY ./cmd/easynode/taskapi_config.json .
 
 EXPOSE 9001 9002
 

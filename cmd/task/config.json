@@ -4,7 +4,7 @@
     "Port": 3306,
     "User": "root",
     "Password": "123456789",
-    "DbName": "easy_node",
+    "DbName": "easy_node2",
     "Table": "node_task"
   },
   "NodeSourceDb": {
@@ -12,7 +12,7 @@
     "Port": 3306,
     "User": "root",
     "Password": "123456789",
-    "DbName": "easy_node",
+    "DbName": "easy_node2",
     "Table": "node_source"
   },
   "NodeInfoDb": {
@@ -20,7 +20,7 @@
     "Port": 3306,
     "User": "root",
     "Password": "123456789",
-    "DbName": "easy_node",
+    "DbName": "easy_node2",
     "Table": "node_info"
   },
   "NodeErrorDb": {
@@ -28,7 +28,7 @@
     "Port": 3306,
     "User": "root",
     "Password": "123456789",
-    "DbName": "easy_node",
+    "DbName": "easy_node2",
     "Table": "node_error"
   },
   "BlockNumberDb": {
@@ -36,7 +36,7 @@
     "Port": 3306,
     "User": "root",
     "Password": "123456789",
-    "DbName": "easy_node",
+    "DbName": "easy_node2",
     "Table": "block_number"
   },
   "AutoCreateBlockTask": true,

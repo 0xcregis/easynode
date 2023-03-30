@@ -17,3 +17,7 @@
 /cmd/blockchain/config.json
 log/
 data/
+./cmd/task/config.json
+./cmd/collect/config.json
+./cmd/collect/config_tron.json
+./cmd/blockchain/config.json

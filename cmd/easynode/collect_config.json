@@ -4,7 +4,7 @@
     "Port": 3306,
     "User": "root",
     "Password": "123456789",
-    "DbName": "easy_node",
+    "DbName": "easy_node2",
     "Table": "node_task"
   },
   "NodeSourceDb": {
@@ -12,7 +12,7 @@
     "Port": 3306,
     "User": "root",
     "Password": "123456789",
-    "DbName": "easy_node",
+    "DbName": "easy_node2",
     "Table": "node_source"
   },
   "NodeInfoDb": {
@@ -20,7 +20,7 @@
     "Port": 3306,
     "User": "root",
     "Password": "123456789",
-    "DbName": "easy_node",
+    "DbName": "easy_node2",
     "Table": "node_info"
   },
   "Log": {
@@ -51,7 +51,7 @@
           }
         ],
         "Kafka": {
-          "Topic": "ether_block",
+          "Topic": "ether_block2",
           "Partition": 0
         }
       },
@@ -63,7 +63,7 @@
           }
         ],
         "Kafka": {
-          "Topic": "ether_tx",
+          "Topic": "ether_tx2",
           "Partition": 0
         }
       },
@@ -75,7 +75,7 @@
           }
         ],
         "Kafka": {
-          "Topic": "ether_receipt",
+          "Topic": "ether_receipt2",
           "Partition": 0
         }
       }

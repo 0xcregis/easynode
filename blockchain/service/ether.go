@@ -122,7 +122,7 @@ func (e *Ether) GetBlockByHash(chainCode int64, hash string) (string, error) {
 		  "method": "eth_getBlockByHash",
 		  "params": [
 			"%v",
- 			false
+ 			true
 		  ]
 		}`
 
@@ -138,7 +138,7 @@ func (e *Ether) GetBlockByNumber(chainCode int64, number string) (string, error)
 			  "method": "eth_getBlockByNumber",
 			  "params": [
 				"%v",
-				false
+				true
 			  ]
 			}
 			`

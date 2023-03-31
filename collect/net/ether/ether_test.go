@@ -14,6 +14,14 @@ func TestEth_GetTransactionByHash(t *testing.T) {
 func TestGetBlockByHash(t *testing.T) {
 	x := xlog.NewXLogger()
 	log.Println(Eth_GetBlockByHash("https://eth-mainnet.g.alchemy.com/v2", "RzxBjjh_c4y0LVHZ7GNm8zoXEZR3HYop", "0xb49d607f5b80890531e3e1d57798a7573cf8e18048ec0df34e3c81d48115078f", x))
+
+}
+
+func TestEth_GetBlockReceiptByBlockNumber(t *testing.T) {
+
+	x := xlog.NewXLogger()
+	log.Println(Eth_GetBlockByNumber("https://eth-mainnet.g.alchemy.com/v2", "RzxBjjh_c4y0LVHZ7GNm8zoXEZR3HYop", "0x10277fa", x))
+
 }
 
 func TestEth_GetBlockByNumber(t *testing.T) {

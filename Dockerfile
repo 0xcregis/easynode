@@ -1,4 +1,4 @@
-FROM golang:1.18 AS builder
+FROM golang:1.20 AS builder
 
 LABEL stage=gobuilder
 
@@ -10,7 +10,6 @@ WORKDIR /build
 COPY ./go.mod .
 COPY ./go.sum .
 
-RUN go mod download
 COPY . .
 RUN go build -ldflags '-s -w' -o /app/easynode ./cmd/easynode/app.go
 

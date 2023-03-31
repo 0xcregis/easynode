@@ -2,7 +2,6 @@ package nodeinfo
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 	"github.com/uduncloud/easynode/collect/common/pg"
@@ -56,8 +55,8 @@ func (s *Service) PushNodeInfo(node *service.NodeInfo, log *logrus.Entry) {
 	}
 }
 
-func NewService(db *config.NodeInfoDb, chains []*config.Chain, logConfig *config.LogConfig) *Service {
-	x := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/node_info", logConfig.Path), 24*time.Hour)
+func NewService(db *config.NodeInfoDb, chains []*config.Chain, logConfig *config.LogConfig, x *xlog.XLog) *Service {
+	//x := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/node_info", logConfig.Path), 24*time.Hour)
 	g, err := pg.Open(db.User, db.Password, db.Addr, db.DbName, db.Port, x)
 	if err != nil {
 		panic(err)

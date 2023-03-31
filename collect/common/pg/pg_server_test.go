@@ -8,7 +8,7 @@ import (
 
 func TestOpen(t *testing.T) {
 	x := xlog.NewXLogger().BuildOutType(xlog.STD)
-	g, err := Open("root", "123456789", "192.168.2.11", "easy_node", 5432, x)
+	g, err := Open("root", "123456789", "192.168.2.11", "information_schema", 3306, x)
 	if err != nil {
 		panic(err)
 	}

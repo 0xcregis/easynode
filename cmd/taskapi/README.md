@@ -76,7 +76,7 @@ curl --location --request POST 'http://127.0.0.1:9001/api/task/txs' \
 }'
 
 //提交区块下所有收据任务
-curl --location --request POST 'http://127.0.0.1:9001/api/task/txs' \
+curl --location --request POST 'http://127.0.0.1:9001/api/task/receipts' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "blockChain": 200,

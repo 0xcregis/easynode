@@ -6,8 +6,13 @@ import (
 )
 
 func Init() *Service {
-	cfg := config.LoadConfig("./../../config.json")
+	cfg := config.LoadConfig("./../../../cmd/task/config.json")
 	return NewService(&cfg)
+}
+
+func TestService_CheckTable(t *testing.T) {
+	s := Init()
+	s.CheckTable()
 }
 
 func TestService_HandlerDeadTask(t *testing.T) {
@@ -21,9 +26,4 @@ func TestService_HandlerManyFailTask(t *testing.T) {
 	s := Init()
 	s.HandlerManyFailTask()
 	//s.createNodeTaskTable()
-}
-
-func TestService_DelNodeErrorWithReceiptByBlockNumber(t *testing.T) {
-	s := Init()
-	_ = s.DelNodeErrorWithReceiptByBlockNumber("16045911", s.config.BlockConfigs[0])
 }

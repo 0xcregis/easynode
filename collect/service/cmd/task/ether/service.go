@@ -1,96 +1,50 @@
 package ether
 
 import (
-	"errors"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
+	chainConfig "github.com/uduncloud/easynode/blockchain/config"
+	chainService "github.com/uduncloud/easynode/blockchain/service"
 	"github.com/uduncloud/easynode/collect/config"
-	"github.com/uduncloud/easynode/collect/net/eth"
 	"github.com/uduncloud/easynode/collect/service"
 	"github.com/uduncloud/easynode/collect/service/cmd/db"
-	"math/rand"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type Service struct {
-	log              *xlog.XLog
-	task             *db.Service
-	chain            *config.Chain
-	originChain      config.Chain
-	blockClusters    []*config.FromCluster
-	txClusters       []*config.FromCluster
-	receiptsClusters []*config.FromCluster
+	log                *xlog.XLog
+	task               *db.Service
+	chain              *config.Chain
+	txChainClient      chainService.API
+	blockChainClient   chainService.API
+	receiptChainClient chainService.API
 }
 
 func (s *Service) Monitor() {
-	go func() {
-		for true {
-			<-time.After(10 * time.Minute)
-			if s.chain.BlockTask != nil {
-				s.blockClusters = s.chain.BlockTask.FromCluster
-			}
-			if s.chain.TxTask != nil {
-				s.txClusters = s.chain.TxTask.FromCluster
-			}
-			if s.chain.ReceiptTask != nil {
-				s.receiptsClusters = s.chain.ReceiptTask.FromCluster
-			}
-		}
-	}()
 }
 
 func (s *Service) BalanceCluster(key string, clusterList []*config.FromCluster) (*config.FromCluster, error) {
-	if clusterList == nil {
-		return nil, errors.New("cluster list is empty,please check config or blockchain node")
-	}
-	var cluster *config.FromCluster
-	temp := make([]*config.FromCluster, 0, 10)
-	for _, v := range clusterList {
-		if v.ErrorCount < 50 {
-			temp = append(temp, v)
-		}
-	}
-
-	l := len(temp)
-	if l > 1 {
-		m := rand.Intn(l)
-		cluster = temp[m]
-	} else if l == 1 {
-		cluster = temp[0]
-	} else {
-		return nil, errors.New("not found active cluster node when try exec task on node")
-	}
-	return cluster, nil
+	return nil, nil
 }
 
 func (s *Service) GetBlockByHash(blockHash string, cfg *config.BlockTask, eLog *logrus.Entry) (*service.Block, []*service.Tx) {
-	//选择节点
-	cluster, err := s.BalanceCluster(blockHash, s.blockClusters)
-	if err != nil {
-		eLog.Errorf("BalanceCluster|BlockChainName=%v,err=%v,blockHash=%v", s.chain.BlockChainName, err.Error(), blockHash)
-		return nil, nil
-	}
-
 	//调用接口
-	resp, err := eth.Eth_GetBlockByHash(cluster.Host, cluster.Key, blockHash, s.log)
+	resp, err := s.blockChainClient.GetBlockByHash(int64(s.chain.BlockChainCode), blockHash)
+	//resp, err := ether.Eth_GetBlockByHash(cluster.Host, cluster.Key, blockHash, s.log)
 	if err != nil {
 		eLog.Errorf("Eth_GetBlockByHash|BlockChainName=%v,err=%v,blockHash=%v", s.chain.BlockChainName, err.Error(), blockHash)
-		cluster.ErrorCount++
 		return nil, nil
 	}
 
 	//处理数据
 	if resp == "" {
 		eLog.Errorf("Eth_GetBlockByHash|BlockChainName=%v,err=%v,blockHash=%v", s.chain.BlockChainName, "block is empty", blockHash)
-		cluster.ErrorCount++
 		return nil, nil
 	}
 
-	cluster.ErrorCount = 0
 	resp = gjson.Parse(resp).Get("result").String()
 
 	//解析数据
@@ -103,27 +57,21 @@ func (s *Service) GetBlockByNumber(blockNumber string, task *config.BlockTask, e
 		n, _ := strconv.ParseInt(blockNumber, 10, 64)
 		blockNumber = fmt.Sprintf("0x%x", n)
 	}
-	//选择节点
-	cluster, err := s.BalanceCluster(blockNumber, s.blockClusters)
-	if err != nil {
-		eLog.Errorf("BalanceCluster|BlockChainName=%v,err=%v,blockHash=%v", s.chain.BlockChainName, err.Error(), blockNumber)
-		return nil, nil
-	}
+
 	//调用接口
-	resp, err := eth.Eth_GetBlockByNumber(cluster.Host, cluster.Key, blockNumber, s.log)
+	resp, err := s.blockChainClient.GetBlockByNumber(int64(s.chain.BlockChainCode), blockNumber)
+	//resp, err := ether.Eth_GetBlockByNumber(cluster.Host, cluster.Key, blockNumber, s.log)
 	if err != nil {
 		eLog.Errorf("Eth_GetBlockByNumber|BlockChainName=%v,err=%v,blockNumber=%v", s.chain.BlockChainName, err.Error(), blockNumber)
-		cluster.ErrorCount++
 		return nil, nil
 	}
 
 	//处理数据
 	if resp == "" {
 		eLog.Errorf("Eth_GetBlockByNumber|BlockChainName=%v,err=%v,blockNumber=%v", s.chain.BlockChainName, "block is empty", blockNumber)
-		cluster.ErrorCount++
 		return nil, nil
 	}
-	cluster.ErrorCount = 0
+
 	resp = gjson.Parse(resp).Get("result").String()
 
 	//解析数据
@@ -132,27 +80,20 @@ func (s *Service) GetBlockByNumber(blockNumber string, task *config.BlockTask, e
 }
 
 func (s *Service) GetTx(txHash string, task *config.TxTask, eLog *logrus.Entry) *service.Tx {
-	//选择节点
-	cluster, err := s.BalanceCluster(txHash, s.txClusters)
-	if err != nil {
-		eLog.Errorf("BalanceCluster|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, err.Error(), txHash)
-		return nil
-	}
+
 	//调用接口
-	resp, err := eth.Eth_GetTransactionByHash(cluster.Host, cluster.Key, txHash, s.log)
+	resp, err := s.txChainClient.GetTxByHash(int64(s.chain.BlockChainCode), txHash)
+	//resp, err := ether.Eth_GetTransactionByHash(cluster.Host, cluster.Key, txHash, s.log)
 	if err != nil {
 		eLog.Errorf("Eth_GetTransactionByHash|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, err.Error(), txHash)
-		cluster.ErrorCount++
 		return nil
 	}
 
 	//处理数据
 	if resp == "" {
 		eLog.Errorf("Eth_GetTransactionByHash|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, "tx is empty", txHash)
-		cluster.ErrorCount++
 		return nil
 	}
-	cluster.ErrorCount = 0
 	resp = gjson.Parse(resp).Get("result").String()
 
 	//解析数据
@@ -162,37 +103,31 @@ func (s *Service) GetTx(txHash string, task *config.TxTask, eLog *logrus.Entry) 
 
 func (s *Service) GetReceiptByBlock(blockHash, number string, task *config.ReceiptTask, eLog *logrus.Entry) []*service.Receipt {
 
-	//选择节点
-	cluster, err := s.BalanceCluster(blockHash, s.receiptsClusters)
-	if err != nil {
-		eLog.Errorf("BalanceCluster|BlockChainName=%v,err=%v,blockHash=%v,blockNumber=%v", s.chain.BlockChainName, err.Error(), blockHash, number)
-		return nil
-	}
 	//调用接口
 	var resp string
+	var err error
 	if len(number) > 0 {
 		if !strings.HasPrefix(number, "0x") {
 			n, _ := strconv.ParseInt(number, 10, 64)
 			number = fmt.Sprintf("0x%x", n)
 		}
-		resp, err = eth.Eth_GetBlockReceiptByBlockNumber(cluster.Host, cluster.Key, number, s.log)
+		resp, err = s.receiptChainClient.GetBlockReceiptByBlockNumber(int64(s.chain.BlockChainCode), number)
+		//resp, err = ether.Eth_GetBlockReceiptByBlockNumber(cluster.Host, cluster.Key, number, s.log)
 	} else if len(number) == 0 && len(blockHash) > 0 {
-		resp, err = eth.Eth_GetBlockReceiptByBlockHash(cluster.Host, cluster.Key, blockHash, s.log)
+		resp, err = s.receiptChainClient.GetBlockReceiptByBlockHash(int64(s.chain.BlockChainCode), blockHash)
+		//resp, err = ether.Eth_GetBlockReceiptByBlockHash(cluster.Host, cluster.Key, blockHash, s.log)
 	}
 
 	if err != nil {
 		eLog.Errorf("Eth_GetBlockReceiptByBlockNumberOrEth_GetBlockReceiptByBlockHash|BlockChainName=%v,err=%v,blocknumber=%v, blockHash=%v", s.chain.BlockChainName, err.Error(), number, blockHash)
-		cluster.ErrorCount++
 		return nil
 	}
 
 	//处理数据
 	if resp == "" {
 		eLog.Errorf("Eth_GetBlockReceiptByBlockNumberOrEth_GetBlockReceiptByBlockHash|BlockChainName=%v,err=%v,blocknumber=%v, blockHash=%v", s.chain.BlockChainName, "receipts is null", number, blockHash)
-		cluster.ErrorCount++
 		return nil
 	}
-	cluster.ErrorCount = 0
 	resp = gjson.Parse(resp).Get("result").String()
 
 	// 解析数据
@@ -200,28 +135,21 @@ func (s *Service) GetReceiptByBlock(blockHash, number string, task *config.Recei
 }
 
 func (s *Service) GetReceipt(txHash string, task *config.ReceiptTask, eLog *logrus.Entry) *service.Receipt {
-	//选择节点
-	cluster, err := s.BalanceCluster(txHash, s.receiptsClusters)
-	if err != nil {
-		eLog.Errorf("BalanceCluster|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, err.Error(), txHash)
-		return nil
-	}
+
 	//调用接口
-	resp, err := eth.Eth_GetTransactionReceiptByHash(cluster.Host, cluster.Key, txHash, s.log)
+	resp, err := s.receiptChainClient.GetTransactionReceiptByHash(int64(s.chain.BlockChainCode), txHash)
+	//resp, err := ether.Eth_GetTransactionReceiptByHash(cluster.Host, cluster.Key, txHash, s.log)
 	if err != nil {
 		eLog.Errorf("Eth_GetTransactionReceiptByHash|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, err.Error(), txHash)
-		cluster.ErrorCount++
 		return nil
 	}
 
 	//处理数据
 	if resp == "" {
 		eLog.Errorf("Eth_GetTransactionReceiptByHash|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, "receipt is empty", txHash)
-		cluster.ErrorCount++
 		return nil
 	}
 
-	cluster.ErrorCount = 0
 	resp = gjson.Parse(resp).Get("result").String()
 
 	// 解析数据
@@ -230,33 +158,58 @@ func (s *Service) GetReceipt(txHash string, task *config.ReceiptTask, eLog *logr
 
 func NewService(c *config.Chain, taskDb *config.TaskDb, sourceDb *config.SourceDb, x *xlog.XLog) service.BlockChainInterface {
 	t := db.NewTaskService(taskDb, sourceDb, x)
-	var bk []*config.FromCluster
+	blockNodeCluster := map[int64][]*chainConfig.NodeCluster{}
 	if c.BlockTask != nil {
-		bk = c.BlockTask.FromCluster
-	} else {
-		bk = nil
+		list := make([]*chainConfig.NodeCluster, 0, 4)
+		for _, v := range c.BlockTask.FromCluster {
+			temp := &chainConfig.NodeCluster{
+				NodeUrl:   v.Host,
+				NodeToken: v.Key,
+				Weight:    v.Weight,
+			}
+			list = append(list, temp)
+		}
+		blockNodeCluster[200] = list
 	}
 
-	var tx []*config.FromCluster
+	txNodeCluster := map[int64][]*chainConfig.NodeCluster{}
 	if c.TxTask != nil {
-		tx = c.TxTask.FromCluster
-	} else {
-		tx = nil
+		list := make([]*chainConfig.NodeCluster, 0, 4)
+		for _, v := range c.TxTask.FromCluster {
+			temp := &chainConfig.NodeCluster{
+				NodeUrl:   v.Host,
+				NodeToken: v.Key,
+				Weight:    v.Weight,
+			}
+			list = append(list, temp)
+		}
+		txNodeCluster[200] = list
 	}
 
-	var rp []*config.FromCluster
+	receiptNodeCluster := map[int64][]*chainConfig.NodeCluster{}
 	if c.ReceiptTask != nil {
-		rp = c.ReceiptTask.FromCluster
-	} else {
-		rp = nil
+		list := make([]*chainConfig.NodeCluster, 0, 4)
+		for _, v := range c.ReceiptTask.FromCluster {
+			temp := &chainConfig.NodeCluster{
+				NodeUrl:   v.Host,
+				NodeToken: v.Key,
+				Weight:    v.Weight,
+			}
+			list = append(list, temp)
+		}
+		receiptNodeCluster[200] = list
 	}
+
+	txClient := chainService.NewEth(txNodeCluster, x)
+	blockClient := chainService.NewEth(blockNodeCluster, x)
+	receiptClient := chainService.NewEth(receiptNodeCluster, x)
+
 	return &Service{
-		log:              x,
-		task:             t,
-		chain:            c,
-		originChain:      c.CopyChain(),
-		blockClusters:    bk,
-		txClusters:       tx,
-		receiptsClusters: rp,
+		log:                x,
+		task:               t,
+		chain:              c,
+		txChainClient:      txClient,
+		blockChainClient:   blockClient,
+		receiptChainClient: receiptClient,
 	}
 }

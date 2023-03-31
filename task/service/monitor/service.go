@@ -8,7 +8,7 @@ import (
 	"github.com/uduncloud/easynode/task/config"
 	"github.com/uduncloud/easynode/task/service"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
+	"strings"
 	"time"
 )
 
@@ -18,12 +18,13 @@ import (
 */
 
 type Service struct {
-	config       *config.Config
-	nodeSourceDb *gorm.DB
-	taskDb       *gorm.DB
-	nodeInfoDb   *gorm.DB
-	nodeErrorDb  *gorm.DB
-	log          *xlog.XLog
+	config        *config.Config
+	nodeSourceDb  *gorm.DB
+	taskDb        *gorm.DB
+	nodeInfoDb    *gorm.DB
+	nodeErrorDb   *gorm.DB
+	blockNumberDb *gorm.DB
+	log           *xlog.XLog
 }
 
 func NewService(config *config.Config) *Service {
@@ -48,17 +49,26 @@ func NewService(config *config.Config) *Service {
 		panic(err)
 	}
 
+	blockNumber, err := sql.Open(config.BlockNumberDb.User, config.BlockNumberDb.Password, config.BlockNumberDb.Addr, config.BlockNumberDb.DbName, config.BlockNumberDb.Port, xg)
+	if err != nil {
+		panic(err)
+	}
+
 	return &Service{
-		config:       config,
-		nodeSourceDb: s,
-		nodeErrorDb:  nodeErr,
-		nodeInfoDb:   info,
-		taskDb:       task,
-		log:          xg,
+		config:        config,
+		nodeSourceDb:  s,
+		nodeErrorDb:   nodeErr,
+		nodeInfoDb:    info,
+		taskDb:        task,
+		blockNumberDb: blockNumber,
+		log:           xg,
 	}
 }
 
 func (s *Service) Start() {
+
+	//检查数据表 是否完备
+	s.CheckTable()
 
 	//每日分表
 	go s.createNodeTaskTable()
@@ -78,6 +88,96 @@ func (s *Service) Start() {
 
 		}
 	}()
+}
+
+func (s *Service) CheckTable() {
+
+	//node_task
+	tableName := fmt.Sprintf("%v_%v", s.config.NodeTaskDb.Table, time.Now().Format(service.DayFormat))
+	createSql := fmt.Sprintf(NodeTaskTable, s.config.NodeTaskDb.DbName, s.config.NodeTaskDb.DbName, tableName)
+
+	sqlList := strings.Split(createSql, ";")
+	for _, sql := range sqlList {
+		err := s.taskDb.Exec(sql).Error
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	//node_info
+	createSql = fmt.Sprintf(NodeInfoTable, s.config.NodeInfoDb.DbName, s.config.NodeInfoDb.DbName, s.config.NodeInfoDb.Table)
+	sqlList = strings.Split(createSql, ";")
+	for _, sql := range sqlList {
+		err := s.taskDb.Exec(sql).Error
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	//node_source
+	createSql = fmt.Sprintf(NodeSourceTable, s.config.NodeSourceDb.DbName, s.config.NodeSourceDb.DbName, s.config.NodeSourceDb.Table)
+	sqlList = strings.Split(createSql, ";")
+	for _, sql := range sqlList {
+		err := s.taskDb.Exec(sql).Error
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	//block_number
+	createSql = fmt.Sprintf(BlockNumberTable, s.config.BlockNumberDb.DbName, s.config.BlockNumberDb.DbName, s.config.BlockNumberDb.Table)
+	sqlList = strings.Split(createSql, ";")
+	for _, sql := range sqlList {
+		err := s.taskDb.Exec(sql).Error
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	//node_error
+	createSql = fmt.Sprintf(NodeErrorTable, s.config.NodeErrorDb.DbName, s.config.NodeErrorDb.DbName, s.config.NodeErrorDb.Table)
+	sqlList = strings.Split(createSql, ";")
+	for _, sql := range sqlList {
+		err := s.taskDb.Exec(sql).Error
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	//NodeTaskTable check
+	var TaskNum int64
+	err := s.taskDb.Raw("SELECT count(1) as task_num FROM information_schema.`TABLES` WHERE TABLE_SCHEMA=? and TABLE_NAME=?", s.config.NodeTaskDb.DbName, tableName).Pluck("task_num", &TaskNum).Error
+	if err != nil || TaskNum < 1 {
+		panic("not found NodeTaskTable")
+	}
+
+	//NodeSourceTable check
+	var SourceNum int64
+	err = s.nodeSourceDb.Raw("SELECT count(1) as source_num FROM information_schema.`TABLES` WHERE TABLE_SCHEMA=? and TABLE_NAME=?", s.config.NodeSourceDb.DbName, s.config.NodeSourceDb.Table).Pluck("source_num", &SourceNum).Error
+	if err != nil || SourceNum < 1 {
+		panic("not found NodeSourceTable")
+	}
+
+	//NodeInfoTable check
+	var InfoNum int64
+	err = s.nodeInfoDb.Raw("SELECT count(1) as info_num FROM information_schema.`TABLES` WHERE TABLE_SCHEMA=? and TABLE_NAME=?", s.config.NodeInfoDb.DbName, s.config.NodeInfoDb.Table).Pluck("info_num", &InfoNum).Error
+	if err != nil || InfoNum < 1 {
+		panic("not found NodeInfoTable")
+	}
+
+	//blockNumberTable check
+	var blockNum int64
+	err = s.blockNumberDb.Raw("SELECT count(1) as block_num FROM information_schema.`TABLES` WHERE TABLE_SCHEMA=? and TABLE_NAME=?", s.config.BlockNumberDb.DbName, s.config.BlockNumberDb.Table).Pluck("block_num", &blockNum).Error
+	if err != nil || blockNum < 1 {
+		panic("not found BlockNumberTable")
+	}
+
+	//errorTable check
+	var ErrorNum int64
+	err = s.nodeErrorDb.Raw("SELECT count(1) as error_num FROM information_schema.`TABLES` WHERE TABLE_SCHEMA=? and TABLE_NAME=?", s.config.BlockNumberDb.DbName, s.config.BlockNumberDb.Table).Pluck("error_num", &ErrorNum).Error
+	if err != nil || ErrorNum < 1 {
+		panic("not found nodeErrorTable")
+	}
 }
 
 func (s *Service) createNodeTaskTable() {
@@ -108,18 +208,17 @@ func (s *Service) createNodeTaskTable() {
 		<-time.After(next.Sub(time.Now()))
 
 		//cp data from pre table to current table
-		cpSql := `
-INSERT IGNORE INTO %v (id, node_id, block_number, block_hash, tx_hash, task_type, block_chain, task_status ) SELECT
-id,
-node_id,
-block_number,
-block_hash,
-tx_hash,
-task_type,
-block_chain,
-task_status 
-FROM %v where task_status in (0,2,3,4)
-`
+		cpSql := `INSERT IGNORE INTO %v (id, node_id, block_number, block_hash, tx_hash, task_type, block_chain, task_status )
+				SELECT
+				id,
+				node_id,
+				block_number,
+				block_hash,
+				tx_hash,
+				task_type,
+				block_chain,
+				task_status 
+				FROM %v where task_status in (0,2,3,4)`
 		cpSql = fmt.Sprintf(cpSql, dayTable, preTable)
 
 		err = s.taskDb.Exec(cpSql).Error
@@ -136,7 +235,6 @@ FROM %v where task_status in (0,2,3,4)
 		}
 		//delete binlog
 		s.taskDb.Exec("RESET MASTER")
-
 	}
 }
 
@@ -161,17 +259,15 @@ func (s *Service) RetryTaskForFail() {
 
 	if len(ids) > 0 {
 
-		sqlStr := `
- INSERT IGNORE INTO %v(block_chain,tx_hash,block_hash,block_number,source_type)
-SELECT block_chain,tx_hash,block_hash,block_number,CASE 
-	WHEN task_type=1 THEN
-		1
-	WHEN task_type=2 THEN
-	2
-	ELSE
-		3
-END as source_type FROM %v WHERE task_status=2 and id in (?)
-`
+		sqlStr := `INSERT IGNORE INTO %v(block_chain,tx_hash,block_hash,block_number,source_type)
+					SELECT block_chain,tx_hash,block_hash,block_number,CASE 
+					WHEN task_type=1 THEN
+						1
+					WHEN task_type=2 THEN
+						2
+					ELSE
+						3
+					END as source_type FROM %v WHERE task_status=2 and id in (?)`
 		sqlStr = fmt.Sprintf(sqlStr, s.config.NodeSourceDb.Table, s.getNodeTaskTable())
 		err = s.nodeSourceDb.Exec(sqlStr, ids).Error
 		if err != nil {
@@ -206,9 +302,7 @@ func (s *Service) HandlerManyFailTask() {
 	})
 
 	//如果任务多次重试，仍然失败，则放弃
-	str := `
-SELECT block_chain, block_number,block_hash,tx_hash,task_type,count(1) as c FROM %v WHERE task_status in (2,5) GROUP BY block_chain, block_number,block_hash,tx_hash,task_type HAVING c>?
-`
+	str := `SELECT block_chain, block_number,block_hash,tx_hash,task_type,count(1) as c FROM %v WHERE task_status in (2,5) GROUP BY block_chain, block_number,block_hash,tx_hash,task_type HAVING c>?`
 	str = fmt.Sprintf(str, s.getNodeTaskTable())
 	var list []*service.NodeTask
 	err := s.taskDb.Raw(str, 5).Scan(&list).Error
@@ -224,35 +318,4 @@ SELECT block_chain, block_number,block_hash,tx_hash,task_type,count(1) as c FROM
 			continue
 		}
 	}
-}
-
-func (s *Service) AddNodeError(list []*service.NodeSource) error {
-	err := s.nodeErrorDb.Table(s.config.NodeErrorDb.Table).Clauses(clause.Insert{Modifier: "IGNORE"}).Omit("id,create_time").CreateInBatches(&list, 10).Error
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Service) DelNodeErrorWithBlockByBlockNumber(number string, chain *config.BlockConfig) error {
-
-	delSql := "delete from %v where block_chain=? and block_number=? and source_type=?"
-	delSql = fmt.Sprintf(delSql, s.config.NodeErrorDb.Table)
-	err := s.nodeSourceDb.Exec(delSql, chain.BlockChainCode, number, 2).Error
-	//err := s.nodeErrorDb.Table().Where("block_chain=? and block_number=? and source_type=?", chain.BlockChainCode, number, 2).Delete(s.config.NodeErrorDb.Table).Error
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Service) DelNodeErrorWithReceiptByBlockNumber(number string, chain *config.BlockConfig) error {
-	delSql := "delete from %v where block_chain=? and block_number=? and source_type=?"
-	delSql = fmt.Sprintf(delSql, s.config.NodeErrorDb.Table)
-	err := s.nodeSourceDb.Exec(delSql, chain.BlockChainCode, number, 3).Error
-	//err := s.nodeErrorDb.Where("block_chain=? and block_number=? and source_type=?", chain.BlockChainCode, number, 3).Delete(s.config.NodeErrorDb.Table).Error
-	if err != nil {
-		return err
-	}
-	return nil
 }

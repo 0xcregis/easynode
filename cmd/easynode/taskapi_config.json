@@ -1,0 +1,33 @@
+{
+  "RootPath": "/api/task",
+  "Port": 9001,
+  "BlockChain": [
+    200,
+    205
+  ],
+  "TaskDb": {
+    "Addr": "192.168.2.11",
+    "Port": 3306,
+    "User": "root",
+    "Password": "123456789",
+    "DbName": "easy_node2"
+  },
+  "ClickhouseDb": {
+    "200": {
+      "Addr": "192.168.2.11",
+      "Port": 9000,
+      "User": "test",
+      "Password": "test",
+      "DbName": "ether",
+      "TxTable": "ether.tx"
+    },
+    "205": {
+      "Addr": "192.168.2.11",
+      "Port": 9000,
+      "User": "test",
+      "Password": "test",
+      "DbName": "tron",
+      "TxTable": "tron.tx"
+    }
+  }
+}

@@ -15,19 +15,20 @@ func Init() *EasyKafka {
 func TestEasyKafka_Write(t *testing.T) {
 
 	k := Init()
-	ch := make(chan *kafka.Message, 10)
+	ch := make(chan []*kafka.Message, 10)
 	go func() {
 		for true {
-			msg := &kafka.Message{Key: []byte("901"), Value: []byte(`{"name":"sunhongtao","age":11}`), Topic: "test2", Partition: 1}
+			msg := &kafka.Message{Key: []byte("901"), Value: []byte(`{"name":"sunhongtao","age":11}`), Topic: "test2", Partition: 0}
 			select {
-			case ch <- msg:
+			case ch <- []*kafka.Message{msg}:
 				log.Printf("==  %+v\n", msg)
 			}
 			time.Sleep(3 * time.Second)
 		}
 	}()
 
-	k.Write(&Config{Brokers: []string{"192.168.2.20:9092"}, Topic: "test", Partition: 1, Group: "g1"}, ch)
+	respCh := make(chan []*kafka.Message, 10)
+	k.Write(Config{Brokers: []string{"kafka:9092"}, Group: "g1"}, ch, respCh)
 }
 
 func TestEasyKafka_Read(t *testing.T) {

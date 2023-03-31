@@ -279,7 +279,7 @@ func (s *Service) GetNodeTaskCountWithMap() map[string]int64 {
 		NodeId string
 		Number int64
 	}
-	err := s.taskDb.Table(s.getNodeTaskTable()).Select("node_id,count(1)as number").Where("task_status in (0,4,3)").Group("node_id").Scan(&list).Error
+	err := s.taskDb.Table(s.getNodeTaskTable()).Select("node_id,count(1) as number").Where("task_status in (0,4,3)").Group("node_id").Scan(&list).Error
 	if err != nil {
 		return nil
 	}

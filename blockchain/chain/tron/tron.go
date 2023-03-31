@@ -18,6 +18,16 @@ import (
 type Tron struct {
 }
 
+func (t *Tron) EthSubscribe(host string, token string) (string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t *Tron) EthUnSubscribe(host string, token string) (string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func NewChainClient() chain.BlockChain {
 	return &Tron{}
 }

@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/ethereum/go-ethereum v1.11.2
-	github.com/fbsobreira/gotron-sdk v0.0.0-20230315142011-bd0176955ca2
+	github.com/fbsobreira/gotron-sdk v0.0.0-20230329170810-8ce6eac59a1d
 	github.com/gin-gonic/gin v1.9.0
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/gorilla/websocket v1.5.0

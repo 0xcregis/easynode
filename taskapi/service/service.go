@@ -28,14 +28,20 @@ func NewServer(dbConfig *config.TaskDb, chConfig map[int64]*config.ClickhouseDb,
 		panic(err)
 	}
 
+	//clickhouse 配置非必须
 	mp := make(map[int64]*gorm.DB, 2)
-	for k, v := range chConfig {
-		c, err := db.OpenCK(v.User, v.Password, v.Addr, v.DbName, v.Port, log)
-		if err != nil {
-			panic(err)
+	if len(chConfig) > 0 {
+		for k, v := range chConfig {
+			c, err := db.OpenCK(v.User, v.Password, v.Addr, v.DbName, v.Port, log)
+			if err != nil {
+				panic(err)
+			}
+			mp[k] = c
 		}
-		mp[k] = c
+	} else {
+		log.Warnf("some function does not work for clickhouse`s config is null")
 	}
+
 	return &Server{
 		log:        log,
 		db:         g,
@@ -357,6 +363,12 @@ func (s *Server) GetActiveNodesFromDB() ([]string, error) {
 }
 
 func (s *Server) QueryTxFromCh(blockChain int64, txHash string) (*Tx, error) {
+
+	//clickhouse 非必须配置项，因此 可能不存在次连接
+	if _, ok := s.chDb[blockChain]; !ok {
+		return nil, errors.New("not found db source ,please check config file")
+	}
+
 	var tx Tx
 	err := s.chDb[blockChain].Table(s.chConfig[blockChain].TxTable).Where("hash=?", txHash).Scan(&tx).Error
 	if err != nil || tx.Id < 1 {

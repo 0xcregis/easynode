@@ -5,9 +5,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
+	blockChainConfig "github.com/uduncloud/easynode/blockchain/config"
+	"github.com/uduncloud/easynode/blockchain/service"
 	"github.com/uduncloud/easynode/task/config"
-	"github.com/uduncloud/easynode/task/net/tron"
-	"github.com/uduncloud/easynode/task/util"
+	"strconv"
 	"time"
 )
 
@@ -27,7 +28,11 @@ func (e *Tron) GetLastBlockNumber(v *config.BlockConfig) (int64, error) {
 		"model": "GetLastBlockNumber",
 	})
 	var lastNumber int64
-	jsonResult, err := tron.Eth_GetBlockNumber(v.NodeHost, v.NodeKey)
+	clusters := map[int64][]*blockChainConfig.NodeCluster{205: {{NodeUrl: v.NodeHost, NodeToken: v.NodeKey}}}
+	/**
+	  {\"blockId\":\"0000000002f52f21275a4e244b191f29dc289bfc66bce08a18c3d5051fcf7203\",\"number\":49622817}
+	*/
+	jsonResult, err := service.NewTron(clusters, e.log).LatestBlock(205)
 	if err != nil {
 		log.Errorf("Eth_GetBlockNumber|err=%v", err)
 		return 0, err
@@ -35,9 +40,9 @@ func (e *Tron) GetLastBlockNumber(v *config.BlockConfig) (int64, error) {
 		log.Printf("Eth_GetBlockNumber|resp=%v", jsonResult)
 	}
 
-	//获取链的最新区块高度
-	number := gjson.Parse(jsonResult).Get("result").String()
-	lastNumber, err = util.HexToInt(number)
+	number := gjson.Parse(jsonResult).Get("number").String()
+	lastNumber, err = strconv.ParseInt(number, 0, 64)
+	//lastNumber, err = util.HexToInt(number)
 	if err != nil {
 		log.Errorf("HexToInt|err=%v", err)
 		return 0, err

@@ -16,7 +16,7 @@ import (
 
 func main() {
 	var configPath string
-	flag.StringVar(&configPath, "config", "./config.json", "The system file of config")
+	flag.StringVar(&configPath, "config", "./cmd/task/config.json", "The system file of config")
 	flag.Parse()
 	if len(configPath) < 1 {
 		panic("can not find config file")
@@ -25,14 +25,16 @@ func main() {
 
 	log.Printf("%+v\n", cfg)
 
+	//系统监控服务
+	monitor.NewService(&cfg).Start()
+
 	//生产任务 服务
-	taskcreate.NewService(&cfg).Start()
+	if cfg.AutoCreateBlockTask {
+		taskcreate.NewService(&cfg).Start()
+	}
 
 	//分配任务
 	taskhandler.NewService(&cfg).Start()
-
-	//系统监控服务
-	monitor.NewService(&cfg).Start()
 
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.

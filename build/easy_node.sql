@@ -1,7 +1,7 @@
 /*
  Navicat MySQL Data Transfer
 
- Source Server         : easy_node
+ Source Server         : easynode
  Source Server Type    : MySQL
  Source Server Version : 80031
  Source Host           : 192.168.2.11:3306
@@ -11,11 +11,10 @@
  Target Server Version : 80031
  File Encoding         : 65001
 
- Date: 13/02/2023 18:23:53
+ Date: 29/03/2023 17:21:42
 */
-
-CREATE DATABASE easynode;
-
+CREATE DATABASE IF NOT EXISTS easy_node;
+USE easy_node;
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
@@ -32,7 +31,7 @@ CREATE TABLE `block_number` (
   `log_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `code` (`chain_code`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=1588893 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='公链最新区块高度表';
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='公链最新区块高度表';
 
 -- ----------------------------
 -- Table structure for node_error
@@ -57,14 +56,14 @@ CREATE TABLE `node_error` (
 DROP TABLE IF EXISTS `node_info`;
 CREATE TABLE `node_info` (
   `id` bigint NOT NULL AUTO_INCREMENT,
-  `ip` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'ip',
-  `host` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'host',
-  `node_id` varchar(255) COLLATE utf8mb4_general_ci NOT NULL COMMENT '节点的唯一标识',
+  `ip` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'ip',
+  `host` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'host',
+  `node_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '节点的唯一标识',
   `info` json NOT NULL COMMENT '''采集节点的配置信息 ，一个json 对象 如：\n[\n  {\n   "blockchain":"eth", \n   "block_code":100,\n   "config":{\n              "tx": 0,\n               "block":1\n          }\n  },\n  {}\n]'';',
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `node_id` (`node_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=3936448 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='节点信息表';
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='节点信息表';
 
 -- ----------------------------
 -- Table structure for node_source
@@ -80,14 +79,14 @@ CREATE TABLE `node_source` (
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`block_chain`,`tx_hash`,`block_hash`,`block_number`,`source_type`) USING BTREE,
-  KEY `type` (`source_type`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=2750196 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='任务来源表\n\n1. 自产生 block number\n2.重试任务: Tx, block\n3. 收据任务';
+  KEY `type` (`source_type`,`block_chain`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='任务来源表\n\n1. 自产生 block number\n2.重试任务: Tx, block\n3. 收据任务';
 
 -- ----------------------------
--- Table structure for node_task_20230213
+-- Table structure for node_task_20230329
 -- ----------------------------
-DROP TABLE IF EXISTS `node_task_20230213`;
-CREATE TABLE `node_task_20230213` (
+DROP TABLE IF EXISTS `node_task_20230329`;
+CREATE TABLE `node_task_20230329` (
   `node_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '节点的唯一标识',
   `block_number` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '区块高度',
   `block_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '区块hash',
@@ -106,6 +105,6 @@ CREATE TABLE `node_task_20230213` (
   KEY `block_hash` (`block_hash`) USING BTREE,
   KEY `block_chain` (`block_chain`) USING BTREE,
   KEY `node_id` (`node_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=173770503 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='节点任务表';
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='节点任务表';
 
 SET FOREIGN_KEY_CHECKS = 1;

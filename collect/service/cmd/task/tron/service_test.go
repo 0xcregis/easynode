@@ -10,7 +10,7 @@ import (
 )
 
 func Init() (service.BlockChainInterface, config.Config, *xlog.XLog) {
-	cfg := config.LoadConfig("./../../../../config_tron.json")
+	cfg := config.LoadConfig("./../../../../../cmd/collect/config_tron.json")
 	x := xlog.NewXLogger()
 	return NewService(cfg.Chains[0], cfg.TaskDb, cfg.SourceDb, x), cfg, x
 }
@@ -40,5 +40,5 @@ func TestService_GetReceiptByBlock(t *testing.T) {
 func TestService_GetReceipt(t *testing.T) {
 	s, cfg, x := Init()
 	r := s.GetReceipt("0x72fd440ff0542c2c28db762b4268f126c57f0fdf6daf69258cb9a306e26723e8", cfg.Chains[0].ReceiptTask, x.WithFields(logrus.Fields{}))
-	log.Println(r)
+	log.Printf("%+v", r)
 }

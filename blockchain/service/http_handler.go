@@ -113,6 +113,31 @@ func (h *HttpHandler) GetTxByHash(ctx *gin.Context) {
 	h.Success(ctx, string(b), res, ctx.Request.RequestURI)
 }
 
+func (h *HttpHandler) GetTxReceiptByHash(ctx *gin.Context) {
+	code := ctx.Param("chain")
+
+	blockChainCode, err := strconv.ParseInt(code, 0, 64)
+	if err != nil {
+		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
+		return
+	}
+	b, err := ioutil.ReadAll(ctx.Request.Body)
+	if err != nil {
+		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
+		return
+	}
+
+	hash := gjson.ParseBytes(b).Get("hash").String()
+	res, err := h.blockChainClients[blockChainCode].GetTransactionReceiptByHash(blockChainCode, hash)
+
+	if err != nil {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
+		return
+	}
+
+	h.Success(ctx, string(b), res, ctx.Request.RequestURI)
+}
+
 func (h *HttpHandler) GetBalance(ctx *gin.Context) {
 	code := ctx.Param("chain")
 

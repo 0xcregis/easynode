@@ -38,6 +38,7 @@ func main() {
 	root.POST("/:chain/block/hash", srv.GetBlockByHash)
 	root.POST("/:chain/block/number", srv.GetBlockByNumber)
 	root.POST("/:chain/tx/hash", srv.GetTxByHash)
+	root.POST("/:chain/tx/receipts", srv.GetTxReceiptByHash)
 	root.POST("/:chain/account/balance", srv.GetBalance)
 	root.POST("/:chain/account/tokenBalance", srv.GetTokenBalance)
 	root.POST("/:chain/account/nonce", srv.GetNonce)

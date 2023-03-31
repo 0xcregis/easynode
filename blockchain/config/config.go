@@ -9,8 +9,10 @@ type Config struct {
 }
 
 type NodeCluster struct {
-	NodeUrl   string `json:"NodeUrl"`
-	NodeToken string `json:"NodeToken"`
+	NodeUrl    string `json:"NodeUrl"`
+	NodeToken  string `json:"NodeToken"`
+	Weight     int64  `json:"Weight"`
+	ErrorCount int64  `json:"ErrorCount"`
 }
 
 type TaskDb struct {

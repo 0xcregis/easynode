@@ -50,8 +50,8 @@ github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25Kn
 github.com/edsrzf/mmap-go v1.0.0 h1:CEBF7HpRnUCSJgGUb5h1Gm7e3VkmVDrR8lvWVLtrOFw=
 github.com/ethereum/go-ethereum v1.11.2 h1:z/luyejbevDCAMUUiu0rc80dxJxOnpoG58k5o0tSawc=
 github.com/ethereum/go-ethereum v1.11.2/go.mod h1:DuefStAgaxoaYGLR0FueVcVbehmn5n9QUcVrMCuOvuc=
-github.com/fbsobreira/gotron-sdk v0.0.0-20230315142011-bd0176955ca2 h1:AfZcUh1WIelqxXBVA2vD2mpM8b4UguZlSZHbILDr9hs=
-github.com/fbsobreira/gotron-sdk v0.0.0-20230315142011-bd0176955ca2/go.mod h1:nu7RbxA7PUWdyMI9O/tBVLDjTMyU0MuRERlTyShJKGg=
+github.com/fbsobreira/gotron-sdk v0.0.0-20230329170810-8ce6eac59a1d h1:k+m8kdRxSNCwJ7sljOlA6Kiv6T1DzdzlYm8kDbMAT64=
+github.com/fbsobreira/gotron-sdk v0.0.0-20230329170810-8ce6eac59a1d/go.mod h1:nu7RbxA7PUWdyMI9O/tBVLDjTMyU0MuRERlTyShJKGg=
 github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5 h1:FtmdgXiUlNeRsoNMFlKLDt+S+6hbjVMEW6RGQ7aUf7c=
 github.com/fsnotify/fsnotify v1.6.0 h1:n+5WquG0fcWoWp6xPWfHdbskMCQaFnG6PfBrh1Ky4HY=
 github.com/fsnotify/fsnotify v1.6.0/go.mod h1:sl3t1tCWJFWoRz9R8WJCbQihKKwmorjAbSClcnxKAGw=

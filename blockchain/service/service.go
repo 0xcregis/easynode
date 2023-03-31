@@ -11,4 +11,12 @@ type API interface {
 	GetBlockByNumber(chainCode int64, number string) (string, error)
 	GetTxByHash(chainCode int64, hash string) (string, error)
 	SendJsonRpc(chainCode int64, req string) (string, error)
+
+	GetBlockReceiptByBlockNumber(chainCode int64, number string) (string, error)
+	GetBlockReceiptByBlockHash(chainCode int64, hash string) (string, error)
+	GetTransactionReceiptByHash(chainCode int64, hash string) (string, error)
+
+	SubscribePendingTx(chainCode int64, receiverCh chan string, sendCh chan string) (string, error)
+	SubscribeLogs(chainCode int64, address string, topics []string, receiverCh chan string, sendCh chan string) (string, error)
+	UnSubscribe(chainCode int64, subId string) (string, error)
 }

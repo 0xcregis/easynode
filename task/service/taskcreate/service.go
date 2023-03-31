@@ -16,11 +16,12 @@ import (
 )
 
 type Service struct {
-	config       *config.Config
-	nodeSourceDb *gorm.DB
-	taskDb       *gorm.DB
-	nodeInfoDb   *gorm.DB
-	log          *xlog.XLog
+	config        *config.Config
+	nodeSourceDb  *gorm.DB
+	taskDb        *gorm.DB
+	nodeInfoDb    *gorm.DB
+	blockNumberDb *gorm.DB
+	log           *xlog.XLog
 }
 
 func (s *Service) Start() {
@@ -32,7 +33,6 @@ func (s *Service) Start() {
 			<-time.After(10 * time.Second)
 		}
 	}()
-
 }
 
 func (s *Service) CreateBlockTask() {
@@ -158,7 +158,7 @@ func (s *Service) AddNodeSource(list []*service.NodeSource) error {
 
 func (s *Service) UpdateLastNumber(blockChainCode int64, latestNumber int64) error {
 	bn := service.BlockNumber{LatestNumber: latestNumber, ChainCode: blockChainCode}
-	err := s.nodeSourceDb.Table(service.BLOCK_NUMBER_TABLE).Omit("id,create_time,log_time,recent_number").Clauses(clause.OnConflict{DoUpdates: clause.AssignmentColumns([]string{"latest_number"})}).Create(&bn).Error
+	err := s.blockNumberDb.Table(s.config.BlockNumberDb.Table).Omit("id,create_time,log_time,recent_number").Clauses(clause.OnConflict{DoUpdates: clause.AssignmentColumns([]string{"latest_number"})}).Create(&bn).Error
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func (s *Service) UpdateLastNumber(blockChainCode int64, latestNumber int64) err
 
 func (s *Service) UpdateRecentNumber(blockChainCode int64, recentNumber int64) error {
 	bn := service.BlockNumber{RecentNumber: recentNumber, ChainCode: blockChainCode}
-	err := s.nodeSourceDb.Table(service.BLOCK_NUMBER_TABLE).Omit("id,create_time,log_time,latest_number").Clauses(clause.OnConflict{DoUpdates: clause.AssignmentColumns([]string{"recent_number"})}).Create(&bn).Error
+	err := s.blockNumberDb.Table(s.config.BlockNumberDb.Table).Omit("id,create_time,log_time,latest_number").Clauses(clause.OnConflict{DoUpdates: clause.AssignmentColumns([]string{"recent_number"})}).Create(&bn).Error
 	if err != nil {
 		return err
 	}
@@ -176,7 +176,7 @@ func (s *Service) UpdateRecentNumber(blockChainCode int64, recentNumber int64) e
 
 func (s *Service) GetRecentNumber(blockCode int64) (int64, int64, error) {
 	var Num int64
-	err := s.nodeSourceDb.Table(service.BLOCK_NUMBER_TABLE).Where("chain_code=?", blockCode).Count(&Num).Error
+	err := s.blockNumberDb.Table(s.config.BlockNumberDb.Table).Where("chain_code=?", blockCode).Count(&Num).Error
 	if err != nil {
 		return 0, 0, err
 	}
@@ -186,7 +186,7 @@ func (s *Service) GetRecentNumber(blockCode int64) (int64, int64, error) {
 	}
 
 	var temp service.BlockNumber
-	err = s.nodeSourceDb.Table(service.BLOCK_NUMBER_TABLE).Where("chain_code=?", blockCode).First(&temp).Error
+	err = s.blockNumberDb.Table(s.config.BlockNumberDb.Table).Where("chain_code=?", blockCode).First(&temp).Error
 	if err != nil {
 		return 0, 0, errors.New("no record")
 	}
@@ -210,11 +210,17 @@ func NewService(config *config.Config) *Service {
 		panic(err)
 	}
 
+	blockNumber, err := sql.Open(config.BlockNumberDb.User, config.BlockNumberDb.Password, config.BlockNumberDb.Addr, config.BlockNumberDb.DbName, config.BlockNumberDb.Port, xg)
+	if err != nil {
+		panic(err)
+	}
+
 	return &Service{
-		config:       config,
-		nodeSourceDb: s,
-		nodeInfoDb:   info,
-		taskDb:       task,
-		log:          xg,
+		config:        config,
+		nodeSourceDb:  s,
+		nodeInfoDb:    info,
+		taskDb:        task,
+		blockNumberDb: blockNumber,
+		log:           xg,
 	}
 }

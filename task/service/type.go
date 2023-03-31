@@ -3,8 +3,6 @@ package service
 import "time"
 
 const (
-	BLOCK_NUMBER_TABLE = "block_number"
-
 	DayFormat  = "20060102"
 	TimeFormat = "2006-01-02 15:04:05"
 )

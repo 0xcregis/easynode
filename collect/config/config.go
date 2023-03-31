@@ -118,7 +118,7 @@ type Etcd struct {
 }
 
 type Chain struct {
-	Etcd           *Etcd        `json:"Etcd"`
+	//Etcd           *Etcd        `json:"Etcd"`
 	BlockChainName string       `json:"BlockChainName"`
 	BlockChainCode int          `json:"BlockChainCode"`
 	NodeWeight     int          `json:"NodeWeight"`

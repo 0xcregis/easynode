@@ -520,7 +520,7 @@ func (c *Cmd) getReceiptTask(nodeId string, blockChain int, receiptChan chan *se
 		//if c.lock() {
 		list, err = c.task.GetTaskWithReceipt(blockChain, nodeId)
 		if err != nil {
-			log.Errorf("GetTaskWithReceipt|error=%v", err)
+			log.Warnf("GetTaskWithReceipt|error=%v", err)
 		}
 		//c.unlock()
 		//}
@@ -547,7 +547,7 @@ func (c *Cmd) getTxTask(nodeId string, blockChain int, txCh chan *service.NodeTa
 		//if c.lock() {
 		list, err = c.task.GetTaskWithTx(blockChain, nodeId)
 		if err != nil {
-			log.Errorf("GetTaskWithTx|err=%v", err)
+			log.Warnf("GetTaskWithTx|err=%v", err)
 		}
 		//c.unlock()
 		//}
@@ -575,7 +575,7 @@ func (c *Cmd) getBlockTask(nodeId string, blockChain int, blockCh chan *service.
 		//if c.lock() {
 		list, err = c.task.GetTaskWithBlock(blockChain, nodeId)
 		if err != nil {
-			log.Errorf("GetTaskWithBlock|err=%v", err)
+			log.Warnf("GetTaskWithBlock|err=%v", err)
 		}
 		//c.unlock()
 		//}

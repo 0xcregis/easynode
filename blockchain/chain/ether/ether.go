@@ -18,6 +18,26 @@ import (
 type Ether struct {
 }
 
+func (e *Ether) EthSubscribe(host string, token string) (string, error) {
+
+	if len(token) > 1 {
+		host = fmt.Sprintf("%v/%v", host, token)
+	}
+
+	if strings.HasPrefix(host, "ws") {
+		host = strings.ReplaceAll(host, "http", "ws")
+	}
+	if strings.HasPrefix(host, "wss") {
+		host = strings.ReplaceAll(host, "http", "wss")
+	}
+	return host, nil
+}
+
+func (e *Ether) EthUnSubscribe(host string, token string) (string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func NewChainClient() chain.BlockChain {
 	return &Ether{}
 }

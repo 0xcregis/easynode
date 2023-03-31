@@ -7,7 +7,7 @@ import (
 )
 
 func Init() *Service {
-	cfg := config.LoadConfig("./../../config.json")
+	cfg := config.LoadConfig("./../../../cmd/task/config.json")
 	return NewService(&cfg)
 }
 
@@ -38,5 +38,5 @@ func TestService_CreateBlockTask(t *testing.T) {
 
 func TestEther_GetLastBlockNumber(t *testing.T) {
 	s := Init()
-	log.Println(s.GetLastBlockNumberForEther(s.config.BlockConfigs[0]))
+	log.Println(s.GetLastBlockNumberForTron(s.config.BlockConfigs[0]))
 }

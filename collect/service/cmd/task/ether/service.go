@@ -9,14 +9,12 @@ import (
 	chainService "github.com/uduncloud/easynode/blockchain/service"
 	"github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service"
-	"github.com/uduncloud/easynode/collect/service/cmd/db"
 	"strconv"
 	"strings"
 )
 
 type Service struct {
 	log                *xlog.XLog
-	task               *db.Service
 	chain              *config.Chain
 	txChainClient      chainService.API
 	blockChainClient   chainService.API
@@ -156,8 +154,7 @@ func (s *Service) GetReceipt(txHash string, task *config.ReceiptTask, eLog *logr
 	return service.GetReceiptFromJson(resp)
 }
 
-func NewService(c *config.Chain, taskDb *config.TaskDb, sourceDb *config.SourceDb, x *xlog.XLog) service.BlockChainInterface {
-	t := db.NewTaskService(taskDb, sourceDb, x)
+func NewService(c *config.Chain, x *xlog.XLog) service.BlockChainInterface {
 	blockNodeCluster := map[int64][]*chainConfig.NodeCluster{}
 	if c.BlockTask != nil {
 		list := make([]*chainConfig.NodeCluster, 0, 4)
@@ -206,7 +203,6 @@ func NewService(c *config.Chain, taskDb *config.TaskDb, sourceDb *config.SourceD
 
 	return &Service{
 		log:                x,
-		task:               t,
 		chain:              c,
 		txChainClient:      txClient,
 		blockChainClient:   blockClient,

@@ -10,7 +10,6 @@ import (
 	"github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/net/tron"
 	"github.com/uduncloud/easynode/collect/service"
-	"github.com/uduncloud/easynode/collect/service/cmd/db"
 	"strconv"
 	"strings"
 )
@@ -21,7 +20,6 @@ import (
 
 type Service struct {
 	log                *xlog.XLog
-	task               *db.Service
 	chain              *config.Chain
 	txChainClient      chainService.API
 	blockChainClient   chainService.API
@@ -158,8 +156,7 @@ func (s *Service) BalanceCluster(key string, clusterList []*config.FromCluster) 
 	return nil, nil
 }
 
-func NewService(c *config.Chain, taskDb *config.TaskDb, sourceDb *config.SourceDb, x *xlog.XLog) service.BlockChainInterface {
-	t := db.NewTaskService(taskDb, sourceDb, x)
+func NewService(c *config.Chain, x *xlog.XLog) service.BlockChainInterface {
 
 	blockNodeCluster := map[int64][]*chainConfig.NodeCluster{}
 	if c.BlockTask != nil {
@@ -208,7 +205,6 @@ func NewService(c *config.Chain, taskDb *config.TaskDb, sourceDb *config.SourceD
 	receiptClient := chainService.NewTron(receiptNodeCluster, x)
 	return &Service{
 		log:                x,
-		task:               t,
 		chain:              c,
 		txChainClient:      txClient,
 		blockChainClient:   blockClient,

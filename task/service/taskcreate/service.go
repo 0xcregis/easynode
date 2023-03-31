@@ -10,6 +10,7 @@ import (
 	"github.com/uduncloud/easynode/task/service"
 	"github.com/uduncloud/easynode/task/service/taskcreate/ether"
 	"github.com/uduncloud/easynode/task/service/taskcreate/tron"
+	"github.com/uduncloud/easynode/task/util"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"time"
@@ -17,9 +18,7 @@ import (
 
 type Service struct {
 	config        *config.Config
-	nodeSourceDb  *gorm.DB
 	taskDb        *gorm.DB
-	nodeInfoDb    *gorm.DB
 	blockNumberDb *gorm.DB
 	log           *xlog.XLog
 }
@@ -122,20 +121,29 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 	if UsedMaxNumber >= v.BlockMax {
 		return errors.New("UsedMaxNumber > BlockMax")
 	}
-	list := make([]*service.NodeSource, 0)
+	list := make([]*service.NodeTask, 0)
 
 	UsedMaxNumber++
 
 	for UsedMaxNumber <= v.BlockMax {
-		ns := &service.NodeSource{BlockChain: v.BlockChainCode, BlockNumber: fmt.Sprintf("%v", UsedMaxNumber), SourceType: 2}
-		list = append(list, ns)
+		//ns := &service.NodeSource{BlockChain: v.BlockChainCode, BlockNumber: fmt.Sprintf("%v", UsedMaxNumber), SourceType: 2}
+
+		task := &service.NodeTask{
+			NodeId:      util.GetLocalNodeId(),
+			BlockNumber: fmt.Sprintf("%v", UsedMaxNumber),
+			BlockChain:  v.BlockChainCode,
+			TaskType:    2,
+			TaskStatus:  0,
+		}
+
+		list = append(list, task)
 		UsedMaxNumber++
 	}
 
 	recentNumber := UsedMaxNumber - 1
 
 	//生成任务并保存
-	err = s.AddNodeSource(list)
+	err = s.AddNodeTask(list)
 	if err != nil {
 		return err
 	}
@@ -148,8 +156,13 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 	return nil
 }
 
-func (s *Service) AddNodeSource(list []*service.NodeSource) error {
-	err := s.nodeSourceDb.Table(s.config.NodeSourceDb.Table).Clauses(clause.Insert{Modifier: "IGNORE"}).Omit("id,create_time").CreateInBatches(&list, 10).Error
+func (s *Service) getNodeTaskTable() string {
+	table := fmt.Sprintf("%v_%v", s.config.NodeTaskDb.Table, time.Now().Format(service.DayFormat))
+	return table
+}
+
+func (s *Service) AddNodeTask(list []*service.NodeTask) error {
+	err := s.taskDb.Table(s.getNodeTaskTable()).Clauses(clause.Insert{Modifier: "IGNORE"}).Omit("id,log_time,create_time").CreateInBatches(&list, 10).Error
 	if err != nil {
 		return err
 	}
@@ -195,16 +208,6 @@ func (s *Service) GetRecentNumber(blockCode int64) (int64, int64, error) {
 
 func NewService(config *config.Config) *Service {
 	xg := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFile("./log/task/create_task", 24*time.Hour)
-	s, err := sql.Open(config.NodeSourceDb.User, config.NodeSourceDb.Password, config.NodeSourceDb.Addr, config.NodeSourceDb.DbName, config.NodeSourceDb.Port, xg)
-	if err != nil {
-		panic(err)
-	}
-
-	info, err := sql.Open(config.NodeInfoDb.User, config.NodeInfoDb.Password, config.NodeInfoDb.Addr, config.NodeInfoDb.DbName, config.NodeInfoDb.Port, xg)
-	if err != nil {
-		panic(err)
-	}
-
 	task, err := sql.Open(config.NodeTaskDb.User, config.NodeTaskDb.Password, config.NodeTaskDb.Addr, config.NodeTaskDb.DbName, config.NodeTaskDb.Port, xg)
 	if err != nil {
 		panic(err)
@@ -217,8 +220,6 @@ func NewService(config *config.Config) *Service {
 
 	return &Service{
 		config:        config,
-		nodeSourceDb:  s,
-		nodeInfoDb:    info,
 		taskDb:        task,
 		blockNumberDb: blockNumber,
 		log:           xg,

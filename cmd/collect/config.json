@@ -7,22 +7,6 @@
     "DbName": "easy_node2",
     "Table": "node_task"
   },
-  "NodeSourceDb": {
-    "Addr": "192.168.2.11",
-    "Port": 3306,
-    "User": "root",
-    "Password": "123456789",
-    "DbName": "easy_node2",
-    "Table": "node_source"
-  },
-  "NodeInfoDb": {
-    "Addr": "192.168.2.11",
-    "Port": 3306,
-    "User": "root",
-    "Password": "123456789",
-    "DbName": "easy_node2",
-    "Table": "node_info"
-  },
   "Log": {
     "Path": "./log/collect",
     "Delay": 2

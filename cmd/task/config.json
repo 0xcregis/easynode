@@ -7,30 +7,6 @@
     "DbName": "easy_node2",
     "Table": "node_task"
   },
-  "NodeSourceDb": {
-    "Addr": "192.168.2.11",
-    "Port": 3306,
-    "User": "root",
-    "Password": "123456789",
-    "DbName": "easy_node2",
-    "Table": "node_source"
-  },
-  "NodeInfoDb": {
-    "Addr": "192.168.2.11",
-    "Port": 3306,
-    "User": "root",
-    "Password": "123456789",
-    "DbName": "easy_node2",
-    "Table": "node_info"
-  },
-  "NodeErrorDb": {
-    "Addr": "192.168.2.11",
-    "Port": 3306,
-    "User": "root",
-    "Password": "123456789",
-    "DbName": "easy_node2",
-    "Table": "node_error"
-  },
   "BlockNumberDb": {
     "Addr": "192.168.2.11",
     "Port": 3306,
@@ -46,7 +22,7 @@
       "NodeKey": "RzxBjjh_c4y0LVHZ7GNm8zoXEZR3HYop",
       "BlockChainName": "eth",
       "BlockChainCode": 200,
-      "BlockMin": 16103500,
+      "BlockMin": 16939249,
       "BlockMax":0
     },
     {
@@ -54,7 +30,7 @@
       "NodeKey": "244f918d-56b5-4a16-9665-9637598b1223",
       "BlockChainName": "tron",
       "BlockChainCode": 205,
-      "BlockMin": 47153472,
+      "BlockMin": 49878022,
       "BlockMax":0
     }
   ]

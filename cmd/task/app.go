@@ -6,7 +6,6 @@ import (
 	"github.com/uduncloud/easynode/task/config"
 	"github.com/uduncloud/easynode/task/service/monitor"
 	"github.com/uduncloud/easynode/task/service/taskcreate"
-	"github.com/uduncloud/easynode/task/service/taskhandler"
 	"log"
 	"os"
 	"os/signal"
@@ -32,9 +31,6 @@ func main() {
 	if cfg.AutoCreateBlockTask {
 		taskcreate.NewService(&cfg).Start()
 	}
-
-	//分配任务
-	taskhandler.NewService(&cfg).Start()
 
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.

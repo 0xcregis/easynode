@@ -1,4 +1,4 @@
-package task
+package cmd
 
 import (
 	"encoding/json"
@@ -20,37 +20,36 @@ import (
 type Cmd struct {
 	blockChain service.BlockChainInterface
 	log        *xlog.XLog
-	task       *db.Service
+	taskDb     service.TaskDbInterface
 	chain      *config.Chain
 	kafka      *kafkaClient.EasyKafka
 }
 
-func GetBlockChainService(c *config.Chain, db *config.TaskDb, sourceDb *config.SourceDb, logConfig *config.LogConfig) service.BlockChainInterface {
+func GetBlockChainService(c *config.Chain, logConfig *config.LogConfig) service.BlockChainInterface {
 	x := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/chain_info", logConfig.Path), 24*time.Hour)
 	var srv service.BlockChainInterface
 	if c.BlockChainCode == 200 {
-		srv = ether.NewService(c, db, sourceDb, x)
+		srv = ether.NewService(c, x)
 	} else if c.BlockChainCode == 205 {
-		srv = tron.NewService(c, db, sourceDb, x)
+		srv = tron.NewService(c, x)
 	}
 	//第三方节点监控
 	srv.Monitor()
 	return srv
 }
 
-func NewService(c *config.Chain, taskDb *config.TaskDb, sourceDb *config.SourceDb, logConfig *config.LogConfig) *Cmd {
-	x := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/cmd", logConfig.Path), 24*time.Hour)
-	t := db.NewTaskService(taskDb, sourceDb, x)
-	client := kafkaClient.NewEasyKafka(x)
-
-	block := GetBlockChainService(c, taskDb, sourceDb, logConfig)
+func NewService(cfg *config.Chain, taskDb *config.TaskDb, logConfig *config.LogConfig) *Cmd {
+	log := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/cmd", logConfig.Path), 24*time.Hour)
+	db := db.NewMySQLTaskService(taskDb, log)
+	kafka := kafkaClient.NewEasyKafka(log)
+	chain := GetBlockChainService(cfg, logConfig)
 
 	return &Cmd{
-		log:        x,
-		task:       t,
-		chain:      c,
-		kafka:      client,
-		blockChain: block,
+		log:        log,
+		taskDb:     db,
+		chain:      cfg,
+		kafka:      kafka,
+		blockChain: chain,
 	}
 }
 
@@ -152,12 +151,12 @@ func (c *Cmd) HandlerKafkaRespMessage(kafkaRespCh chan []*kafka.Message) {
 				number := r.Get("number").String()
 				blockHash := r.Get("hash").String()
 
-				t, err := c.task.GetNodeTaskByBlockNumber(number, 2, c.chain.BlockChainCode)
+				t, err := c.taskDb.GetNodeTaskByBlockNumber(number, 2, c.chain.BlockChainCode)
 				if err == nil && t.Id > 1 {
 					ids = append(ids, t.Id)
 					//_ = c.task.UpdateNodeTaskStatus(t.Id, 1)
 				} else {
-					t, err = c.task.GetNodeTaskByBlockHash(blockHash, 2, c.chain.BlockChainCode)
+					t, err = c.taskDb.GetNodeTaskByBlockHash(blockHash, 2, c.chain.BlockChainCode)
 					if err == nil && t.Id > 1 {
 						ids = append(ids, t.Id)
 						//_ = c.task.UpdateNodeTaskStatus(t.Id, 1)
@@ -168,7 +167,7 @@ func (c *Cmd) HandlerKafkaRespMessage(kafkaRespCh chan []*kafka.Message) {
 		}
 
 		if len(txHashList) > 0 {
-			list, err := c.task.GetNodeTaskWithTxs(txHashList, 1, c.chain.BlockChainCode, 4)
+			list, err := c.taskDb.GetNodeTaskWithTxs(txHashList, 1, c.chain.BlockChainCode, 4)
 			if err != nil {
 				log.Errorf("GetNodeTaskWithTxs|tx|err=%v", err)
 			} else {
@@ -177,7 +176,7 @@ func (c *Cmd) HandlerKafkaRespMessage(kafkaRespCh chan []*kafka.Message) {
 		}
 
 		if len(receiptsHashList) > 0 {
-			list, err := c.task.GetNodeTaskWithTxs(receiptsHashList, 3, c.chain.BlockChainCode, 4)
+			list, err := c.taskDb.GetNodeTaskWithTxs(receiptsHashList, 3, c.chain.BlockChainCode, 4)
 			if err != nil {
 				log.Errorf("GetNodeTaskWithTxs|receipt|err=%v", err)
 			} else {
@@ -186,7 +185,7 @@ func (c *Cmd) HandlerKafkaRespMessage(kafkaRespCh chan []*kafka.Message) {
 		}
 
 		if len(ids) > 0 {
-			err := c.task.UpdateNodeTaskStatusWithBatch(ids, 1)
+			err := c.taskDb.UpdateNodeTaskStatusWithBatch(ids, 1)
 			if err != nil {
 				log.Errorf("UpdateNodeTaskStatusWithBatch|err=%v", err)
 			}
@@ -213,9 +212,9 @@ func (c *Cmd) ExecReceiptTask(receiptChan chan *service.NodeTask, kf chan []*kaf
 				<-buffCh
 			}()
 
-			err := c.task.UpdateNodeTaskStatus(taskReceipt.Id, 3)
+			err := c.taskDb.UpdateNodeTaskStatus(taskReceipt.Id, 3)
 			if err != nil {
-				err := c.task.UpdateNodeTaskStatus(taskReceipt.Id, 2)
+				err := c.taskDb.UpdateNodeTaskStatus(taskReceipt.Id, 2)
 				log.Errorf("UpdateNodeTaskStatus|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err, taskReceipt.Id)
 				return
 			}
@@ -225,25 +224,25 @@ func (c *Cmd) ExecReceiptTask(receiptChan chan *service.NodeTask, kf chan []*kaf
 				//根据交易
 				receipt := c.blockChain.GetReceipt(taskReceipt.TxHash, c.chain.ReceiptTask, log)
 				if receipt == nil {
-					_ = c.task.UpdateNodeTaskStatus(taskReceipt.Id, 2) //失败
+					_ = c.taskDb.UpdateNodeTaskStatus(taskReceipt.Id, 2) //失败
 					log.Errorf("GetReceipt|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, "receipt is null", taskReceipt.Id)
 					return
 				}
 				m, err := c.HandlerReceipt(receipt)
 				if err != nil {
-					_ = c.task.UpdateNodeTaskStatus(taskReceipt.Id, 2) //失败
+					_ = c.taskDb.UpdateNodeTaskStatus(taskReceipt.Id, 2) //失败
 					log.Errorf("HandlerReceipt|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err.Error(), taskReceipt.Id)
 					return
 				}
 				kf <- []*kafka.Message{m}
-				_ = c.task.UpdateNodeTaskStatus(taskReceipt.Id, 4) //成功
+				_ = c.taskDb.UpdateNodeTaskStatus(taskReceipt.Id, 4) //成功
 
 			} else {
 				//根据区块
 				receiptList := c.blockChain.GetReceiptByBlock(taskReceipt.BlockHash, taskReceipt.BlockNumber, c.chain.ReceiptTask, log)
 
 				if receiptList == nil || len(receiptList) < 1 {
-					_ = c.task.UpdateNodeTaskStatus(taskReceipt.Id, 2) //失败
+					_ = c.taskDb.UpdateNodeTaskStatus(taskReceipt.Id, 2) //失败
 					log.Errorf("GetReceiptByBlock|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, "receipt task is empty", taskReceipt.Id)
 					return
 				}
@@ -267,13 +266,13 @@ func (c *Cmd) ExecReceiptTask(receiptChan chan *service.NodeTask, kf chan []*kaf
 				}
 
 				if len(receiptTaskList) > 0 {
-					err = c.task.AddNodeTask(receiptTaskList)
+					err = c.taskDb.AddNodeTask(receiptTaskList)
 					if err != nil {
 						log.Errorf("AddNodeTask|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err.Error(), taskReceipt.Id)
 						return
 					}
 
-					_ = c.task.UpdateNodeTaskStatus(taskReceipt.Id, 1) //成功
+					_ = c.taskDb.UpdateNodeTaskStatus(taskReceipt.Id, 1) //成功
 					if len(kafkaMsgList) > 0 {
 						kf <- kafkaMsgList
 					}
@@ -307,9 +306,9 @@ func (c *Cmd) ExecTxTask(txCh chan *service.NodeTask, kf chan []*kafka.Message) 
 					<-buffCh
 				}()
 
-				err := c.task.UpdateNodeTaskStatus(taskTx.Id, 3)
+				err := c.taskDb.UpdateNodeTaskStatus(taskTx.Id, 3)
 				if err != nil {
-					_ = c.task.UpdateNodeTaskStatus(taskTx.Id, 2) //失败
+					_ = c.taskDb.UpdateNodeTaskStatus(taskTx.Id, 2) //失败
 					log.Errorf("UpdateNodeTaskStatus|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err, taskTx.Id)
 					return
 				}
@@ -319,24 +318,24 @@ func (c *Cmd) ExecTxTask(txCh chan *service.NodeTask, kf chan []*kafka.Message) 
 					tx = c.blockChain.GetTx(taskTx.TxHash, c.chain.TxTask, log)
 				}
 				if tx == nil {
-					_ = c.task.UpdateNodeTaskStatus(taskTx.Id, 2) //失败
+					_ = c.taskDb.UpdateNodeTaskStatus(taskTx.Id, 2) //失败
 					log.Errorf("GetTx|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, "tx is null", taskTx.Id)
 					return
 				}
 				m, err := c.HandlerTx(tx)
 				if err != nil {
-					_ = c.task.UpdateNodeTaskStatus(taskTx.Id, 2) //失败
+					_ = c.taskDb.UpdateNodeTaskStatus(taskTx.Id, 2) //失败
 					log.Errorf("HandlerTx|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err.Error(), taskTx.Id)
 					return
 				}
 
 				//写入receipt task
 				if c.chain.PullReceipt {
-					_ = c.task.AddNodeSource(&service.NodeSource{BlockChain: c.chain.BlockChainCode, TxHash: tx.TxHash, BlockHash: tx.BlockHash, BlockNumber: tx.BlockNumber, SourceType: 3})
+					_ = c.taskDb.AddNodeTask([]*service.NodeTask{{BlockChain: c.chain.BlockChainCode, TxHash: tx.TxHash, BlockHash: tx.BlockHash, BlockNumber: tx.BlockNumber, TaskType: 3, TaskStatus: 0, NodeId: util.GetLocalNodeId()}})
 				}
 
 				kf <- []*kafka.Message{m}
-				_ = c.task.UpdateNodeTaskStatus(taskTx.Id, 4) //成功
+				_ = c.taskDb.UpdateNodeTaskStatus(taskTx.Id, 4) //成功
 
 			}(txTask, buffCh, kf, log)
 
@@ -347,10 +346,10 @@ func (c *Cmd) ExecTxTask(txCh chan *service.NodeTask, kf chan []*kafka.Message) 
 					<-buffCh
 				}()
 
-				err := c.task.UpdateNodeTaskStatus(taskTx.Id, 3)
+				err := c.taskDb.UpdateNodeTaskStatus(taskTx.Id, 3)
 				if err != nil {
 					log.Errorf("UpdateNodeTaskStatus|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err, taskTx.Id)
-					_ = c.task.UpdateNodeTaskStatus(taskTx.Id, 2) //失败
+					_ = c.taskDb.UpdateNodeTaskStatus(taskTx.Id, 2) //失败
 					return
 				}
 
@@ -362,7 +361,7 @@ func (c *Cmd) ExecTxTask(txCh chan *service.NodeTask, kf chan []*kafka.Message) 
 					block, txList = c.blockChain.GetBlockByNumber(taskTx.BlockNumber, c.chain.BlockTask, log)
 				}
 				if block == nil {
-					_ = c.task.UpdateNodeTaskStatus(taskTx.Id, 2) //失败
+					_ = c.taskDb.UpdateNodeTaskStatus(taskTx.Id, 2) //失败
 					log.Errorf("GetBlockByHashOrGetBlockByNumber｜BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, "block is null", taskTx.Id)
 					return
 				}
@@ -371,7 +370,7 @@ func (c *Cmd) ExecTxTask(txCh chan *service.NodeTask, kf chan []*kafka.Message) 
 				if txList != nil && len(txList) > 0 {
 					txMessageList := make([]*kafka.Message, 0, len(txList))
 					txTaskList := make([]*service.NodeTask, 0, len(txList))
-					nodeSourceList := make([]*service.NodeSource, 0, len(txList))
+					receiptsTaskList := make([]*service.NodeTask, 0, len(txList))
 
 					for _, v := range txList {
 						//交易任务
@@ -379,8 +378,8 @@ func (c *Cmd) ExecTxTask(txCh chan *service.NodeTask, kf chan []*kafka.Message) 
 						txTaskList = append(txTaskList, t)
 
 						//收据任务
-						s := &service.NodeSource{BlockChain: c.chain.BlockChainCode, TxHash: v.TxHash, BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, SourceType: 3}
-						nodeSourceList = append(nodeSourceList, s)
+						s := &service.NodeTask{NodeId: taskTx.NodeId, BlockChain: c.chain.BlockChainCode, TxHash: v.TxHash, BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, TaskType: 3, TaskStatus: 0}
+						receiptsTaskList = append(receiptsTaskList, s)
 
 						//交易消息
 						m, err := c.HandlerTx(v)
@@ -396,18 +395,18 @@ func (c *Cmd) ExecTxTask(txCh chan *service.NodeTask, kf chan []*kafka.Message) 
 						}
 					}
 
-					//add source task: 未分配的收据任务
+					//未分配的收据任务
 					//写入receipt task
 					if len(txTaskList) > 0 && c.chain.PullReceipt {
 
 						//tron 不支持 批量获取收据
 						if c.chain.BlockChainCode == 205 {
-							_ = c.task.AddNodeSourceList(nodeSourceList)
+							_ = c.taskDb.AddNodeTask(receiptsTaskList)
 						} else {
 							//其他公链，则 批量获取收据
 							//根据区块获取收据，则 tx_hash 必需未空
-							ns := &service.NodeSource{BlockChain: c.chain.BlockChainCode, TxHash: "", BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, SourceType: 3}
-							err := c.task.AddNodeSource(ns)
+							task := &service.NodeTask{BlockChain: c.chain.BlockChainCode, TxHash: "", BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, TaskType: 3, TaskStatus: 0, NodeId: taskTx.NodeId}
+							err := c.taskDb.AddNodeTask([]*service.NodeTask{task})
 							if err != nil {
 								log.Errorf("AddNodeSource|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err.Error(), taskTx.Id)
 							}
@@ -417,7 +416,7 @@ func (c *Cmd) ExecTxTask(txCh chan *service.NodeTask, kf chan []*kafka.Message) 
 
 					//更新交易状态
 					if len(txTaskList) > 0 {
-						_ = c.task.AddNodeTask(txTaskList)
+						_ = c.taskDb.AddNodeTask(txTaskList)
 					}
 
 					//批量发送到Kafka
@@ -427,7 +426,7 @@ func (c *Cmd) ExecTxTask(txCh chan *service.NodeTask, kf chan []*kafka.Message) 
 				}
 
 				//批量交易任务成功结束
-				_ = c.task.UpdateNodeTaskStatus(taskTx.Id, 1)
+				_ = c.taskDb.UpdateNodeTaskStatus(taskTx.Id, 1)
 
 			}(txTask, buffCh, kf, log)
 		}
@@ -455,10 +454,10 @@ func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Mes
 				<-buffCh
 			}()
 
-			err := c.task.UpdateNodeTaskStatus(taskBlock.Id, 3)
+			err := c.taskDb.UpdateNodeTaskStatus(taskBlock.Id, 3)
 			if err != nil {
 				log.Errorf("UpdateNodeTaskStatus|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err, taskBlock.Id)
-				_ = c.task.UpdateNodeTaskStatus(taskBlock.Id, 2) //失败
+				_ = c.taskDb.UpdateNodeTaskStatus(taskBlock.Id, 2) //失败
 				return
 			}
 
@@ -470,17 +469,17 @@ func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Mes
 				block, _ = c.blockChain.GetBlockByNumber(taskBlock.BlockNumber, c.chain.BlockTask, log)
 			}
 			if block == nil {
-				_ = c.task.UpdateNodeTaskStatus(taskBlock.Id, 2) //失败
+				_ = c.taskDb.UpdateNodeTaskStatus(taskBlock.Id, 2) //失败
 				log.Errorf("GetBlockByHashOrGetBlockByNumber|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, "block is null", taskBlock.Id)
 				return
 			}
 
 			//发出批量交易任务
 			if c.chain.PullTx {
-				s := &service.NodeSource{BlockChain: taskBlock.BlockChain, BlockNumber: taskBlock.BlockNumber, BlockHash: taskBlock.BlockHash, SourceType: 1}
-				err = c.task.AddNodeSource(s)
+				s := &service.NodeTask{NodeId: taskBlock.NodeId, BlockChain: taskBlock.BlockChain, BlockNumber: taskBlock.BlockNumber, BlockHash: taskBlock.BlockHash, TaskType: 1, TaskStatus: 0}
+				err = c.taskDb.AddNodeTask([]*service.NodeTask{s})
 				if err != nil {
-					_ = c.task.UpdateNodeTaskStatus(taskBlock.Id, 2) //失败
+					_ = c.taskDb.UpdateNodeTaskStatus(taskBlock.Id, 2) //失败
 					log.Errorf("AddNodeSource|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, "push task is error with batch tx by block", taskBlock.Id)
 					return
 				}
@@ -489,12 +488,12 @@ func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Mes
 			//发出block
 			m, err := c.HandlerBlock(block)
 			if err != nil {
-				_ = c.task.UpdateNodeTaskStatus(taskBlock.Id, 2) //失败
+				_ = c.taskDb.UpdateNodeTaskStatus(taskBlock.Id, 2) //失败
 				log.Errorf("HandlerBlock|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err.Error(), taskBlock.Id)
 				return
 			}
 
-			err = c.task.UpdateNodeTaskStatus(taskBlock.Id, 4) //成功
+			err = c.taskDb.UpdateNodeTaskStatus(taskBlock.Id, 4) //成功
 			if err != nil {
 				log.Errorf("UpdateNodeTaskStatus|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err.Error(), taskBlock.Id)
 				return
@@ -518,7 +517,7 @@ func (c *Cmd) getReceiptTask(nodeId string, blockChain int, receiptChan chan *se
 		var list []*service.NodeTask
 		var err error
 		//if c.lock() {
-		list, err = c.task.GetTaskWithReceipt(blockChain, nodeId)
+		list, err = c.taskDb.GetTaskWithReceipt(blockChain, nodeId)
 		if err != nil {
 			log.Warnf("GetTaskWithReceipt|error=%v", err)
 		}
@@ -545,7 +544,7 @@ func (c *Cmd) getTxTask(nodeId string, blockChain int, txCh chan *service.NodeTa
 		var list []*service.NodeTask
 		var err error
 		//if c.lock() {
-		list, err = c.task.GetTaskWithTx(blockChain, nodeId)
+		list, err = c.taskDb.GetTaskWithTx(blockChain, nodeId)
 		if err != nil {
 			log.Warnf("GetTaskWithTx|err=%v", err)
 		}
@@ -573,7 +572,7 @@ func (c *Cmd) getBlockTask(nodeId string, blockChain int, blockCh chan *service.
 		var list []*service.NodeTask
 		var err error
 		//if c.lock() {
-		list, err = c.task.GetTaskWithBlock(blockChain, nodeId)
+		list, err = c.taskDb.GetTaskWithBlock(blockChain, nodeId)
 		if err != nil {
 			log.Warnf("GetTaskWithBlock|err=%v", err)
 		}

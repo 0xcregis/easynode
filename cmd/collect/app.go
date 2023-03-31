@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"github.com/sunjiangjun/xlog"
 	"github.com/uduncloud/easynode/collect/config"
-	"github.com/uduncloud/easynode/collect/service/cmd/task"
+	"github.com/uduncloud/easynode/collect/service/cmd"
 	"github.com/uduncloud/easynode/collect/service/monitor"
-	"github.com/uduncloud/easynode/collect/service/nodeinfo"
 	"log"
 	"os"
 	"os/signal"
@@ -37,12 +36,11 @@ func main() {
 	monitor.NewService(&cfg, cfg.LogConfig, x).Start()
 
 	//上传节点信息 服务
-	nodeinfo.NewService(cfg.NodeInfoDb, cfg.Chains, cfg.LogConfig, x).Start()
+	//nodeinfo.NewService(cfg.NodeInfoDb, cfg.Chains, cfg.LogConfig, x).Start()
 
 	//启动公链服务
 	for _, v := range cfg.Chains {
-		//GetBlockChainService(v, cfg.TaskDb, cfg.SourceDb).Start()
-		task.NewService(v, cfg.TaskDb, cfg.SourceDb, cfg.LogConfig).Start()
+		cmd.NewService(v, cfg.TaskDb, cfg.LogConfig).Start()
 	}
 
 	// Wait for interrupt signal to gracefully shutdown the server with

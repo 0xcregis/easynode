@@ -12,7 +12,7 @@ import (
 func Init() *Service {
 	cfg := config.LoadConfig("./../../../config_tron.json")
 	x := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/collect/task", 24*time.Hour)
-	return NewTaskService(cfg.TaskDb, cfg.SourceDb, x)
+	return NewMySQLTaskService(cfg.TaskDb, x)
 }
 
 func TestService_GetTaskByBlock(t *testing.T) {
@@ -40,7 +40,7 @@ func TestService_AddTaskSource(t *testing.T) {
 
 func TestService_AddTaskSourceList(t *testing.T) {
 	s := Init()
-	err := s.AddNodeSourceList([]*service.NodeSource{&service.NodeSource{
+	err := s.AddNodeTaskList([]*service.NodeSource{&service.NodeSource{
 		SourceType: 10,
 		BlockChain: 200,
 		TxHash:     "0x8fc90a6c3ee3001cdcbbb685b4fbe67b1fa2bec575b15b0395fea5540d0901ae",

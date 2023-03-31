@@ -3,6 +3,10 @@ package util
 import (
 	"errors"
 	"fmt"
+	"github.com/gofrs/uuid"
+	"io/ioutil"
+	"log"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -38,4 +42,57 @@ func HexToIntWithString(hex string) (string, error) {
 		return hex, err
 	}
 	return fmt.Sprintf("%v", i), nil
+}
+
+func PathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
+}
+
+func GetLocalNodeId() string {
+
+	keyFile := "./data/key"
+	path := "./data"
+	if ok, _ := PathExists(keyFile); ok {
+		//存在
+		bs, err := ioutil.ReadFile(keyFile)
+		if err != nil {
+			panic(err)
+		}
+		return string(bs)
+	} else {
+		//不存在
+		err := os.MkdirAll(path, os.ModePerm)
+		if err != nil {
+			log.Println(err.Error())
+			panic(err)
+		}
+		err = os.Chmod(path, 0777)
+		if err != nil {
+			panic(err)
+		}
+		f, err := os.Create(keyFile)
+		if err != nil {
+			panic(err)
+		}
+		defer f.Close()
+
+		u, err := uuid.NewV4()
+		if err != nil {
+			panic(err)
+		}
+		nodeId := u.String()
+		_, err = f.WriteString(nodeId)
+		if err != nil {
+			panic(err)
+		}
+		return nodeId
+	}
+
 }

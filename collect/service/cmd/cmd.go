@@ -152,7 +152,7 @@ func (c *Cmd) HandlerKafkaRespMessage(kafkaRespCh chan []*kafka.Message) {
 				blockHash := r.Get("hash").String()
 
 				t, err := c.taskDb.GetNodeTaskByBlockNumber(number, 2, c.chain.BlockChainCode)
-				if err == nil && t.Id > 1 {
+				if err == nil && t.Id > 0 {
 					ids = append(ids, t.Id)
 					//_ = c.task.UpdateNodeTaskStatus(t.Id, 1)
 				} else {

@@ -12,7 +12,7 @@ import (
 	"github.com/uduncloud/easynode/blockchain/chain/ether"
 	"github.com/uduncloud/easynode/blockchain/config"
 	"log"
-	"math/rand"
+	"math"
 	"strings"
 	"time"
 )
@@ -384,20 +384,38 @@ func (e *Ether) BalanceCluster(blockChain int64) *config.NodeCluster {
 		return nil
 	}
 
-	//todo 后期重新设计和优化
 	var resultCluster *config.NodeCluster
-	//temps := make([]*config.NodeCluster, 0, 10)
-	//for _, v := range cluster {
-	//	if v.ErrorCount < 50 {
-	//		temps = append(temps, v)
-	//	}
-	//}
-
 	l := len(cluster)
+
 	if l > 1 {
-		m := rand.Intn(l)
-		resultCluster = cluster[m]
+		//如果有多个节点，则根据权重计算
+		mp := make(map[string][]int64, 0)
+		originCluster := make(map[string]*config.NodeCluster, 0)
+
+		var sum int64
+		for _, v := range cluster {
+			if v.Weight == 0 {
+				//如果没有设置weight,则默认设定5
+				v.Weight = 5
+			}
+			sum += v.Weight
+			key := fmt.Sprintf("%v/%v", v.NodeUrl, v.NodeToken)
+			mp[key] = []int64{v.Weight, sum}
+			originCluster[key] = v
+		}
+
+		f := math.Mod(float64(time.Now().Unix()), float64(sum))
+		var nodeId string
+
+		for k, v := range mp {
+			if len(v) == 2 && f <= float64(v[1]) && f >= float64(v[1]-v[0]) {
+				nodeId = k
+				break
+			}
+		}
+		resultCluster = originCluster[nodeId]
 	} else if l == 1 {
+		//如果 仅有一个节点，则只能使用该节点
 		resultCluster = cluster[0]
 	} else {
 		return nil

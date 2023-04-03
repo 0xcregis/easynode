@@ -141,6 +141,7 @@ func (easy *EasyKafka) sendToKafka(w *kafka.Writer, ms []*kafka.Message, resp ch
 			easy.log.Errorf("kafka|sendToKafka|failed to write messages:%v", err)
 			return err
 		}
+		break
 	}
 
 	resp <- ms

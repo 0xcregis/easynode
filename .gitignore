@@ -24,3 +24,4 @@ go.work
 /cmd/blockchain/config.json
 /log/
 /data/
+/.idea/

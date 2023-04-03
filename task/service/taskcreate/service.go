@@ -5,22 +5,19 @@ import (
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
-	"github.com/uduncloud/easynode/task/common/sql"
 	"github.com/uduncloud/easynode/task/config"
 	"github.com/uduncloud/easynode/task/service"
+	"github.com/uduncloud/easynode/task/service/taskcreate/db"
 	"github.com/uduncloud/easynode/task/service/taskcreate/ether"
 	"github.com/uduncloud/easynode/task/service/taskcreate/tron"
 	"github.com/uduncloud/easynode/task/util"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 	"time"
 )
 
 type Service struct {
-	config        *config.Config
-	taskDb        *gorm.DB
-	blockNumberDb *gorm.DB
-	log           *xlog.XLog
+	config    *config.Config
+	dbService service.DbTaskCreateInterface
+	log       *xlog.XLog
 }
 
 func (s *Service) Start() {
@@ -77,7 +74,7 @@ func (s *Service) GetLastBlockNumberForEther(v *config.BlockConfig) error {
 		return err
 	}
 	if lastNumber > 1 {
-		_ = s.UpdateLastNumber(v.BlockChainCode, lastNumber)
+		_ = s.dbService.UpdateLastNumber(v.BlockChainCode, lastNumber)
 	}
 	return nil
 }
@@ -88,7 +85,7 @@ func (s *Service) GetLastBlockNumberForTron(v *config.BlockConfig) error {
 		return err
 	}
 	if lastNumber > 1 {
-		_ = s.UpdateLastNumber(v.BlockChainCode, lastNumber)
+		_ = s.dbService.UpdateLastNumber(v.BlockChainCode, lastNumber)
 	}
 	return nil
 }
@@ -99,7 +96,7 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 	}
 
 	//已经下发的最新区块高度
-	UsedMaxNumber, lastBlockNumber, err := s.GetRecentNumber(v.BlockChainCode)
+	UsedMaxNumber, lastBlockNumber, err := s.dbService.GetRecentNumber(v.BlockChainCode)
 	if err != nil {
 		log.Errorf("GetRecentNumber|err=%v", err)
 		return err
@@ -143,85 +140,25 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 	recentNumber := UsedMaxNumber - 1
 
 	//生成任务并保存
-	err = s.AddNodeTask(list)
+	err = s.dbService.AddNodeTask(list)
 	if err != nil {
 		return err
 	}
 	//更新最新下发的区块高度
-	err = s.UpdateRecentNumber(v.BlockChainCode, recentNumber)
+	err = s.dbService.UpdateRecentNumber(v.BlockChainCode, recentNumber)
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func (s *Service) getNodeTaskTable() string {
-	table := fmt.Sprintf("%v_%v", s.config.NodeTaskDb.Table, time.Now().Format(service.DayFormat))
-	return table
-}
-
-func (s *Service) AddNodeTask(list []*service.NodeTask) error {
-	err := s.taskDb.Table(s.getNodeTaskTable()).Clauses(clause.Insert{Modifier: "IGNORE"}).Omit("id,log_time,create_time").CreateInBatches(&list, 10).Error
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Service) UpdateLastNumber(blockChainCode int64, latestNumber int64) error {
-	bn := service.BlockNumber{LatestNumber: latestNumber, ChainCode: blockChainCode}
-	err := s.blockNumberDb.Table(s.config.BlockNumberDb.Table).Omit("id,create_time,log_time,recent_number").Clauses(clause.OnConflict{DoUpdates: clause.AssignmentColumns([]string{"latest_number"})}).Create(&bn).Error
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Service) UpdateRecentNumber(blockChainCode int64, recentNumber int64) error {
-	bn := service.BlockNumber{RecentNumber: recentNumber, ChainCode: blockChainCode}
-	err := s.blockNumberDb.Table(s.config.BlockNumberDb.Table).Omit("id,create_time,log_time,latest_number").Clauses(clause.OnConflict{DoUpdates: clause.AssignmentColumns([]string{"recent_number"})}).Create(&bn).Error
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Service) GetRecentNumber(blockCode int64) (int64, int64, error) {
-	var Num int64
-	err := s.blockNumberDb.Table(s.config.BlockNumberDb.Table).Where("chain_code=?", blockCode).Count(&Num).Error
-	if err != nil {
-		return 0, 0, err
-	}
-
-	if Num < 1 {
-		return 0, 0, nil
-	}
-
-	var temp service.BlockNumber
-	err = s.blockNumberDb.Table(s.config.BlockNumberDb.Table).Where("chain_code=?", blockCode).First(&temp).Error
-	if err != nil {
-		return 0, 0, errors.New("no record")
-	}
-	return temp.RecentNumber, temp.LatestNumber, nil
 }
 
 func NewService(config *config.Config) *Service {
 	xg := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFile("./log/task/create_task", 24*time.Hour)
-	task, err := sql.Open(config.NodeTaskDb.User, config.NodeTaskDb.Password, config.NodeTaskDb.Addr, config.NodeTaskDb.DbName, config.NodeTaskDb.Port, xg)
-	if err != nil {
-		panic(err)
-	}
-
-	blockNumber, err := sql.Open(config.BlockNumberDb.User, config.BlockNumberDb.Password, config.BlockNumberDb.Addr, config.BlockNumberDb.DbName, config.BlockNumberDb.Port, xg)
-	if err != nil {
-		panic(err)
-	}
-
+	db := db.NewMySQLTaskCreateService(config, xg)
 	return &Service{
-		config:        config,
-		taskDb:        task,
-		blockNumberDb: blockNumber,
-		log:           xg,
+		config:    config,
+		log:       xg,
+		dbService: db,
 	}
 }

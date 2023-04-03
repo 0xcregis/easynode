@@ -1,4 +1,4 @@
-package monitor
+package db
 
 const (
 	BlockNumberTable = "CREATE DATABASE IF NOT EXISTS %v;\nUSE %v;\nCREATE TABLE IF NOT EXISTS `%v` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `chain_code` int NOT NULL DEFAULT '100' COMMENT '公链代码',\n  `latest_number` bigint DEFAULT '0' COMMENT '区块链最新高度',\n  `recent_number` bigint DEFAULT '0' COMMENT '已经处理区块高度',\n  `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP,\n  `log_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `code` (`chain_code`) USING BTREE\n) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='公链最新区块高度表'"

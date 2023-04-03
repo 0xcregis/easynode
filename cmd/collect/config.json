@@ -13,11 +13,6 @@
   },
   "Chains": [
     {
-      "Etcd": {
-        "Host": "http://192.168.2.20:2379",
-        "Key": "eth",
-        "Ttl": 10
-      },
       "Kafka": {
         "Host": "192.168.2.20",
         "Port": 9092
@@ -35,7 +30,7 @@
           }
         ],
         "Kafka": {
-          "Topic": "ether_block",
+          "Topic": "ether_block2",
           "Partition": 0
         }
       },
@@ -47,7 +42,7 @@
           }
         ],
         "Kafka": {
-          "Topic": "ether_tx",
+          "Topic": "ether_tx2",
           "Partition": 0
         }
       },
@@ -59,7 +54,7 @@
           }
         ],
         "Kafka": {
-          "Topic": "ether_receipt",
+          "Topic": "ether_receipt2",
           "Partition": 0
         }
       }

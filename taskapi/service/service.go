@@ -8,7 +8,6 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/uduncloud/easynode/task/util"
 	"github.com/uduncloud/easynode/taskapi/config"
-	"github.com/uduncloud/easynode/taskapi/service/db"
 	"io/ioutil"
 	"time"
 )
@@ -20,21 +19,12 @@ type Server struct {
 }
 
 func NewServer(dbConfig *config.TaskDb, chConfig map[int64]*config.ClickhouseDb, blockChain []int64, log *xlog.XLog) *Server {
-	db := db.NewMysqlService(dbConfig, chConfig, log)
+	db := NewMysqlService(dbConfig, chConfig, log)
 	return &Server{
 		db:         db,
 		log:        log,
 		blockChain: blockChain,
 	}
-}
-
-func (s *Server) GetActiveNodes(c *gin.Context) {
-	list, err := s.db.GetActiveNodesFromDB()
-	if err != nil {
-		s.Error(c, c.Request.URL.Path, err.Error())
-		return
-	}
-	s.Success(c, list, c.Request.URL.Path)
 }
 
 func (s *Server) PushBlockTask(c *gin.Context) {

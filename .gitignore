@@ -21,7 +21,6 @@ vendor/
 # Go workspace file
 go.work
 .idea
-/cmd/blockchain/config.json
 /log/
 /data/
-/.idea/
+.idea/*

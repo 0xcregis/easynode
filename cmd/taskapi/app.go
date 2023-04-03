@@ -32,7 +32,7 @@ func main() {
 
 	srv := service.NewServer(cfg.TaskDb, cfg.ClickhouseDb, cfg.BlockChain, xLog)
 
-	root.GET("/node", srv.GetActiveNodes)
+	//root.GET("/node", srv.GetActiveNodes)
 	root.POST("/block", srv.PushBlockTask)
 
 	root.POST("/tx", srv.PushTxTask)

@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
+	"github.com/uduncloud/easynode/common/util"
 	"github.com/uduncloud/easynode/task/config"
 	"github.com/uduncloud/easynode/task/service"
 	"github.com/uduncloud/easynode/task/service/taskcreate/db"
 	"github.com/uduncloud/easynode/task/service/taskcreate/ether"
 	"github.com/uduncloud/easynode/task/service/taskcreate/tron"
-	"github.com/uduncloud/easynode/task/util"
 	"time"
 )
 
@@ -18,6 +18,7 @@ type Service struct {
 	config    *config.Config
 	dbService service.DbTaskCreateInterface
 	log       *xlog.XLog
+	nodeId    string
 }
 
 func (s *Service) Start() {
@@ -126,7 +127,7 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 		//ns := &service.NodeSource{BlockChain: v.BlockChainCode, BlockNumber: fmt.Sprintf("%v", UsedMaxNumber), SourceType: 2}
 
 		task := &service.NodeTask{
-			NodeId:      util.GetLocalNodeId(),
+			NodeId:      s.nodeId,
 			BlockNumber: fmt.Sprintf("%v", UsedMaxNumber),
 			BlockChain:  v.BlockChainCode,
 			TaskType:    2,
@@ -156,9 +157,14 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 func NewService(config *config.Config) *Service {
 	xg := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFile("./log/task/create_task", 24*time.Hour)
 	db := db.NewMySQLTaskCreateService(config, xg)
+	nodeId, err := util.GetLocalNodeId()
+	if err != nil {
+		panic(err)
+	}
 	return &Service{
 		config:    config,
 		log:       xg,
 		dbService: db,
+		nodeId:    nodeId,
 	}
 }

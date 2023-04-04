@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
-	"github.com/uduncloud/easynode/task/util"
+	"github.com/uduncloud/easynode/common/util"
 	"github.com/uduncloud/easynode/taskapi/config"
 	"io/ioutil"
 	"time"
@@ -15,13 +15,19 @@ import (
 type Server struct {
 	log        *xlog.XLog
 	blockChain []int64
+	nodeId     string
 	db         DbApiInterface
 }
 
 func NewServer(dbConfig *config.TaskDb, chConfig map[int64]*config.ClickhouseDb, blockChain []int64, log *xlog.XLog) *Server {
 	db := NewMysqlService(dbConfig, chConfig, log)
+	nodeId, err := util.GetLocalNodeId()
+	if err != nil {
+		panic(err)
+	}
 	return &Server{
 		db:         db,
+		nodeId:     nodeId,
 		log:        log,
 		blockChain: blockChain,
 	}
@@ -57,7 +63,7 @@ func (s *Server) PushBlockTask(c *gin.Context) {
 		return
 	}
 
-	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 2, TaskStatus: 0, NodeId: util.GetLocalNodeId()}
+	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 2, TaskStatus: 0, NodeId: s.nodeId}
 	err = s.db.AddNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -95,7 +101,7 @@ func (s *Server) PushSyncTxTask(c *gin.Context) {
 		return
 	}
 
-	task := &NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 1, TaskStatus: 0, NodeId: util.GetLocalNodeId()}
+	task := &NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 1, TaskStatus: 0, NodeId: s.nodeId}
 	err = s.db.AddNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -174,7 +180,7 @@ func (s *Server) PushTxTask(c *gin.Context) {
 		return
 	}
 
-	task := &NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 1, TaskStatus: 0, NodeId: util.GetLocalNodeId()}
+	task := &NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 1, TaskStatus: 0, NodeId: s.nodeId}
 	err = s.db.AddNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -214,7 +220,7 @@ func (s *Server) PushTxsTask(c *gin.Context) {
 		return
 	}
 
-	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 1, TaskStatus: 0, NodeId: util.GetLocalNodeId()}
+	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 1, TaskStatus: 0, NodeId: s.nodeId}
 	err = s.db.AddNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -253,7 +259,7 @@ func (s *Server) PushReceiptTask(c *gin.Context) {
 		return
 	}
 
-	task := &NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 3, TaskStatus: 0, NodeId: util.GetLocalNodeId()}
+	task := &NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 3, TaskStatus: 0, NodeId: s.nodeId}
 	err = s.db.AddNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -293,7 +299,7 @@ func (s *Server) PushReceiptsTask(c *gin.Context) {
 		return
 	}
 
-	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 3, TaskStatus: 0, NodeId: util.GetLocalNodeId()}
+	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 3, TaskStatus: 0, NodeId: s.nodeId}
 	err = s.db.AddNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())

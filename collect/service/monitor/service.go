@@ -6,7 +6,7 @@ import (
 	"github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service"
 	"github.com/uduncloud/easynode/collect/service/monitor/db"
-	"github.com/uduncloud/easynode/collect/util"
+	"github.com/uduncloud/easynode/common/util"
 	"path"
 	"time"
 )

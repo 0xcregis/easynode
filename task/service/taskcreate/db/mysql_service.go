@@ -1,9 +1,11 @@
 package db
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/sunjiangjun/xlog"
+	"github.com/uduncloud/easynode/common/util"
 	"github.com/uduncloud/easynode/task/common/sql"
 	"github.com/uduncloud/easynode/task/config"
 	"github.com/uduncloud/easynode/task/service"
@@ -52,8 +54,26 @@ func (t *TaskCreateDb) AddNodeTask(list []*service.NodeTask) error {
 }
 
 func (t *TaskCreateDb) UpdateLastNumber(blockChainCode int64, latestNumber int64) error {
-	bn := service.BlockNumber{LatestNumber: latestNumber, ChainCode: blockChainCode}
-	err := t.blockNumberDb.Table(t.config.BlockNumberDb.Table).Omit("id,create_time,log_time,recent_number").Clauses(clause.OnConflict{DoUpdates: clause.AssignmentColumns([]string{"latest_number"})}).Create(&bn).Error
+
+	mp := make(map[int64]*service.BlockNumber, 2)
+
+	bs, err := util.ReadLatestBlock()
+	if err != nil {
+		bn := service.BlockNumber{LatestNumber: latestNumber, ChainCode: blockChainCode, LogTime: time.Now()}
+		mp[blockChainCode] = &bn
+		//return err
+	} else {
+		_ = json.Unmarshal(bs, &mp)
+		if _, ok := mp[blockChainCode]; ok {
+			mp[blockChainCode].LatestNumber = latestNumber
+		} else {
+			bn := service.BlockNumber{LatestNumber: latestNumber, ChainCode: blockChainCode, LogTime: time.Now()}
+			mp[blockChainCode] = &bn
+		}
+	}
+
+	bs, _ = json.Marshal(mp)
+	err = util.WriteLatestBlock(string(bs))
 	if err != nil {
 		return err
 	}
@@ -61,29 +81,44 @@ func (t *TaskCreateDb) UpdateLastNumber(blockChainCode int64, latestNumber int64
 }
 
 func (t *TaskCreateDb) UpdateRecentNumber(blockChainCode int64, recentNumber int64) error {
-	bn := service.BlockNumber{RecentNumber: recentNumber, ChainCode: blockChainCode}
-	err := t.blockNumberDb.Table(t.config.BlockNumberDb.Table).Omit("id,create_time,log_time,latest_number").Clauses(clause.OnConflict{DoUpdates: clause.AssignmentColumns([]string{"recent_number"})}).Create(&bn).Error
+	mp := make(map[int64]*service.BlockNumber, 2)
+	bs, err := util.ReadLatestBlock()
+	if err != nil {
+		bn := service.BlockNumber{RecentNumber: recentNumber, ChainCode: blockChainCode, LogTime: time.Now()}
+		mp[blockChainCode] = &bn
+	} else {
+		_ = json.Unmarshal(bs, &mp)
+		if _, ok := mp[blockChainCode]; ok {
+			mp[blockChainCode].RecentNumber = recentNumber
+		} else {
+			bn := service.BlockNumber{RecentNumber: recentNumber, ChainCode: blockChainCode, LogTime: time.Now()}
+			mp[blockChainCode] = &bn
+		}
+	}
+
+	bs, _ = json.Marshal(mp)
+	err = util.WriteLatestBlock(string(bs))
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func (t *TaskCreateDb) GetRecentNumber(blockCode int64) (int64, int64, error) {
-	var Num int64
-	err := t.blockNumberDb.Table(t.config.BlockNumberDb.Table).Where("chain_code=?", blockCode).Count(&Num).Error
+
+	bs, err := util.ReadLatestBlock()
 	if err != nil {
 		return 0, 0, err
 	}
 
-	if Num < 1 {
-		return 0, 0, nil
-	}
+	mp := make(map[int64]*service.BlockNumber, 2)
+	_ = json.Unmarshal(bs, &mp)
 
-	var temp service.BlockNumber
-	err = t.blockNumberDb.Table(t.config.BlockNumberDb.Table).Where("chain_code=?", blockCode).First(&temp).Error
-	if err != nil {
+	if v, ok := mp[blockCode]; ok {
+		return v.RecentNumber, v.LatestNumber, nil
+	} else {
 		return 0, 0, errors.New("no record")
 	}
-	return temp.RecentNumber, temp.LatestNumber, nil
+
 }

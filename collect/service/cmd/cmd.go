@@ -13,7 +13,7 @@ import (
 	"github.com/uduncloud/easynode/collect/service/cmd/db"
 	"github.com/uduncloud/easynode/collect/service/cmd/task/ether"
 	"github.com/uduncloud/easynode/collect/service/cmd/task/tron"
-	"github.com/uduncloud/easynode/collect/util"
+	"github.com/uduncloud/easynode/common/util"
 	"time"
 )
 
@@ -56,7 +56,10 @@ func NewService(cfg *config.Chain, taskDb *config.TaskDb, logConfig *config.LogC
 func (c *Cmd) Start() {
 	c.log.Printf("start %v service...", c.chain.BlockChainName)
 
-	nodeId := util.GetLocalNodeId()
+	nodeId, err := util.GetLocalNodeId()
+	if err != nil {
+		panic(err)
+	}
 	txChan := make(chan *service.NodeTask, 10)
 	receiptChan := make(chan *service.NodeTask, 10)
 	blockChan := make(chan *service.NodeTask, 10)
@@ -78,7 +81,7 @@ func (c *Cmd) Start() {
 		go c.getTxTask(nodeId, c.chain.BlockChainCode, txChan)
 
 		//执行交易
-		go c.ExecTxTask(txChan, kafkaCh)
+		go c.ExecTxTask(nodeId, txChan, kafkaCh)
 	}
 
 	//配置了 收据执行计划
@@ -285,7 +288,7 @@ func (c *Cmd) ExecReceiptTask(receiptChan chan *service.NodeTask, kf chan []*kaf
 
 }
 
-func (c *Cmd) ExecTxTask(txCh chan *service.NodeTask, kf chan []*kafka.Message) {
+func (c *Cmd) ExecTxTask(nodeId string, txCh chan *service.NodeTask, kf chan []*kafka.Message) {
 	buffCh := make(chan struct{}, 5)
 	for true {
 		//控制协程数量
@@ -331,7 +334,7 @@ func (c *Cmd) ExecTxTask(txCh chan *service.NodeTask, kf chan []*kafka.Message) 
 
 				//写入receipt task
 				if c.chain.PullReceipt {
-					_ = c.taskDb.AddNodeTask([]*service.NodeTask{{BlockChain: c.chain.BlockChainCode, TxHash: tx.TxHash, BlockHash: tx.BlockHash, BlockNumber: tx.BlockNumber, TaskType: 3, TaskStatus: 0, NodeId: util.GetLocalNodeId()}})
+					_ = c.taskDb.AddNodeTask([]*service.NodeTask{{BlockChain: c.chain.BlockChainCode, TxHash: tx.TxHash, BlockHash: tx.BlockHash, BlockNumber: tx.BlockNumber, TaskType: 3, TaskStatus: 0, NodeId: taskTx.NodeId}})
 				}
 
 				kf <- []*kafka.Message{m}
@@ -592,32 +595,29 @@ func (c *Cmd) getBlockTask(nodeId string, blockChain int, blockCh chan *service.
 
 func (c *Cmd) HandlerBlock(block *service.Block) (*kafka.Message, error) {
 	k := c.chain.BlockTask.Kafka
-	nodeId := util.GetLocalNodeId()
 	b, err := json.Marshal(block)
 	if err != nil {
 		return nil, err
 	}
-	return &kafka.Message{Topic: k.Topic, Partition: k.Partition, Time: time.Now(), Key: []byte(nodeId), Value: b}, nil
+	return &kafka.Message{Topic: k.Topic, Partition: k.Partition, Time: time.Now(), Key: []byte(block.BlockHash), Value: b}, nil
 }
 
 func (c *Cmd) HandlerTx(tx *service.Tx) (*kafka.Message, error) {
 	k := c.chain.TxTask.Kafka
-	nodeId := util.GetLocalNodeId()
 	b, err := json.Marshal(tx)
 	if err != nil {
 		return nil, err
 	}
-	return &kafka.Message{Topic: k.Topic, Partition: k.Partition, Time: time.Now(), Key: []byte(nodeId), Value: b}, nil
+	return &kafka.Message{Topic: k.Topic, Partition: k.Partition, Time: time.Now(), Key: []byte(tx.TxHash), Value: b}, nil
 }
 
 func (c *Cmd) HandlerReceipt(receipt *service.Receipt) (*kafka.Message, error) {
 	k := c.chain.ReceiptTask.Kafka
-	nodeId := util.GetLocalNodeId()
 	b, err := json.Marshal(receipt)
 	if err != nil {
 		return nil, err
 	}
-	return &kafka.Message{Topic: k.Topic, Partition: k.Partition, Time: time.Now(), Key: []byte(nodeId), Value: b}, nil
+	return &kafka.Message{Topic: k.Topic, Partition: k.Partition, Time: time.Now(), Key: []byte(receipt.TransactionHash), Value: b}, nil
 }
 
 func (c *Cmd) Stop() {

@@ -51,7 +51,6 @@ func (s *Service) Start() {
 
 			//失败任务重试
 			s.dbMonitor.RetryTaskForFail()
-
 		}
 	}()
 }

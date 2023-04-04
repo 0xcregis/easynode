@@ -7,14 +7,6 @@
     "DbName": "easy_node2",
     "Table": "node_task"
   },
-  "BlockNumberDb": {
-    "Addr": "192.168.2.11",
-    "Port": 3306,
-    "User": "root",
-    "Password": "123456789",
-    "DbName": "easy_node2",
-    "Table": "block_number"
-  },
   "AutoCreateBlockTask": true,
   "Chains": [
     {

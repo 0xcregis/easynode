@@ -124,28 +124,11 @@ func (m *MonitorDB) CheckTable() {
 		}
 	}
 
-	//block_number
-	createSql = fmt.Sprintf(BlockNumberTable, m.config.BlockNumberDb.DbName, m.config.BlockNumberDb.DbName, m.config.BlockNumberDb.Table)
-	sqlList = strings.Split(createSql, ";")
-	for _, sql := range sqlList {
-		err := m.blockNumberDb.Exec(sql).Error
-		if err != nil {
-			panic(err)
-		}
-	}
-
 	//NodeTaskTable check
 	var TaskNum int64
 	err := m.taskDb.Raw("SELECT count(1) as task_num FROM information_schema.`TABLES` WHERE TABLE_SCHEMA=? and TABLE_NAME=?", m.config.NodeTaskDb.DbName, tableName).Pluck("task_num", &TaskNum).Error
 	if err != nil || TaskNum < 1 {
 		panic("not found NodeTaskTable")
-	}
-
-	//blockNumberTable check
-	var blockNum int64
-	err = m.blockNumberDb.Raw("SELECT count(1) as block_num FROM information_schema.`TABLES` WHERE TABLE_SCHEMA=? and TABLE_NAME=?", m.config.BlockNumberDb.DbName, m.config.BlockNumberDb.Table).Pluck("block_num", &blockNum).Error
-	if err != nil || blockNum < 1 {
-		panic("not found BlockNumberTable")
 	}
 
 }
@@ -186,15 +169,9 @@ func NewMySQLMonitorService(config *config.Config, log *xlog.XLog) service.DbTas
 		panic(err)
 	}
 
-	blockNumber, err := sql.Open(config.BlockNumberDb.User, config.BlockNumberDb.Password, config.BlockNumberDb.Addr, config.BlockNumberDb.DbName, config.BlockNumberDb.Port, log)
-	if err != nil {
-		panic(err)
-	}
-
 	return &MonitorDB{
-		config:        config,
-		taskDb:        task,
-		blockNumberDb: blockNumber,
-		log:           log,
+		config: config,
+		taskDb: task,
+		log:    log,
 	}
 }

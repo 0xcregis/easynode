@@ -14,31 +14,31 @@ import (
 	"time"
 )
 
-type TaskCreateSqlDb struct {
+type TaskCreateChDb struct {
 	config *config.Config
 	taskDb *gorm.DB
 	log    *xlog.XLog
 }
 
-func NewMySQLTaskCreateService(config *config.Config, xg *xlog.XLog) service.DbTaskCreateInterface {
-	task, err := sql.Open(config.NodeTaskDb.User, config.NodeTaskDb.Password, config.NodeTaskDb.Addr, config.NodeTaskDb.DbName, config.NodeTaskDb.Port, xg)
+func NewChTaskCreateService(config *config.Config, xg *xlog.XLog) service.DbTaskCreateInterface {
+	task, err := sql.OpenCK(config.NodeTaskDb.User, config.NodeTaskDb.Password, config.NodeTaskDb.Addr, config.NodeTaskDb.DbName, config.NodeTaskDb.Port, xg)
 	if err != nil {
 		panic(err)
 	}
 
-	return &TaskCreateSqlDb{
+	return &TaskCreateChDb{
 		config: config,
 		taskDb: task,
 		log:    xg,
 	}
 }
 
-func (t *TaskCreateSqlDb) getNodeTaskTable() string {
+func (t *TaskCreateChDb) getNodeTaskTable() string {
 	table := fmt.Sprintf("%v_%v", t.config.NodeTaskDb.Table, time.Now().Format(service.DayFormat))
 	return table
 }
 
-func (t *TaskCreateSqlDb) AddNodeTask(list []*service.NodeTask) error {
+func (t *TaskCreateChDb) AddNodeTask(list []*service.NodeTask) error {
 	err := t.taskDb.Table(t.getNodeTaskTable()).Clauses(clause.Insert{Modifier: "IGNORE"}).Omit("id,log_time,create_time").CreateInBatches(&list, 10).Error
 	if err != nil {
 		return err
@@ -46,7 +46,7 @@ func (t *TaskCreateSqlDb) AddNodeTask(list []*service.NodeTask) error {
 	return nil
 }
 
-func (t *TaskCreateSqlDb) UpdateLastNumber(blockChainCode int64, latestNumber int64) error {
+func (t *TaskCreateChDb) UpdateLastNumber(blockChainCode int64, latestNumber int64) error {
 
 	mp := make(map[int64]*service.BlockNumber, 2)
 
@@ -73,7 +73,7 @@ func (t *TaskCreateSqlDb) UpdateLastNumber(blockChainCode int64, latestNumber in
 	return nil
 }
 
-func (t *TaskCreateSqlDb) UpdateRecentNumber(blockChainCode int64, recentNumber int64) error {
+func (t *TaskCreateChDb) UpdateRecentNumber(blockChainCode int64, recentNumber int64) error {
 	mp := make(map[int64]*service.BlockNumber, 2)
 	bs, err := util.ReadLatestBlock()
 	if err != nil {
@@ -98,7 +98,7 @@ func (t *TaskCreateSqlDb) UpdateRecentNumber(blockChainCode int64, recentNumber 
 	return nil
 }
 
-func (t *TaskCreateSqlDb) GetRecentNumber(blockCode int64) (int64, int64, error) {
+func (t *TaskCreateChDb) GetRecentNumber(blockCode int64) (int64, int64, error) {
 
 	bs, err := util.ReadLatestBlock()
 	if err != nil {

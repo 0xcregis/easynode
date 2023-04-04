@@ -1,41 +1,11 @@
 package config
 
 type Config struct {
-	NodeErrorDb         *NodeSourceDb  `json:"NodeErrorDb"`
-	NodeSourceDb        *NodeSourceDb  `json:"NodeSourceDb"`
-	NodeInfoDb          *NodeInfoDb    `json:"NodeInfoDb"`
 	NodeTaskDb          *NodeTaskDb    `json:"NodeTaskDb"`
-	BlockNumberDb       *BlockNumberDb `json:"BlockNumberDb"`
 	AutoCreateBlockTask bool           `json:"AutoCreateBlockTask"`
 	BlockConfigs        []*BlockConfig `json:"Chains"`
 }
 
-type BlockNumberDb struct {
-	User     string `json:"User" gorm:"column:User"`
-	Table    string `json:"Table" gorm:"column:Table"`
-	Port     int    `json:"Port" gorm:"column:Port"`
-	DbName   string `json:"DbName" gorm:"column:DbName"`
-	Addr     string `json:"Addr" gorm:"column:Addr"`
-	Password string `json:"Password" gorm:"column:Password"`
-}
-
-type NodeSourceDb struct {
-	User     string `json:"User" gorm:"column:User"`
-	Table    string `json:"Table" gorm:"column:Table"`
-	Port     int    `json:"Port" gorm:"column:Port"`
-	DbName   string `json:"DbName" gorm:"column:DbName"`
-	Addr     string `json:"Addr" gorm:"column:Addr"`
-	Password string `json:"Password" gorm:"column:Password"`
-}
-
-type NodeInfoDb struct {
-	User     string `json:"User" gorm:"column:User"`
-	Table    string `json:"Table" gorm:"column:Table"`
-	Port     int    `json:"Port" gorm:"column:Port"`
-	DbName   string `json:"DbName" gorm:"column:DbName"`
-	Addr     string `json:"Addr" gorm:"column:Addr"`
-	Password string `json:"Password" gorm:"column:Password"`
-}
 type NodeTaskDb struct {
 	User     string `json:"User" gorm:"column:User"`
 	Table    string `json:"Table" gorm:"column:Table"`

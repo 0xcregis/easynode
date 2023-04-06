@@ -22,7 +22,7 @@ func NewTron(log *xlog.XLog) *Tron {
 	}
 }
 
-func (e *Tron) GetLastBlockNumber(v *config.BlockConfig) (int64, error) {
+func (e *Tron) GetLatestBlockNumber(v *config.BlockConfig) (int64, error) {
 	log := e.log.WithFields(logrus.Fields{
 		"id":    time.Now().UnixMilli(),
 		"model": "GetLastBlockNumber",

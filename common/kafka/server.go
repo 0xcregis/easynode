@@ -144,6 +144,8 @@ func (easy *EasyKafka) sendToKafka(w *kafka.Writer, ms []*kafka.Message, resp ch
 		break
 	}
 
-	resp <- ms
+	if resp != nil {
+		resp <- ms
+	}
 	return nil
 }

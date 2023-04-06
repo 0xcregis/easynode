@@ -7,12 +7,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
-	kafkaClient "github.com/uduncloud/easynode/collect/common/kafka"
 	"github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service"
 	"github.com/uduncloud/easynode/collect/service/cmd/db"
 	"github.com/uduncloud/easynode/collect/service/cmd/task/ether"
 	"github.com/uduncloud/easynode/collect/service/cmd/task/tron"
+	kafkaClient "github.com/uduncloud/easynode/common/kafka"
 	"github.com/uduncloud/easynode/common/util"
 	"time"
 )

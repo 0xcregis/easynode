@@ -30,7 +30,7 @@ func main() {
 
 	root.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: xLog.Out}))
 
-	srv := service.NewServer(cfg.TaskDb, cfg.ClickhouseDb, cfg.BlockChain, xLog)
+	srv := service.NewServer(&cfg, cfg.BlockChain, xLog)
 
 	//root.GET("/node", srv.GetActiveNodes)
 	root.POST("/block", srv.PushBlockTask)

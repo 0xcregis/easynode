@@ -12,7 +12,6 @@ import (
 	"github.com/uduncloud/easynode/collect/service/cmd"
 	collectMonitor "github.com/uduncloud/easynode/collect/service/monitor"
 	taskConfig "github.com/uduncloud/easynode/task/config"
-	taskMonitor "github.com/uduncloud/easynode/task/service/monitor"
 	"github.com/uduncloud/easynode/task/service/taskcreate"
 	taskapiConfig "github.com/uduncloud/easynode/taskapi/config"
 	taskapiService "github.com/uduncloud/easynode/taskapi/service"
@@ -73,7 +72,7 @@ func startTaskApi() {
 
 	root.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: xLog.Out}))
 
-	srv := taskapiService.NewServer(cfg.TaskDb, cfg.ClickhouseDb, cfg.BlockChain, xLog)
+	srv := taskapiService.NewServer(&cfg, cfg.BlockChain, xLog)
 
 	//root.GET("/node", srv.GetActiveNodes)
 	root.POST("/block", srv.PushBlockTask)
@@ -147,9 +146,6 @@ func startTask() {
 	cfg := taskConfig.LoadConfig(configPath)
 
 	log.Printf("%+v\n", cfg)
-
-	//系统监控服务
-	taskMonitor.NewService(&cfg).Start()
 
 	//生产任务 服务
 	if cfg.AutoCreateBlockTask {

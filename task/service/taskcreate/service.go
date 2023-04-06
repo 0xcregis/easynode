@@ -1,40 +1,55 @@
 package taskcreate
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
+	kafkaClient "github.com/uduncloud/easynode/common/kafka"
 	"github.com/uduncloud/easynode/common/util"
 	"github.com/uduncloud/easynode/task/config"
 	"github.com/uduncloud/easynode/task/service"
 	"github.com/uduncloud/easynode/task/service/taskcreate/db"
 	"github.com/uduncloud/easynode/task/service/taskcreate/ether"
 	"github.com/uduncloud/easynode/task/service/taskcreate/tron"
+	"math"
+	"math/rand"
 	"time"
 )
 
 type Service struct {
-	config    *config.Config
-	dbService service.DbTaskCreateInterface
-	log       *xlog.XLog
-	nodeId    string
+	config      *config.Config
+	store       service.DbTaskCreateInterface
+	log         *xlog.XLog
+	nodeId      string
+	kafkaClient *kafkaClient.EasyKafka
+	sendCh      chan []*kafka.Message
+	receiverCh  chan []*kafka.Message
 }
 
 func (s *Service) Start() {
 
+	go s.startKafka()
+
 	go func() {
 		for true {
 			//处理自产生区块任务，包括：区块
-			s.CreateBlockTask()
+			s.startCreateBlockProc()
 			<-time.After(10 * time.Second)
 		}
 	}()
 }
 
-func (s *Service) CreateBlockTask() {
+func (s *Service) startKafka() {
+	broker := fmt.Sprintf("%v:%v", s.config.Kafka.Host, s.config.Kafka.Port)
+	s.kafkaClient.Write(kafkaClient.Config{Brokers: []string{broker}}, s.sendCh, nil)
+}
+
+func (s *Service) startCreateBlockProc() {
 	log := s.log.WithFields(logrus.Fields{
-		"model": "CreateBlockTask",
+		"model": "startCreateBlockProc",
 		"id":    time.Now().UnixMilli(),
 	})
 	blockConfigs := s.config.BlockConfigs
@@ -70,23 +85,23 @@ func (s *Service) CreateBlockTask() {
 }
 
 func (s *Service) GetLastBlockNumberForEther(v *config.BlockConfig) error {
-	lastNumber, err := ether.NewEther(s.log).GetLastBlockNumber(v)
+	lastNumber, err := ether.NewEther(s.log).GetLatestBlockNumber(v)
 	if err != nil {
 		return err
 	}
 	if lastNumber > 1 {
-		_ = s.dbService.UpdateLastNumber(v.BlockChainCode, lastNumber)
+		_ = s.store.UpdateLastNumber(v.BlockChainCode, lastNumber)
 	}
 	return nil
 }
 
 func (s *Service) GetLastBlockNumberForTron(v *config.BlockConfig) error {
-	lastNumber, err := tron.NewTron(s.log).GetLastBlockNumber(v)
+	lastNumber, err := tron.NewTron(s.log).GetLatestBlockNumber(v)
 	if err != nil {
 		return err
 	}
 	if lastNumber > 1 {
-		_ = s.dbService.UpdateLastNumber(v.BlockChainCode, lastNumber)
+		_ = s.store.UpdateLastNumber(v.BlockChainCode, lastNumber)
 	}
 	return nil
 }
@@ -97,7 +112,7 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 	}
 
 	//已经下发的最新区块高度
-	UsedMaxNumber, lastBlockNumber, err := s.dbService.GetRecentNumber(v.BlockChainCode)
+	UsedMaxNumber, lastBlockNumber, err := s.store.GetRecentNumber(v.BlockChainCode)
 	if err != nil {
 		log.Errorf("GetRecentNumber|err=%v", err)
 		return err
@@ -119,7 +134,7 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 	if UsedMaxNumber >= v.BlockMax {
 		return errors.New("UsedMaxNumber > BlockMax")
 	}
-	list := make([]*service.NodeTask, 0)
+	list := make([]*kafka.Message, 0)
 
 	UsedMaxNumber++
 
@@ -132,21 +147,29 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 			BlockChain:  v.BlockChainCode,
 			TaskType:    2,
 			TaskStatus:  0,
+			CreateTime:  time.Now(),
+			LogTime:     time.Now(),
+			Id:          rand.Int63n(math.MaxInt64),
 		}
 
-		list = append(list, task)
+		bs, _ := json.Marshal(task)
+		msg := &kafka.Message{Topic: fmt.Sprintf("task_%v", v.BlockChainCode), Partition: 0, Key: []byte(task.NodeId), Value: bs}
+		list = append(list, msg)
 		UsedMaxNumber++
 	}
 
 	recentNumber := UsedMaxNumber - 1
 
 	//生成任务并保存
-	err = s.dbService.AddNodeTask(list)
-	if err != nil {
-		return err
-	}
+	//err = s.store.AddNodeTask(list)
+	//if err != nil {
+	//	return err
+	//}
+
+	s.sendCh <- list
+
 	//更新最新下发的区块高度
-	err = s.dbService.UpdateRecentNumber(v.BlockChainCode, recentNumber)
+	err = s.store.UpdateRecentNumber(v.BlockChainCode, recentNumber)
 	if err != nil {
 		return err
 	}
@@ -156,15 +179,22 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 
 func NewService(config *config.Config) *Service {
 	xg := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFile("./log/task/create_task", 24*time.Hour)
-	db := db.NewMySQLTaskCreateService(config, xg)
+	store := db.NewFileTaskCreateService(config, xg)
 	nodeId, err := util.GetLocalNodeId()
+
 	if err != nil {
 		panic(err)
 	}
+	kf := kafkaClient.NewEasyKafka(xg)
+	sendCh := make(chan []*kafka.Message, 5)
+	receiverCh := make(chan []*kafka.Message, 5)
 	return &Service{
-		config:    config,
-		log:       xg,
-		dbService: db,
-		nodeId:    nodeId,
+		config:      config,
+		log:         xg,
+		store:       store,
+		nodeId:      nodeId,
+		kafkaClient: kf,
+		sendCh:      sendCh,
+		receiverCh:  receiverCh,
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"github.com/uduncloud/easynode/task/config"
-	"github.com/uduncloud/easynode/task/service/monitor"
 	"github.com/uduncloud/easynode/task/service/taskcreate"
 	"log"
 	"os"
@@ -23,9 +22,6 @@ func main() {
 	cfg := config.LoadConfig(configPath)
 
 	log.Printf("%+v\n", cfg)
-
-	//系统监控服务
-	monitor.NewService(&cfg).Start()
 
 	//生产任务 服务
 	if cfg.AutoCreateBlockTask {

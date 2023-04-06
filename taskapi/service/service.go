@@ -16,17 +16,19 @@ type Server struct {
 	log        *xlog.XLog
 	blockChain []int64
 	nodeId     string
+	cfg        *config.Config
 	db         DbApiInterface
 }
 
-func NewServer(dbConfig *config.TaskDb, chConfig map[int64]*config.ClickhouseDb, blockChain []int64, log *xlog.XLog) *Server {
-	db := NewMysqlService(dbConfig, chConfig, log)
+func NewServer(cfg *config.Config, blockChain []int64, log *xlog.XLog) *Server {
+	db := NewChService(cfg, log)
 	nodeId, err := util.GetLocalNodeId()
 	if err != nil {
 		panic(err)
 	}
 	return &Server{
 		db:         db,
+		cfg:        cfg,
 		nodeId:     nodeId,
 		log:        log,
 		blockChain: blockChain,

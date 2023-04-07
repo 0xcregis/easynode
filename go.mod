@@ -3,9 +3,9 @@ module github.com/uduncloud/easynode
 go 1.20
 
 require (
-	github.com/bradfitz/gomemcache v0.0.0-20221031212613-62deef7fc822
+	github.com/allegro/bigcache/v3 v3.1.0
 	github.com/eko/gocache/lib/v4 v4.1.3
-	github.com/eko/gocache/store/memcache/v4 v4.1.2
+	github.com/eko/gocache/store/bigcache/v4 v4.1.2
 	github.com/eko/gocache/store/redis/v4 v4.2.0
 	github.com/ethereum/go-ethereum v1.11.2
 	github.com/fbsobreira/gotron-sdk v0.0.0-20230329170810-8ce6eac59a1d
@@ -37,7 +37,6 @@ require (
 	github.com/deckarep/golang-set/v2 v2.1.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
-	github.com/eko/gocache/store/freecache/v4 v4.1.2 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
@@ -97,7 +96,6 @@ require (
 	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0 // indirect
 	golang.org/x/net v0.8.0 // indirect
-	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect

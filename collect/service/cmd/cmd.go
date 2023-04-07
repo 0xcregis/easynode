@@ -38,7 +38,7 @@ func NewService(cfg *config.Chain, logConfig *config.LogConfig) *Cmd {
 	blockChan := make(chan *service.NodeTask, 10)
 	kafkaCh := make(chan []*kafka.Message, 100)
 	kafkaRespCh := make(chan []*kafka.Message, 30)
-	db := db.NewMySQLTaskService(cfg, kafkaCh, log)
+	db := db.NewTaskCacheService(cfg, kafkaCh, log)
 	kf := kafkaClient.NewEasyKafka(log)
 	chain := getBlockChainService(cfg, logConfig)
 

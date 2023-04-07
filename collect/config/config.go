@@ -49,6 +49,13 @@ type Chain struct {
 	BlockTask      *BlockTask   `json:"BlockTask"`
 	TxTask         *TxTask      `json:"TxTask"`
 	ReceiptTask    *ReceiptTask `json:"ReceiptTask"`
+	Redis          *Redis       `json:"Redis"`
+}
+
+type Redis struct {
+	Addr string `json:"Addr"`
+	Port int64  `json:"Port"`
+	DB   int    `json:"DB"`
 }
 
 type LogConfig struct {
@@ -57,7 +64,6 @@ type LogConfig struct {
 }
 
 type Config struct {
-	TaskDb    *TaskDb    `json:"NodeTaskDb"`
 	Chains    []*Chain   `json:"Chains"`
 	LogConfig *LogConfig `json:"Log"`
 }

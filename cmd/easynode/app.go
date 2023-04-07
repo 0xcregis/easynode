@@ -172,13 +172,10 @@ func startCollect() {
 	x := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/node_info", cfg.LogConfig.Path), 24*time.Hour)
 
 	//启动处理日志服务
-	collectMonitor.NewService(&cfg, cfg.LogConfig, x).Start()
-
-	//上传节点信息 服务
-	//nodeinfo.NewService(cfg.NodeInfoDb, cfg.Chains, cfg.LogConfig, x).Start()
+	collectMonitor.NewService(cfg.LogConfig, x).Start()
 
 	//启动公链服务
 	for _, v := range cfg.Chains {
-		cmd.NewService(v, cfg.TaskDb, cfg.LogConfig).Start()
+		cmd.NewService(v, cfg.LogConfig).Start()
 	}
 }

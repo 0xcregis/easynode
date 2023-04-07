@@ -24,9 +24,8 @@ type EasyKafka struct {
 
 func NewEasyKafka(xLog *xlog.XLog) *EasyKafka {
 	f := func(msg string, a ...interface{}) {
-		xLog.Printf("kafka|msg=%v , other=%v", msg, a)
+		//xLog.Printf("kafka|msg=%v , other=%v", msg, a)
 		fmt.Println(msg, a)
-		fmt.Println()
 	}
 	query := make(chan int, 5)
 	return &EasyKafka{
@@ -55,6 +54,7 @@ func (easy *EasyKafka) Read(c *Config, ch chan *kafka.Message) {
 		for {
 			m, err := r.ReadMessage(context.Background())
 			if err != nil {
+				easy.log.Errorf("kafka|read|ReadMessage err:%v", err)
 				errCh <- 1
 				break
 			}
@@ -65,7 +65,7 @@ func (easy *EasyKafka) Read(c *Config, ch chan *kafka.Message) {
 
 	<-errCh
 	if err := r.Close(); err != nil {
-		easy.log.Printf("failed to close reader:%v", err)
+		easy.log.Fatal("kafka|read| failed to close reader:", err)
 	}
 }
 
@@ -93,7 +93,7 @@ func (easy *EasyKafka) Write(c Config, ch chan []*kafka.Message, resp chan []*ka
 
 	defer func() {
 		if err := w.Close(); err != nil {
-			easy.log.Fatal("failed to close writer:", err)
+			easy.log.Fatal("kafka|write| failed to close writer:", err)
 		}
 		<-easy.query
 	}()
@@ -101,7 +101,7 @@ func (easy *EasyKafka) Write(c Config, ch chan []*kafka.Message, resp chan []*ka
 	running := true
 
 	for running {
-		easy.log.Printf("kafka|Write|length=%v", len(ch))
+		//easy.log.Printf("kafka|Write|length=%v", len(ch))
 		ms := <-ch
 		step := 10
 		for i := 0; i < len(ms); i += step {

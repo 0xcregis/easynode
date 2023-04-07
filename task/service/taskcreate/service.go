@@ -1,7 +1,6 @@
 package taskcreate
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/segmentio/kafka-go"
@@ -14,14 +13,12 @@ import (
 	"github.com/uduncloud/easynode/task/service/taskcreate/db"
 	"github.com/uduncloud/easynode/task/service/taskcreate/ether"
 	"github.com/uduncloud/easynode/task/service/taskcreate/tron"
-	"math"
-	"math/rand"
 	"time"
 )
 
 type Service struct {
 	config      *config.Config
-	store       service.DbTaskCreateInterface
+	store       service.StoreTaskInterface
 	log         *xlog.XLog
 	nodeId      string
 	kafkaClient *kafkaClient.EasyKafka
@@ -134,7 +131,7 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 	if UsedMaxNumber >= v.BlockMax {
 		return errors.New("UsedMaxNumber > BlockMax")
 	}
-	list := make([]*kafka.Message, 0)
+	list := make([]*service.NodeTask, 0)
 
 	UsedMaxNumber++
 
@@ -149,24 +146,20 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 			TaskStatus:  0,
 			CreateTime:  time.Now(),
 			LogTime:     time.Now(),
-			Id:          rand.Int63n(math.MaxInt64),
+			Id:          time.Now().UnixNano(),
 		}
 
-		bs, _ := json.Marshal(task)
-		msg := &kafka.Message{Topic: fmt.Sprintf("task_%v", v.BlockChainCode), Partition: 0, Key: []byte(task.NodeId), Value: bs}
-		list = append(list, msg)
+		list = append(list, task)
 		UsedMaxNumber++
 	}
 
 	recentNumber := UsedMaxNumber - 1
 
 	//生成任务并保存
-	//err = s.store.AddNodeTask(list)
-	//if err != nil {
-	//	return err
-	//}
-
-	s.sendCh <- list
+	err = s.store.AddNodeTask(list)
+	if err != nil {
+		return err
+	}
 
 	//更新最新下发的区块高度
 	err = s.store.UpdateRecentNumber(v.BlockChainCode, recentNumber)
@@ -179,15 +172,14 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 
 func NewService(config *config.Config) *Service {
 	xg := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFile("./log/task/create_task", 24*time.Hour)
-	store := db.NewFileTaskCreateService(config, xg)
-	nodeId, err := util.GetLocalNodeId()
-
-	if err != nil {
-		panic(err)
-	}
 	kf := kafkaClient.NewEasyKafka(xg)
 	sendCh := make(chan []*kafka.Message, 5)
 	receiverCh := make(chan []*kafka.Message, 5)
+	store := db.NewFileTaskCreateService(config, sendCh, xg)
+	nodeId, err := util.GetLocalNodeId()
+	if err != nil {
+		panic(err)
+	}
 	return &Service{
 		config:      config,
 		log:         xg,

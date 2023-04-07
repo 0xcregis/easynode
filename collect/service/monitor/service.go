@@ -5,26 +5,17 @@ import (
 	"github.com/sunjiangjun/xlog"
 	"github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service"
-	"github.com/uduncloud/easynode/collect/service/monitor/db"
 	"github.com/uduncloud/easynode/common/util"
 	"path"
 	"time"
 )
 
 type Service struct {
-	config    *config.Config
 	logConfig config.LogConfig
-	monitorDb service.MonitorDbInterface
-}
-
-func (s *Service) CheckTable() {
-	s.monitorDb.CheckTable()
+	log       *xlog.XLog
 }
 
 func (s *Service) Start() {
-
-	//检查表
-	s.CheckTable()
 
 	//监控服务
 	go func() {
@@ -63,11 +54,9 @@ func (s *Service) Stop() {
 	panic("implement me")
 }
 
-func NewService(config *config.Config, logConfig *config.LogConfig, xg *xlog.XLog) *Service {
-	db := db.NewMonitorDbService(config, xg)
+func NewService(logConfig *config.LogConfig, xg *xlog.XLog) *Service {
 	return &Service{
-		config:    config,
 		logConfig: *logConfig,
-		monitorDb: db,
+		log:       xg,
 	}
 }

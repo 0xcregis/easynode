@@ -10,22 +10,15 @@ type Common interface {
 	Stop()
 }
 
-type MonitorDbInterface interface {
-	CheckTable()
-}
-
-type TaskDbInterface interface {
+type StoreTaskInterface interface {
 	GetTaskWithTx(blockChain int, nodeId string) ([]*NodeTask, error)
 	GetTaskWithReceipt(blockChain int, nodeId string) ([]*NodeTask, error)
 	GetTaskWithBlock(blockChain int, nodeId string) ([]*NodeTask, error)
-	UpdateTaskStatus(id int64, status int) error
 	AddNodeTask(list []*NodeTask) error
-	GetNodeTaskTable() string
-	GetNodeTaskWithTxs(txHash []string, taskType int, blockChain int, taskStatus int) ([]int64, error)
-	GetNodeTaskByBlockNumber(number string, taskType int, blockChain int) (*NodeTask, error)
-	GetNodeTaskByBlockHash(hash string, taskType int, blockChain int) (*NodeTask, error)
-	UpdateNodeTaskStatus(id int64, status int) error
-	UpdateNodeTaskStatusWithBatch(ids []int64, status int) error
+	UpdateNodeTaskStatus(key string, status int) error
+	UpdateNodeTaskStatusWithBatch(keys []string, status int) error
+
+	StoreExecTask(key string, task *NodeTask)
 }
 
 // BlockChainInterface 公链接口

@@ -20,7 +20,7 @@ type TaskCreateSqlDb struct {
 	log    *xlog.XLog
 }
 
-func NewMySQLTaskCreateService(config *config.Config, xg *xlog.XLog) service.DbTaskCreateInterface {
+func NewMySQLTaskCreateService(config *config.Config, xg *xlog.XLog) service.StoreTaskInterface {
 	task, err := sql.Open(config.NodeTaskDb.User, config.NodeTaskDb.Password, config.NodeTaskDb.Addr, config.NodeTaskDb.DbName, config.NodeTaskDb.Port, xg)
 	if err != nil {
 		panic(err)

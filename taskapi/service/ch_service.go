@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/segmentio/kafka-go"
@@ -9,9 +10,10 @@ import (
 	"github.com/uduncloud/easynode/taskapi/common"
 	"github.com/uduncloud/easynode/taskapi/config"
 	"gorm.io/gorm"
+	"time"
 )
 
-type MysqlDb struct {
+type ClickhouseDb struct {
 	chDb        map[int64]*gorm.DB
 	cfg         *config.Config
 	kafkaClient *kafkaClient.EasyKafka
@@ -38,7 +40,7 @@ func NewChService(cfg *config.Config, log *xlog.XLog) DbApiInterface {
 		log.Warnf("some function does not work for clickhouse`s config is null")
 	}
 
-	m := &MysqlDb{
+	m := &ClickhouseDb{
 		chDb:        mp,
 		cfg:         cfg,
 		kafkaClient: kf,
@@ -46,20 +48,31 @@ func NewChService(cfg *config.Config, log *xlog.XLog) DbApiInterface {
 		receiverCh:  receiverCh,
 	}
 
-	m.startKafka()
+	go func() {
+		m.startKafka()
+	}()
 	return m
 }
 
-func (m *MysqlDb) startKafka() {
+func (m *ClickhouseDb) startKafka() {
 	broker := fmt.Sprintf("%v:%v", m.cfg.Kafka.Host, m.cfg.Kafka.Port)
 	m.kafkaClient.Write(kafkaClient.Config{Brokers: []string{broker}}, m.sendCh, nil)
 }
 
-func (m *MysqlDb) AddNodeTask(task *NodeTask) error {
+func (m *ClickhouseDb) AddNodeTask(task *NodeTask) error {
+	task.CreateTime = time.Now()
+	task.LogTime = time.Now()
+	task.Id = time.Now().UnixNano()
+	bs, err := json.Marshal(task)
+	if err != nil {
+		return err
+	}
+	msg := &kafka.Message{Topic: fmt.Sprintf("task_%v", task.BlockChain), Partition: 0, Key: []byte(task.NodeId), Value: bs}
+	m.sendCh <- []*kafka.Message{msg}
 	return nil
 }
 
-func (m *MysqlDb) QueryTxFromCh(blockChain int64, txHash string) (*Tx, error) {
+func (m *ClickhouseDb) QueryTxFromCh(blockChain int64, txHash string) (*Tx, error) {
 	//clickhouse 非必须配置项，因此 可能不存此次连接
 	if _, ok := m.chDb[blockChain]; !ok {
 		return nil, errors.New("not found db source ,please check config file")

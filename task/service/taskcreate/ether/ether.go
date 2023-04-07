@@ -22,10 +22,10 @@ func NewEther(log *xlog.XLog) *Ether {
 	}
 }
 
-func (e *Ether) GetLastBlockNumber(v *config.BlockConfig) (int64, error) {
+func (e *Ether) GetLatestBlockNumber(v *config.BlockConfig) (int64, error) {
 	log := e.log.WithFields(logrus.Fields{
 		"id":    time.Now().UnixMilli(),
-		"model": "GetLastBlockNumber",
+		"model": "GetLatestBlockNumber",
 	})
 
 	clusters := map[int64][]*blockChainConfig.NodeCluster{200: {{NodeUrl: v.NodeHost, NodeToken: v.NodeKey}}}

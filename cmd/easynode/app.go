@@ -9,13 +9,10 @@ import (
 	blockchainConfig "github.com/uduncloud/easynode/blockchain/config"
 	blockchainService "github.com/uduncloud/easynode/blockchain/service"
 	collectConfig "github.com/uduncloud/easynode/collect/config"
-	"github.com/uduncloud/easynode/collect/service/cmd/task"
+	"github.com/uduncloud/easynode/collect/service/cmd"
 	collectMonitor "github.com/uduncloud/easynode/collect/service/monitor"
-	"github.com/uduncloud/easynode/collect/service/nodeinfo"
 	taskConfig "github.com/uduncloud/easynode/task/config"
-	taskMonitor "github.com/uduncloud/easynode/task/service/monitor"
 	"github.com/uduncloud/easynode/task/service/taskcreate"
-	"github.com/uduncloud/easynode/task/service/taskhandler"
 	taskapiConfig "github.com/uduncloud/easynode/taskapi/config"
 	taskapiService "github.com/uduncloud/easynode/taskapi/service"
 	"log"
@@ -75,9 +72,9 @@ func startTaskApi() {
 
 	root.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: xLog.Out}))
 
-	srv := taskapiService.NewServer(cfg.TaskDb, cfg.ClickhouseDb, cfg.BlockChain, xLog)
+	srv := taskapiService.NewServer(&cfg, cfg.BlockChain, xLog)
 
-	root.GET("/node", srv.GetActiveNodes)
+	//root.GET("/node", srv.GetActiveNodes)
 	root.POST("/block", srv.PushBlockTask)
 
 	root.POST("/tx", srv.PushTxTask)
@@ -150,17 +147,10 @@ func startTask() {
 
 	log.Printf("%+v\n", cfg)
 
-	//系统监控服务
-	taskMonitor.NewService(&cfg).Start()
-
 	//生产任务 服务
 	if cfg.AutoCreateBlockTask {
 		taskcreate.NewService(&cfg).Start()
 	}
-
-	//分配任务
-	taskhandler.NewService(&cfg).Start()
-
 }
 
 func startCollect() {
@@ -182,14 +172,10 @@ func startCollect() {
 	x := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/node_info", cfg.LogConfig.Path), 24*time.Hour)
 
 	//启动处理日志服务
-	collectMonitor.NewService(&cfg, cfg.LogConfig, x).Start()
-
-	//上传节点信息 服务
-	nodeinfo.NewService(cfg.NodeInfoDb, cfg.Chains, cfg.LogConfig, x).Start()
+	collectMonitor.NewService(cfg.LogConfig, x).Start()
 
 	//启动公链服务
 	for _, v := range cfg.Chains {
-		//GetBlockChainService(v, cfg.TaskDb, cfg.SourceDb).Start()
-		task.NewService(v, cfg.TaskDb, cfg.SourceDb, cfg.LogConfig).Start()
+		cmd.NewService(v, cfg.LogConfig).Start()
 	}
 }

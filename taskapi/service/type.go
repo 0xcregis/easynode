@@ -3,23 +3,22 @@ package service
 import "time"
 
 const (
-	NodeInfoTable   = "node_info"
-	NodeSourceTable = "node_source"
-	NodeTaskTable   = "node_task_%v"
+	NodeTaskTable = "node_task_%v"
+	DayFormat     = "20060102"
+	TimeFormat    = "2006-01-02 15:04:05"
 )
 
-const (
-	TimeFormat = "2006-01-02 15:04:05"
-)
-
-type NodeSource struct {
-	Id          int64     `json:"id" gorm:"column:id"`
-	BlockChain  int64     `json:"blockChain" gorm:"column:block_chain"` // 公链code
-	TxHash      string    `json:"txHash" gorm:"column:tx_hash"`
-	BlockHash   string    `json:"blockHash" gorm:"column:block_hash"`
+type NodeTask struct {
+	Id          int64     `json:"id"  gorm:"column:id"`
+	NodeId      string    `json:"nodeId" gorm:"column:node_id"`
 	BlockNumber string    `json:"blockNumber" gorm:"column:block_number"`
-	SourceType  int       `json:"sourceType" gorm:"column:source_type"` // 任务类型 1: 交易 2:区块 3.收据
+	BlockHash   string    `json:"blockHash" gorm:"column:block_hash"`
+	TxHash      string    `json:"txHash" gorm:"column:tx_hash"`
+	TaskType    int       `json:"taskType" gorm:"column:task_type"` // 0:保留 1:同步Tx. 2:同步Block 3:同步Receipt
+	BlockChain  int64     `json:"blockChain" gorm:"column:block_chain"`
+	TaskStatus  int       `json:"taskStatus" gorm:"column:task_status"` //0: 初始 1: 成功. 2: 失败.  3: 执行中 其他：重试次数
 	CreateTime  time.Time `json:"createTime" gorm:"column:create_time"`
+	LogTime     time.Time `json:"logTime" gorm:"column:log_time"`
 }
 
 type Tx struct {

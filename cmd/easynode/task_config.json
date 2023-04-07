@@ -7,38 +7,6 @@
     "DbName": "easy_node2",
     "Table": "node_task"
   },
-  "NodeSourceDb": {
-    "Addr": "192.168.2.11",
-    "Port": 3306,
-    "User": "root",
-    "Password": "123456789",
-    "DbName": "easy_node2",
-    "Table": "node_source"
-  },
-  "NodeInfoDb": {
-    "Addr": "192.168.2.11",
-    "Port": 3306,
-    "User": "root",
-    "Password": "123456789",
-    "DbName": "easy_node2",
-    "Table": "node_info"
-  },
-  "NodeErrorDb": {
-    "Addr": "192.168.2.11",
-    "Port": 3306,
-    "User": "root",
-    "Password": "123456789",
-    "DbName": "easy_node2",
-    "Table": "node_error"
-  },
-  "BlockNumberDb": {
-    "Addr": "192.168.2.11",
-    "Port": 3306,
-    "User": "root",
-    "Password": "123456789",
-    "DbName": "easy_node2",
-    "Table": "block_number"
-  },
   "AutoCreateBlockTask": true,
   "Chains": [
     {

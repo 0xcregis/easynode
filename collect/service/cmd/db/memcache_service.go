@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/bradfitz/gomemcache/memcache"
+	"github.com/allegro/bigcache/v3"
 	"github.com/eko/gocache/lib/v4/cache"
 	"github.com/eko/gocache/lib/v4/store"
-	memcacheStore "github.com/eko/gocache/store/memcache/v4"
+	bigcacheStore "github.com/eko/gocache/store/bigcache/v4"
 	redisStore "github.com/eko/gocache/store/redis/v4"
 	"github.com/redis/go-redis/v9"
 	"github.com/segmentio/kafka-go"
@@ -91,14 +91,15 @@ func (s *Service) GetTaskWithBlock(blockChain int, nodeId string) ([]*service.No
 	return nil, nil
 }
 
-func NewMySQLTaskService(cfg *config.Chain, kafkaCh chan []*kafka.Message, x *xlog.XLog) service.StoreTaskInterface {
+func NewTaskCacheService(cfg *config.Chain, kafkaCh chan []*kafka.Message, x *xlog.XLog) service.StoreTaskInterface {
 	opt := func(o *store.Options) {
 		o.Expiration = 1 * time.Hour
 	}
 
 	var store store.StoreInterface
 	if cfg.Redis == nil {
-		store = memcacheStore.NewMemcache(memcache.New("localhost:11211"), opt)
+		c, _ := bigcache.New(context.Background(), bigcache.DefaultConfig(30*time.Minute))
+		store = bigcacheStore.NewBigcache(c, opt)
 	} else {
 		store = redisStore.NewRedis(redis.NewClient(&redis.Options{
 			Addr:         fmt.Sprintf("%v:%v", cfg.Redis.Addr, cfg.Redis.Port),

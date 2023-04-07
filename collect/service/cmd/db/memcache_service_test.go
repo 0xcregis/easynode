@@ -12,7 +12,7 @@ func Init() service.StoreTaskInterface {
 	//cfg := config.LoadConfig("./../../../config_tron.json")
 	x := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/collect/task", 24*time.Hour)
 	receiverCh := make(chan []*kafka.Message, 0)
-	return NewMySQLTaskService(receiverCh, x)
+	return NewTaskCacheService(receiverCh, x)
 }
 
 func TestService_GetTaskByTx(t *testing.T) {

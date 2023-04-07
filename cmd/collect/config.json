@@ -9,10 +9,6 @@
         "Host": "192.168.2.20",
         "Port": 9092
       },
-      "Redis": {
-        "Addr": "localhost",
-        "Port": 6379
-      },
       "BlockChainName": "eth",
       "BlockChainCode": 200,
       "NodeWeight":1,

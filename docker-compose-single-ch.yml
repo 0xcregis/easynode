@@ -39,20 +39,6 @@ services:
       - ZK_HOSTS=zookeeper:2181
     depends_on:
       - kafka
-  mysql:
-    image: bitnami/mysql:8.0
-    ports:
-      - "3306:3306"
-    networks:
-      - easynode_net
-    volumes:
-      - ./mysql:/bitnami/mysql/data
-    environment:
-      - MYSQL_CHARACTER_SET=utf8mb4
-      - MYSQL_COLLATE=utf8mb4_general_ci
-      - MYSQL_DATABASE=easynode
-      - MYSQL_ROOT_USER=root
-      - MYSQL_ROOT_PASSWORD=test12345678
   clickhouse:
     image: bitnami/clickhouse:23
     environment:
@@ -86,7 +72,6 @@ services:
       - ./easynode:/app
     depends_on:
       - kafka
-      - mysql
       - clickhouse
 
 volumes:

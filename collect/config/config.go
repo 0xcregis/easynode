@@ -45,7 +45,8 @@ type Chain struct {
 	NodeWeight     int          `json:"NodeWeight"`
 	PullReceipt    bool         `json:"PullReceipt"`
 	PullTx         bool         `json:"PullTx"`
-	Kafka          *Kafka       `json:"Kafka"`
+	Kafka          *Kafka       `json:"Kafka"`     //结果数据Kafka
+	TaskKafka      *Kafka       `json:"TaskKafka"` //任务kafka
 	BlockTask      *BlockTask   `json:"BlockTask"`
 	TxTask         *TxTask      `json:"TxTask"`
 	ReceiptTask    *ReceiptTask `json:"ReceiptTask"`

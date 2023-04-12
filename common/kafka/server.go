@@ -74,6 +74,7 @@ func (easy *EasyKafka) WriteBatch(c *Config, ch chan []*kafka.Message, resp chan
 		easy.query <- 1
 		go func(c *Config, ch chan []*kafka.Message, resp chan []*kafka.Message) {
 			easy.Write(*c, ch, resp)
+			<-easy.query
 		}(c, ch, resp)
 	}
 }
@@ -95,7 +96,6 @@ func (easy *EasyKafka) Write(c Config, ch chan []*kafka.Message, resp chan []*ka
 		if err := w.Close(); err != nil {
 			easy.log.Fatal("kafka|write| failed to close writer:", err)
 		}
-		<-easy.query
 	}()
 
 	running := true

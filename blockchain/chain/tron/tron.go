@@ -68,7 +68,7 @@ func (t *Tron) EthSendRequestToChain(host string, token string, query string) (s
 	return string(body), nil
 }
 
-func (t *Tron) SendRequestToChain(host string, token string, query string) (string, error) {
+func (t *Tron) SendRequestToChainByHttp(host string, token string, query string) (string, error) {
 	payload := strings.NewReader(query)
 
 	query = strings.Replace(query, "\t", "", -1)
@@ -132,7 +132,7 @@ func (t *Tron) GetTokenBalanceByHttp(host string, token string, contractAddress 
 	m := "0000000000000000000000000000000000000000000000000000000000000000"
 	params := m[:len(m)-len(c2)] + c2
 	query = fmt.Sprintf(query, userAddr.Hex(), contractAddr.Hex(), params)
-	resp, err := t.SendRequestToChain(host, token, query)
+	resp, err := t.SendRequestToChainByHttp(host, token, query)
 	if err != nil {
 		return nil, err
 	}

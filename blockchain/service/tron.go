@@ -20,6 +20,29 @@ type Tron struct {
 	blockChainClient chain.BlockChain
 }
 
+func (t *Tron) GetCode(chainCode int64, address string) (string, error) {
+	req := `{ "value": "%v", "visible": true}`
+	req = fmt.Sprintf(req, address)
+	return t.SendReq(chainCode, req, "wallet/getcontract")
+}
+
+func (t *Tron) GetAddressType(chainCode int64, address string) (string, error) {
+	req := `{ "value": "%v", "visible": true}`
+	req = fmt.Sprintf(req, address)
+	resp, err := t.SendReq(chainCode, req, "wallet/getcontract")
+	if err != nil {
+		return "", err
+	}
+
+	if gjson.Parse(resp).Get("code_hash").Exists() {
+		//合约地址
+		return "0x2", nil
+	} else {
+		//外部地址
+		return "0x1", nil
+	}
+}
+
 func (t *Tron) SubscribePendingTx(chainCode int64, receiverCh chan string, sendCh chan string) (string, error) {
 	//TODO implement me
 	panic("implement me")
@@ -195,7 +218,7 @@ func (t *Tron) SendReq(blockChain int64, reqBody string, url string) (string, er
 
 	if blockChain == 205 {
 		url = fmt.Sprintf("%v/%v", cluster.NodeUrl, url)
-		return t.blockChainClient.SendRequestToChain(url, cluster.NodeToken, reqBody)
+		return t.blockChainClient.SendRequestToChainByHttp(url, cluster.NodeToken, reqBody)
 	}
 
 	return "", errors.New("blockChainCode is error")

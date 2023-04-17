@@ -23,6 +23,46 @@ type Ether struct {
 	blockChainClient chain.BlockChain
 }
 
+func (e *Ether) GetCode(chainCode int64, address string) (string, error) {
+	query := `{
+				"id": 1,
+				"jsonrpc": "2.0",
+				"method": "eth_getCode",
+				"params": [
+					"%v",
+					"latest"
+				]
+			}`
+	query = fmt.Sprintf(query, address)
+	return e.SendEthReq(chainCode, query)
+}
+
+func (e *Ether) GetAddressType(chainCode int64, address string) (string, error) {
+	query := `{
+				"id": 1,
+				"jsonrpc": "2.0",
+				"method": "eth_getCode",
+				"params": [
+					"%v",
+					"latest"
+				]
+			}`
+	query = fmt.Sprintf(query, address)
+	resp, err := e.SendEthReq(chainCode, query)
+	if err != nil {
+		return "", err
+	}
+
+	code := gjson.Parse(resp).Get("result").String()
+	if len(code) > 5 {
+		//合约地址
+		return "0x2", nil
+	} else {
+		//外部地址
+		return "0x1", nil
+	}
+}
+
 func (e *Ether) SubscribePendingTx(chainCode int64, receiverCh chan string, sendCh chan string) (string, error) {
 
 	query := `{"jsonrpc":  "2.0",  "id":  1,  "method":  "eth_subscribe",  "params":  ["newPendingTransactions"]}`

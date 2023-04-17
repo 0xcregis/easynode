@@ -19,4 +19,8 @@ type API interface {
 	SubscribePendingTx(chainCode int64, receiverCh chan string, sendCh chan string) (string, error)
 	SubscribeLogs(chainCode int64, address string, topics []string, receiverCh chan string, sendCh chan string) (string, error)
 	UnSubscribe(chainCode int64, subId string) (string, error)
+
+	// GetAddressType 0x1：外部账户，0x2:合约地址
+	GetAddressType(chainCode int64, address string) (string, error)
+	GetCode(chainCode int64, address string) (string, error)
 }

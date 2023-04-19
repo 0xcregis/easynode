@@ -38,6 +38,10 @@ func (e *Ether) GetCode(chainCode int64, address string) (string, error) {
 }
 
 func (e *Ether) GetAddressType(chainCode int64, address string) (string, error) {
+	start:=time.Now()
+	defer func() {
+		e.log.Printf("GetAddressType,Duration=%v",time.Now().Sub(start))
+	}()
 	query := `{
 				"id": 1,
 				"jsonrpc": "2.0",
@@ -187,6 +191,10 @@ func (e *Ether) GetBlockByNumber(chainCode int64, number string) (string, error)
 }
 
 func (e *Ether) GetTxByHash(chainCode int64, hash string) (string, error) {
+	start:=time.Now()
+	defer func() {
+		e.log.Printf("GetTxByHash,Duration=%v",time.Now().Sub(start))
+	}()
 	req := `
 		{
 		  "id": 1,
@@ -220,6 +228,10 @@ func NewEth(cluster map[int64][]*config.NodeCluster, xlog *xlog.XLog) API {
 	}
 }
 func (e *Ether) Balance(chainCode int64, address string, tag string) (string, error) {
+	start:=time.Now()
+	defer func() {
+		e.log.Printf("Balance,Duration=%v",time.Now().Sub(start))
+	}()
 	if len(tag) < 1 {
 		tag = "latest"
 	}
@@ -238,6 +250,10 @@ func (e *Ether) Balance(chainCode int64, address string, tag string) (string, er
 }
 
 func (e *Ether) TokenBalance(chainCode int64, address string, contractAddr string, abi string) (string, error) {
+	start:=time.Now()
+	defer func() {
+		e.log.Printf("TokenBalance,Duration=%v",time.Now().Sub(start))
+	}()
 	cluster := e.BalanceCluster(chainCode)
 	if cluster == nil {
 		//不存在节点

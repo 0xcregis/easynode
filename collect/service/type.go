@@ -6,14 +6,6 @@ const (
 	DateFormat = "20060102"
 )
 
-type NodeInfo struct {
-	Ip         string    `json:"ip"`
-	Host       string    `json:"host"`
-	Info       string    `json:"info"`   //json 对象
-	NodeId     string    `json:"nodeId"` //node 唯一标识
-	CreateTime time.Time `json:"createTime" gorm:"column:create_time"`
-}
-
 /**
 CREATE TABLE IF NOT EXISTS node.node_task
 (
@@ -40,30 +32,6 @@ type NodeTask struct {
 	TaskStatus  int       `json:"taskStatus" gorm:"column:task_status"` //0: 初始 1: 成功. 2: 失败.  3: 执行中 其他：重试次数
 	CreateTime  time.Time `json:"createTime" gorm:"column:create_time"`
 	LogTime     time.Time `json:"logTime" gorm:"column:log_time"`
-}
-
-/**
-CREATE TABLE `node_source` (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `block_chain` int NOT NULL COMMENT '公链code',
-  `tx_hash` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `block_hash` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `block_number` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `source_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT '0' COMMENT '任务类型\n0: 区块\n1:交易\n3.收据',
-  `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='任务来源表\n\n1. 自产生 block number\n2.重试任务: Tx, block\n3. 收据任务';
-
-*/
-
-type NodeSource struct {
-	Id          int64     `json:"id" gorm:"column:id"`
-	BlockChain  int       `json:"blockChain" gorm:"column:block_chain"` // 公链code
-	TxHash      string    `json:"txHash" gorm:"column:tx_hash"`
-	BlockHash   string    `json:"blockHash" gorm:"column:block_hash"`
-	BlockNumber string    `json:"blockNumber" gorm:"column:block_number"`
-	SourceType  int       `json:"sourceType" gorm:"column:source_type"` // 任务类型 1: 交易 2:区块 3.收据
-	CreateTime  time.Time `json:"createTime" gorm:"column:create_time"`
 }
 
 /**
@@ -135,6 +103,7 @@ type Tx struct {
 
 	TransactionIndex string `json:"transactionIndex" gorm:"column:transaction_index"`
 	Type             string `json:"type" gorm:"column:tx_type"`
+	Receipt          string `json:"receipt" gorm:"-"`
 }
 
 /**

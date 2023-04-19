@@ -2,7 +2,6 @@ package monitor
 
 import (
 	"fmt"
-	"github.com/sunjiangjun/xlog"
 	"github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service"
 	"github.com/uduncloud/easynode/common/util"
@@ -12,7 +11,6 @@ import (
 
 type Service struct {
 	logConfig config.LogConfig
-	log       *xlog.XLog
 }
 
 func (s *Service) Start() {
@@ -35,10 +33,6 @@ func (s *Service) Start() {
 				cmdLog := fmt.Sprintf("%v_%v", "cmd_log", datePath)
 				_ = util.DeleteFile(path.Join(p, cmdLog))
 
-				//
-				nodeInfoLog := fmt.Sprintf("%v_%v", "node_info_log", datePath)
-				_ = util.DeleteFile(path.Join(p, nodeInfoLog))
-
 				chainInfoLog := fmt.Sprintf("%v_%v", "chain_info_log", datePath)
 				_ = util.DeleteFile(path.Join(p, chainInfoLog))
 
@@ -54,9 +48,8 @@ func (s *Service) Stop() {
 	panic("implement me")
 }
 
-func NewService(logConfig *config.LogConfig, xg *xlog.XLog) *Service {
+func NewService(logConfig *config.LogConfig) *Service {
 	return &Service{
 		logConfig: *logConfig,
-		log:       xg,
 	}
 }

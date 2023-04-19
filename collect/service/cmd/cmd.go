@@ -14,8 +14,18 @@ import (
 	"github.com/uduncloud/easynode/collect/service/cmd/task/tron"
 	kafkaClient "github.com/uduncloud/easynode/common/kafka"
 	"github.com/uduncloud/easynode/common/util"
+	"math/rand"
 	"strings"
 	"time"
+)
+
+const (
+	KeyBlock       = "%v_block_%v"
+	KeyBlockById   = "%v_blockId_%v"
+	KeyTx          = "%v_tx_%v"
+	KeyTxById      = "%v_txId_%v"
+	KeyReceipt     = "%v_receipt_%v"
+	KeyReceiptById = "%v_receiptId_%v"
 )
 
 type Cmd struct {
@@ -121,7 +131,7 @@ func (c *Cmd) HandlerNodeTaskFromKafka(nodeId string, blockChain int, blockCh ch
 
 	//taskKafka read
 	go func() {
-		group := fmt.Sprintf("group_%v", blockChain)
+		group := fmt.Sprintf("group_%v_%v", blockChain, rand.Int())
 		topic := fmt.Sprintf("task_%v", blockChain)
 		c.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: topic, Group: group, Partition: 0}, receiver)
 	}()
@@ -139,23 +149,31 @@ func (c *Cmd) HandlerNodeTaskFromKafka(nodeId string, blockChain int, blockCh ch
 
 			if task.Id > 0 && task.NodeId == nodeId && task.TaskType == 1 && task.TaskStatus == 0 {
 				//交易任务
-				c.taskStore.StoreExecTask(fmt.Sprintf("%v_tx_%v", task.BlockChain, task.TxHash), &task)
+				if len(task.TxHash) > 0 {
+					c.taskStore.StoreExecTask(fmt.Sprintf(KeyTx, task.BlockChain, task.TxHash), &task)
+				} else {
+					c.taskStore.StoreExecTask(fmt.Sprintf(KeyTx, task.BlockChain, task.BlockHash+task.BlockNumber), &task)
+				}
 				txCh <- &task
 			}
 
 			if task.Id > 0 && task.NodeId == nodeId && task.TaskType == 2 && task.TaskStatus == 0 {
 				//区块任务
 				if len(task.BlockNumber) > 0 {
-					c.taskStore.StoreExecTask(fmt.Sprintf("%v_block_%v", task.BlockChain, task.BlockNumber), &task)
+					c.taskStore.StoreExecTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockNumber), &task)
 				} else if len(task.BlockHash) > 0 {
-					c.taskStore.StoreExecTask(fmt.Sprintf("%v_block_%v", task.BlockChain, task.BlockHash), &task)
+					c.taskStore.StoreExecTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockHash), &task)
 				}
 				blockCh <- &task
 			}
 
 			if task.Id > 0 && task.NodeId == nodeId && task.TaskType == 3 && task.TaskStatus == 0 {
 				//收据任务
-				c.taskStore.StoreExecTask(fmt.Sprintf("%v_receipt_%v", task.BlockChain, task.TxHash), &task)
+				if len(task.TxHash) > 0 {
+					c.taskStore.StoreExecTask(fmt.Sprintf(KeyReceipt, task.BlockChain, task.TxHash), &task)
+				} else {
+					c.taskStore.StoreExecTask(fmt.Sprintf(KeyReceipt, task.BlockChain, task.BlockHash+task.BlockNumber), &task)
+				}
 				receiptChan <- &task
 			}
 		}
@@ -195,31 +213,24 @@ func (c *Cmd) HandlerKafkaRespMessage(kafkaRespCh chan []*kafka.Message) {
 
 			//交易消息回调，如下处理
 			r := gjson.ParseBytes(msg.Value)
-			log.Printf("topic=%v,msg.value=%v", topic, string(msg.Value))
+			//log.Printf("topic=%v,msg.value=%v", topic, string(msg.Value))
 
 			//交易
 			if c.chain.TxTask != nil && topic == c.chain.TxTask.Kafka.Topic {
 				txHash := r.Get("hash").String()
-				ids = append(ids, fmt.Sprintf("%v_tx_%v", c.chain.BlockChainCode, txHash))
+				ids = append(ids, fmt.Sprintf(KeyTxById, c.chain.BlockChainCode, txHash))
 			}
 
 			//收据
 			if c.chain.ReceiptTask != nil && topic == c.chain.ReceiptTask.Kafka.Topic {
 				txHash := r.Get("transactionHash").String()
-				ids = append(ids, fmt.Sprintf("%v_receipt_%v", c.chain.BlockChainCode, txHash))
+				ids = append(ids, fmt.Sprintf(KeyReceiptById, c.chain.BlockChainCode, txHash))
 			}
 
 			//区块
 			if c.chain.BlockTask != nil && topic == c.chain.BlockTask.Kafka.Topic {
-				number := r.Get("number").String()
 				blockHash := r.Get("hash").String()
-
-				if len(number) > 0 {
-					ids = append(ids, fmt.Sprintf("%v_block_%v", c.chain.BlockChainCode, number))
-				} else if len(blockHash) > 1 {
-					ids = append(ids, fmt.Sprintf("%v_block_%v", c.chain.BlockChainCode, blockHash))
-				}
-
+				ids = append(ids, fmt.Sprintf(KeyBlock, c.chain.BlockChainCode, blockHash))
 			}
 
 		}
@@ -252,17 +263,11 @@ func (c *Cmd) ExecReceiptTask(receiptChan chan *service.NodeTask, kf chan []*kaf
 				<-buffCh
 			}()
 
-			key := fmt.Sprintf("%v_receipt_%v", taskReceipt.BlockChain, taskReceipt.TxHash)
-
-			err := c.taskStore.UpdateNodeTaskStatus(key, 3)
-			if err != nil {
-				err := c.taskStore.UpdateNodeTaskStatus(key, 2)
-				log.Errorf("UpdateNodeTaskStatus|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err, taskReceipt.Id)
-				return
-			}
-
 			//receiptList := make([]*service.Receipt, 0, 10)
 			if len(taskReceipt.TxHash) > 1 {
+				key := fmt.Sprintf(KeyReceipt, taskReceipt.BlockChain, taskReceipt.TxHash)
+				err := c.taskStore.UpdateNodeTaskStatus(key, 3)
+
 				//根据交易
 				receipt := c.blockChain.GetReceipt(taskReceipt.TxHash, c.chain.ReceiptTask, log)
 				if receipt == nil {
@@ -276,11 +281,23 @@ func (c *Cmd) ExecReceiptTask(receiptChan chan *service.NodeTask, kf chan []*kaf
 					log.Errorf("HandlerReceipt|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err.Error(), taskReceipt.Id)
 					return
 				}
-				kf <- []*kafka.Message{m}
+
+				//update status
 				_ = c.taskStore.UpdateNodeTaskStatus(key, 4) //成功
 
+				//reset key
+				newKey := fmt.Sprintf(KeyReceiptById, taskReceipt.BlockChain, receipt.TransactionHash)
+				_ = c.taskStore.ResetNodeTask(key, newKey)
+
+				kf <- []*kafka.Message{m}
+
 			} else {
+
 				//根据区块
+				key := fmt.Sprintf(KeyReceipt, taskReceipt.BlockChain, taskReceipt.BlockHash+taskReceipt.BlockNumber)
+				_ = c.taskStore.UpdateNodeTaskStatus(key, 3)
+
+				//读取区块
 				receiptList := c.blockChain.GetReceiptByBlock(taskReceipt.BlockHash, taskReceipt.BlockNumber, c.chain.ReceiptTask, log)
 
 				if receiptList == nil || len(receiptList) < 1 {
@@ -300,21 +317,16 @@ func (c *Cmd) ExecReceiptTask(receiptChan chan *service.NodeTask, kf chan []*kaf
 					if err != nil {
 						log.Errorf("HandlerReceipt|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err.Error(), taskReceipt.Id)
 						t.TaskStatus = 2 //失败
-						continue
+						//continue
 					} else {
 						t.TaskStatus = 4
 					}
 					kafkaMsgList = append(kafkaMsgList, m)
+					c.taskStore.StoreExecTask(fmt.Sprintf(KeyReceiptById, c.chain.BlockChainCode, receipt.TransactionHash), t)
 				}
 
-				if len(receiptTaskList) > 0 {
-					err = c.taskStore.AddNodeTask(receiptTaskList)
-					if err != nil {
-						log.Errorf("AddNodeTask|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err.Error(), taskReceipt.Id)
-						return
-					}
-
-					_ = c.taskStore.UpdateNodeTaskStatus(key, 1) //成功
+				if len(kafkaMsgList) > 0 {
+					_ = c.taskStore.UpdateNodeTaskStatus(key, 1) //成功、
 					if len(kafkaMsgList) > 0 {
 						kf <- kafkaMsgList
 					}
@@ -348,7 +360,7 @@ func (c *Cmd) ExecTxTask(nodeId string, txCh chan *service.NodeTask, kf chan []*
 					<-buffCh
 				}()
 
-				key := fmt.Sprintf("%v_tx_%v", txTask.BlockChain, txTask.TxHash)
+				key := fmt.Sprintf(KeyTx, txTask.BlockChain, txTask.TxHash)
 
 				err := c.taskStore.UpdateNodeTaskStatus(key, 3)
 				if err != nil {
@@ -375,11 +387,17 @@ func (c *Cmd) ExecTxTask(nodeId string, txCh chan *service.NodeTask, kf chan []*
 
 				//写入receipt task
 				if c.chain.PullReceipt {
-					_ = c.taskStore.AddNodeTask([]*service.NodeTask{{BlockChain: c.chain.BlockChainCode, TxHash: tx.TxHash, BlockHash: tx.BlockHash, BlockNumber: tx.BlockNumber, TaskType: 3, TaskStatus: 0, NodeId: taskTx.NodeId}})
+					_ = c.taskStore.SendNodeTask([]*service.NodeTask{{BlockChain: c.chain.BlockChainCode, TxHash: tx.TxHash, BlockHash: tx.BlockHash, BlockNumber: tx.BlockNumber, TaskType: 3, TaskStatus: 0, NodeId: taskTx.NodeId}})
 				}
 
-				kf <- []*kafka.Message{m}
+				//update status
 				_ = c.taskStore.UpdateNodeTaskStatus(key, 4) //成功
+
+				//reset key
+				newKey := fmt.Sprintf(KeyTxById, txTask.BlockChain, tx.TxHash)
+				_ = c.taskStore.ResetNodeTask(key, newKey)
+
+				kf <- []*kafka.Message{m}
 
 			}(txTask, buffCh, kf, log)
 
@@ -389,7 +407,7 @@ func (c *Cmd) ExecTxTask(nodeId string, txCh chan *service.NodeTask, kf chan []*
 				defer func() {
 					<-buffCh
 				}()
-				key := fmt.Sprintf("%v_tx_%v", txTask.BlockChain, txTask.TxHash)
+				key := fmt.Sprintf(KeyTx, txTask.BlockChain, txTask.BlockHash+txTask.BlockNumber)
 				err := c.taskStore.UpdateNodeTaskStatus(key, 3)
 				if err != nil {
 					log.Errorf("UpdateNodeTaskStatus|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err, taskTx.Id)
@@ -413,13 +431,13 @@ func (c *Cmd) ExecTxTask(nodeId string, txCh chan *service.NodeTask, kf chan []*
 				//发出tx
 				if txList != nil && len(txList) > 0 {
 					txMessageList := make([]*kafka.Message, 0, len(txList))
-					txTaskList := make([]*service.NodeTask, 0, len(txList))
+					//txTaskList := make([]*service.NodeTask, 0, len(txList))
 					receiptsTaskList := make([]*service.NodeTask, 0, len(txList))
 
 					for _, v := range txList {
 						//交易任务
 						t := &service.NodeTask{NodeId: taskTx.NodeId, BlockNumber: taskTx.BlockNumber, BlockHash: taskTx.BlockHash, TxHash: v.TxHash, TaskType: 1, BlockChain: taskTx.BlockChain, TaskStatus: 3}
-						txTaskList = append(txTaskList, t)
+						//txTaskList = append(txTaskList, t)
 
 						//收据任务
 						s := &service.NodeTask{NodeId: taskTx.NodeId, BlockChain: c.chain.BlockChainCode, TxHash: v.TxHash, BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, TaskType: 3, TaskStatus: 0}
@@ -437,30 +455,27 @@ func (c *Cmd) ExecTxTask(nodeId string, txCh chan *service.NodeTask, kf chan []*
 							t.TaskStatus = 4
 							txMessageList = append(txMessageList, m)
 						}
+
+						c.taskStore.StoreExecTask(fmt.Sprintf(KeyTxById, c.chain.BlockChainCode, t.TxHash), t)
 					}
 
 					//未分配的收据任务
 					//写入receipt task
-					if len(txTaskList) > 0 && c.chain.PullReceipt {
+					if len(receiptsTaskList) > 0 && c.chain.PullReceipt {
 
 						//tron 不支持 批量获取收据
 						if c.chain.BlockChainCode == 205 {
-							_ = c.taskStore.AddNodeTask(receiptsTaskList)
+							_ = c.taskStore.SendNodeTask(receiptsTaskList)
 						} else {
 							//其他公链，则 批量获取收据
 							//根据区块获取收据，则 tx_hash 必需未空
 							task := &service.NodeTask{BlockChain: c.chain.BlockChainCode, TxHash: "", BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, TaskType: 3, TaskStatus: 0, NodeId: taskTx.NodeId}
-							err := c.taskStore.AddNodeTask([]*service.NodeTask{task})
+							err := c.taskStore.SendNodeTask([]*service.NodeTask{task})
 							if err != nil {
 								log.Errorf("AddNodeSource|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err.Error(), taskTx.Id)
 							}
 						}
 
-					}
-
-					//更新交易状态
-					if len(txTaskList) > 0 {
-						_ = c.taskStore.AddNodeTask(txTaskList)
 					}
 
 					//批量发送到Kafka
@@ -500,9 +515,9 @@ func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Mes
 
 			var key string
 			if len(taskBlock.BlockNumber) > 0 {
-				key = fmt.Sprintf("%v_block_%v", taskBlock.BlockChain, taskBlock.BlockNumber)
+				key = fmt.Sprintf(KeyBlock, taskBlock.BlockChain, taskBlock.BlockNumber)
 			} else if len(taskBlock.BlockHash) > 0 {
-				key = fmt.Sprintf("%v_block_%v", taskBlock.BlockChain, taskBlock.BlockHash)
+				key = fmt.Sprintf(KeyBlock, taskBlock.BlockChain, taskBlock.BlockHash)
 			}
 
 			err := c.taskStore.UpdateNodeTaskStatus(key, 3)
@@ -528,7 +543,7 @@ func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Mes
 			//发出批量交易任务
 			if c.chain.PullTx {
 				s := &service.NodeTask{NodeId: taskBlock.NodeId, BlockChain: taskBlock.BlockChain, BlockNumber: taskBlock.BlockNumber, BlockHash: taskBlock.BlockHash, TaskType: 1, TaskStatus: 0}
-				err = c.taskStore.AddNodeTask([]*service.NodeTask{s})
+				err = c.taskStore.SendNodeTask([]*service.NodeTask{s})
 				if err != nil {
 					_ = c.taskStore.UpdateNodeTaskStatus(key, 2) //失败
 					log.Errorf("AddNodeSource|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, "push task is error with batch tx by block", taskBlock.Id)
@@ -550,9 +565,12 @@ func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Mes
 				return
 			}
 
+			//重置缓存key
+			newKey := fmt.Sprintf(KeyBlockById, taskBlock.BlockChain, block.BlockHash)
+			_ = c.taskStore.ResetNodeTask(key, newKey)
+
 			//区块发送到Kafka
 			kf <- []*kafka.Message{m}
-
 		}(blockTask, buffCh, kf, log)
 	}
 

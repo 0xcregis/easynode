@@ -14,10 +14,11 @@ type StoreTaskInterface interface {
 	GetTaskWithTx(blockChain int, nodeId string) ([]*NodeTask, error)
 	GetTaskWithReceipt(blockChain int, nodeId string) ([]*NodeTask, error)
 	GetTaskWithBlock(blockChain int, nodeId string) ([]*NodeTask, error)
-	AddNodeTask(list []*NodeTask) error
+	SendNodeTask(list []*NodeTask) error
 	UpdateNodeTaskStatus(key string, status int) error
 	UpdateNodeTaskStatusWithBatch(keys []string, status int) error
-
+	GetNodeTask(key string) (*NodeTask, error)
+	ResetNodeTask(oldKey, key string) error
 	StoreExecTask(key string, task *NodeTask)
 }
 

@@ -11,6 +11,7 @@ import (
 	"github.com/uduncloud/easynode/collect/service"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Service struct {
@@ -29,6 +30,10 @@ func (s *Service) BalanceCluster(key string, clusterList []*config.FromCluster) 
 }
 
 func (s *Service) GetBlockByHash(blockHash string, cfg *config.BlockTask, eLog *logrus.Entry) (*service.Block, []*service.Tx) {
+	start := time.Now()
+	defer func() {
+		eLog.Printf("GetBlockByHash.Duration =%v", time.Now().Sub(start))
+	}()
 	//调用接口
 	resp, err := s.blockChainClient.GetBlockByHash(int64(s.chain.BlockChainCode), blockHash)
 	//resp, err := ether.Eth_GetBlockByHash(cluster.Host, cluster.Key, blockHash, s.log)
@@ -47,10 +52,30 @@ func (s *Service) GetBlockByHash(blockHash string, cfg *config.BlockTask, eLog *
 
 	//解析数据
 	block, txList := service.GetBlockFromJson(resp)
+	//for _, tx := range txList {
+	//	// 补充字段
+	//
+	//	tp, err := s.txChainClient.GetAddressType(int64(s.chain.BlockChainCode), tx.ToAddr)
+	//	if err == nil {
+	//		tx.Type = tp
+	//	}
+	//
+	//	rp, err := s.receiptChainClient.GetTransactionReceiptByHash(int64(s.chain.BlockChainCode), tx.TxHash)
+	//
+	//	if err == nil {
+	//		tx.Receipt = rp
+	//	}
+	//}
 	return block, txList
 }
 
 func (s *Service) GetBlockByNumber(blockNumber string, task *config.BlockTask, eLog *logrus.Entry) (*service.Block, []*service.Tx) {
+
+	start := time.Now()
+	defer func() {
+		eLog.Printf("GetBlockByNumber.Duration =%v", time.Now().Sub(start))
+	}()
+
 	if !strings.HasPrefix(blockNumber, "0x") {
 		n, _ := strconv.ParseInt(blockNumber, 10, 64)
 		blockNumber = fmt.Sprintf("0x%x", n)
@@ -74,6 +99,21 @@ func (s *Service) GetBlockByNumber(blockNumber string, task *config.BlockTask, e
 
 	//解析数据
 	block, txList := service.GetBlockFromJson(resp)
+
+	//for _, tx := range txList {
+	//	// 补充字段
+	//
+	//	tp, err := s.txChainClient.GetAddressType(int64(s.chain.BlockChainCode), tx.ToAddr)
+	//	if err == nil {
+	//		tx.Type = tp
+	//	}
+	//
+	//	rp, err := s.receiptChainClient.GetTransactionReceiptByHash(int64(s.chain.BlockChainCode), tx.TxHash)
+	//
+	//	if err == nil {
+	//		tx.Receipt = rp
+	//	}
+	//}
 	return block, txList
 }
 
@@ -96,6 +136,19 @@ func (s *Service) GetTx(txHash string, task *config.TxTask, eLog *logrus.Entry) 
 
 	//解析数据
 	tx := service.GetTxFromJson(resp)
+
+	// 补充字段
+
+	tp, err := s.txChainClient.GetAddressType(int64(s.chain.BlockChainCode), tx.ToAddr)
+	if err == nil {
+		tx.Type = tp
+	}
+
+	rp, err := s.receiptChainClient.GetTransactionReceiptByHash(int64(s.chain.BlockChainCode), tx.TxHash)
+
+	if err == nil {
+		tx.Receipt = rp
+	}
 	return tx
 }
 

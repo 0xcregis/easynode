@@ -4,7 +4,7 @@ type Config struct {
 	NodeTaskDb          *NodeTaskDb    `json:"NodeTaskDb"`
 	AutoCreateBlockTask bool           `json:"AutoCreateBlockTask"`
 	BlockConfigs        []*BlockConfig `json:"Chains"`
-	Kafka               *Kafka         `json:"Kafka"`
+	TaskKafka           *Kafka         `json:"TaskKafka"`
 }
 
 type Kafka struct {

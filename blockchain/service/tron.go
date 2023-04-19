@@ -36,10 +36,10 @@ func (t *Tron) GetAddressType(chainCode int64, address string) (string, error) {
 
 	if gjson.Parse(resp).Get("code_hash").Exists() {
 		//合约地址
-		return "0x2", nil
+		return "0x12", nil
 	} else {
 		//外部地址
-		return "0x1", nil
+		return "0x11", nil
 	}
 }
 

@@ -56,10 +56,10 @@ func (e *Ether) GetAddressType(chainCode int64, address string) (string, error) 
 	code := gjson.Parse(resp).Get("result").String()
 	if len(code) > 5 {
 		//合约地址
-		return "0x2", nil
+		return "0x12", nil
 	} else {
 		//外部地址
-		return "0x1", nil
+		return "0x11", nil
 	}
 }
 

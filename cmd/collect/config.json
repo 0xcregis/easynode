@@ -7,7 +7,9 @@
     {
       "TaskKafka": {
         "Host": "192.168.2.20",
-        "Port": 9092
+        "Port": 9092,
+        "Topic": "11",
+        "StartOffset": -1
       },
       "Kafka": {
         "Host": "192.168.2.20",

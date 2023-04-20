@@ -15,7 +15,6 @@ import (
 	"github.com/uduncloud/easynode/collect/service/cmd/task/tron"
 	kafkaClient "github.com/uduncloud/easynode/common/kafka"
 	"github.com/uduncloud/easynode/common/util"
-	"math/rand"
 	"strings"
 	"time"
 )
@@ -139,9 +138,9 @@ func (c *Cmd) HandlerNodeTaskFromKafka(nodeId string, blockChain int, blockCh ch
 
 	//taskKafka read
 	go func() {
-		group := fmt.Sprintf("group_%v_%v", blockChain, rand.Intn(1000))
+		group := fmt.Sprintf("group_%v_%v", blockChain, c.chain.TaskKafka.Topic)
 		topic := fmt.Sprintf("task_%v", blockChain)
-		c.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: topic, Group: group, Partition: 0, StartOffset: -1}, receiver, ctx)
+		c.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: topic, Group: group, Partition: 0, StartOffset: c.chain.TaskKafka.StartOffset}, receiver, ctx)
 	}()
 
 	for true {

@@ -1,6 +1,7 @@
 package ether
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
@@ -52,6 +53,19 @@ func (s *Service) GetBlockByHash(blockHash string, cfg *config.BlockTask, eLog *
 
 	//解析数据
 	block, txList := service.GetBlockFromJson(resp)
+
+	list := s.GetReceiptByBlock(block.BlockHash, block.BlockNumber, nil, eLog)
+
+	for _, v := range txList {
+		for _, r := range list {
+			if v.TxHash == r.TransactionHash {
+				bs, _ := json.Marshal(r)
+				v.Receipt = string(bs)
+				break
+			}
+		}
+	}
+
 	//for _, tx := range txList {
 	//	// 补充字段
 	//
@@ -99,6 +113,17 @@ func (s *Service) GetBlockByNumber(blockNumber string, task *config.BlockTask, e
 
 	//解析数据
 	block, txList := service.GetBlockFromJson(resp)
+
+	list := s.GetReceiptByBlock(block.BlockHash, block.BlockNumber, nil, eLog)
+	for _, v := range txList {
+		for _, r := range list {
+			if v.TxHash == r.TransactionHash {
+				bs, _ := json.Marshal(r)
+				v.Receipt = string(bs)
+				break
+			}
+		}
+	}
 
 	//for _, tx := range txList {
 	//	// 补充字段

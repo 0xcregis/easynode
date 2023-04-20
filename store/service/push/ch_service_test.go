@@ -1,7 +1,6 @@
 package push
 
 import (
-	"context"
 	"github.com/sunjiangjun/xlog"
 	"github.com/uduncloud/easynode/store/config"
 	"github.com/uduncloud/easynode/store/service"
@@ -23,36 +22,4 @@ func TestClickhouseDb_AddMonitorAddress(t *testing.T) {
 func TestClickhouseDb_GetAddressByToken(t *testing.T) {
 	s := Init()
 	log.Println(s.GetAddressByToken(200, "5fe5f231-7051-4caf-9b52-108db92edbb4"))
-}
-
-func TestName(t *testing.T) {
-
-	ctx, cancel := context.WithCancel(context.Background())
-
-	//c, _ := context.WithCancel(ctx)
-
-	go func(ctx2 context.Context) {
-		for {
-			select {
-			case <-ctx2.Done():
-				log.Println("2 done")
-				return
-			}
-		}
-	}(ctx)
-
-	go func(ctx2 context.Context) {
-		for {
-			select {
-			case <-ctx2.Done():
-				log.Println("1 done")
-				return
-			}
-		}
-	}(ctx)
-
-	time.Sleep(5 * time.Second)
-	cancel()
-
-	time.Sleep(5 * time.Second)
 }

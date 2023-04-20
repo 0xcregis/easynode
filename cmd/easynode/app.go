@@ -64,7 +64,7 @@ func startTaskApi() {
 
 	log.Printf("%+v\n", cfg)
 
-	xLog := xlog.NewXLogger().BuildOutType(1).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/task_api", 24*time.Hour)
+	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/task_api", 24*time.Hour)
 
 	e := gin.Default()
 
@@ -101,7 +101,7 @@ func startBlockchain() {
 
 	log.Printf("%+v\n", cfg)
 
-	xLog := xlog.NewXLogger().BuildOutType(1).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/blockchain", 24*time.Hour)
+	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/blockchain", 24*time.Hour)
 
 	e := gin.Default()
 
@@ -169,10 +169,9 @@ func startCollect() {
 
 	log.Printf("%+v\n", cfg)
 
-	x := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/node_info", cfg.LogConfig.Path), 24*time.Hour)
 
 	//启动处理日志服务
-	collectMonitor.NewService(cfg.LogConfig, x).Start()
+	collectMonitor.NewService(cfg.LogConfig).Start()
 
 	//启动公链服务
 	for _, v := range cfg.Chains {

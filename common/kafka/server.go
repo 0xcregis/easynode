@@ -33,10 +33,10 @@ func NewEasyKafka(xLog *xlog.XLog) *EasyKafka {
 	}
 }
 
-func (easy *EasyKafka) Read(c *Config, ch chan *kafka.Message) {
-	if c.StartOffset == 0 {
-		c.StartOffset = kafka.LastOffset
-	}
+func (easy *EasyKafka) Read(c *Config, ch chan *kafka.Message, ctx context.Context) {
+	//if c.StartOffset == 0 {
+	//	c.StartOffset = kafka.LastOffset
+	//}
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:     c.Brokers,
 		Topic:       c.Topic,
@@ -50,10 +50,18 @@ func (easy *EasyKafka) Read(c *Config, ch chan *kafka.Message) {
 	})
 	//r.SetOffset(0)
 
+	defer func() {
+		if err := r.Close(); err != nil {
+			easy.log.Fatal("kafka|read| failed to close reader:", err)
+		}
+	}()
+
 	errCh := make(chan int)
 
+	interrupt := true
+
 	go func(r *kafka.Reader, ch chan *kafka.Message, errCh chan int) {
-		for {
+		for interrupt {
 			m, err := r.ReadMessage(context.Background())
 			if err != nil {
 				easy.log.Errorf("kafka|read|ReadMessage err:%v", err)
@@ -63,12 +71,17 @@ func (easy *EasyKafka) Read(c *Config, ch chan *kafka.Message) {
 			easy.log.Printf("kafka|read message at offset %d: %s ", m.Offset, string(m.Key))
 			ch <- &m
 		}
+
 	}(r, ch, errCh)
 
-	<-errCh
-	if err := r.Close(); err != nil {
-		easy.log.Fatal("kafka|read| failed to close reader:", err)
+	select {
+	case <-errCh:
+		break
+	case <-ctx.Done():
+		break
 	}
+	interrupt = false
+	time.Sleep(2 * time.Second)
 }
 
 func (easy *EasyKafka) WriteBatch(c *Config, ch chan []*kafka.Message, resp chan []*kafka.Message) {

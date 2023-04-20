@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/segmentio/kafka-go"
@@ -91,6 +92,15 @@ func (c *Cmd) Start() {
 		panic(err)
 	}
 
+	//task kafka write
+	go func() {
+		broker := fmt.Sprintf("%v:%v", c.chain.TaskKafka.Host, c.chain.TaskKafka.Port)
+		//taskKafka write
+		go func() {
+			c.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker}}, c.taskKafkaCh, nil)
+		}()
+	}()
+
 	go c.HandlerNodeTaskFromKafka(nodeId, c.chain.BlockChainCode, c.blockChan, c.txChan, c.receiptChan)
 
 	//配置了区块执行计划
@@ -124,16 +134,14 @@ func (c *Cmd) HandlerNodeTaskFromKafka(nodeId string, blockChain int, blockCh ch
 	receiver := make(chan *kafka.Message)
 	broker := fmt.Sprintf("%v:%v", c.chain.TaskKafka.Host, c.chain.TaskKafka.Port)
 
-	//taskKafka write
-	go func() {
-		c.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker}}, c.taskKafkaCh, nil)
-	}()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	//taskKafka read
 	go func() {
-		group := fmt.Sprintf("group_%v_%v", blockChain, rand.Int())
+		group := fmt.Sprintf("group_%v_%v", blockChain, rand.Intn(1000))
 		topic := fmt.Sprintf("task_%v", blockChain)
-		c.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: topic, Group: group, Partition: 0}, receiver)
+		c.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: topic, Group: group, Partition: 0, StartOffset: -1}, receiver, ctx)
 	}()
 
 	for true {

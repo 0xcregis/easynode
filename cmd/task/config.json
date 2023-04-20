@@ -1,5 +1,5 @@
 {
-  "Kafka": {
+  "TaskKafka": {
     "Host": "192.168.2.20",
     "Port": 9092
   },
@@ -10,7 +10,7 @@
       "NodeKey": "RzxBjjh_c4y0LVHZ7GNm8zoXEZR3HYop",
       "BlockChainName": "eth",
       "BlockChainCode": 200,
-      "BlockMin": 16993919,
+      "BlockMin": 17077918,
       "BlockMax": 0
     },
     {
@@ -18,7 +18,7 @@
       "NodeKey": "244f918d-56b5-4a16-9665-9637598b1223",
       "BlockChainName": "tron",
       "BlockChainCode": 205,
-      "BlockMin": 50074867,
+      "BlockMin": 50420250,
       "BlockMax": 0
     }
   ]

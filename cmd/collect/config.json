@@ -22,7 +22,7 @@
       "BlockChainCode": 200,
       "NodeWeight": 1,
       "PullReceipt": false,
-      "PullTx": false,
+      "PullTx": true,
       "BlockTask": {
         "FromCluster": [
           {

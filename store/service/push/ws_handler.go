@@ -1,49 +1,56 @@
-package service
+package push
 
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
-	"github.com/tidwall/gjson"
-	"github.com/uduncloud/easynode/blockchain/config"
+	kafkaClient "github.com/uduncloud/easynode/common/kafka"
+	"github.com/uduncloud/easynode/store/config"
+	"github.com/uduncloud/easynode/store/service"
+	"log"
+	"net"
 	"net/http"
-	"strconv"
+	"strings"
 	"time"
 )
 
 type WsHandler struct {
-	log               *xlog.XLog
-	nodeCluster       map[int64][]*config.NodeCluster
-	blockChainClients map[int64]API
+	log     *xlog.XLog
+	cfg     *config.Config
+	kafka   *kafkaClient.EasyKafka
+	db      service.DbMonitorAddressInterface
+	connMap map[string]*websocket.Conn
+	cmdMap  map[string]service.WsReqMessage
+	ctxMap  map[string]context.CancelFunc
 }
 
-func NewWsHandler(cluster map[int64][]*config.NodeCluster, xlog *xlog.XLog) *WsHandler {
-
-	blockChainClients := make(map[int64]API, 0)
-
-	for k, _ := range cluster {
-		if k == 200 {
-			bc := NewEth(cluster, xlog)
-			blockChainClients[k] = bc
-		}
-		if k == 205 {
-			bc := NewTron(cluster, xlog)
-			blockChainClients[k] = bc
-		}
-	}
-
+func NewWsHandler(cfg *config.Config, xlog *xlog.XLog) *WsHandler {
+	kfk := kafkaClient.NewEasyKafka(xlog)
+	db := NewChService(cfg, xlog)
 	return &WsHandler{
-		log:               xlog,
-		nodeCluster:       cluster,
-		blockChainClients: blockChainClients,
+		log:     xlog,
+		db:      db,
+		cfg:     cfg,
+		kafka:   kfk,
+		connMap: make(map[string]*websocket.Conn, 5),
+		cmdMap:  make(map[string]service.WsReqMessage, 5),
+		ctxMap:  make(map[string]context.CancelFunc, 5),
 	}
 }
 
-func (s *WsHandler) Start(w http.ResponseWriter, r *http.Request) {
+func (ws *WsHandler) Start(ctx *gin.Context, w http.ResponseWriter, r *http.Request) {
+
+	token := ctx.Param("token")
+	if len(token) < 1 {
+		resp := "{\"code\":1,\"data\":\"not found token\"}"
+		_, _ = ctx.Writer.Write([]byte(resp))
+		return
+	}
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -54,331 +61,226 @@ func (s *WsHandler) Start(w http.ResponseWriter, r *http.Request) {
 	} // use default options
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		s.log.Errorf("upgrade|err=%v", err)
+		ws.log.Errorf("upgrade|err=%v", err)
 		return
 	}
 	defer c.Close()
 
+	if old, ok := ws.connMap[token]; ok {
+		old.Close()
+		delete(ws.connMap, token)
+	}
+	ws.connMap[token] = c
+
+	c.SetPingHandler(func(message string) error {
+		err := c.WriteControl(websocket.PongMessage, []byte(message), time.Now().Add(1*time.Second))
+		if err == websocket.ErrCloseSent {
+			return nil
+		} else if e, ok := err.(net.Error); ok && e.Temporary() {
+			return nil
+		}
+		return err
+	})
+
+	cx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	PongCh := make(chan string)
+	c.SetPongHandler(func(appData string) error {
+		PongCh <- appData
+		return nil
+	})
+
+	//监听
+	go func(PongCh chan string, ws *WsHandler, token string, cancel context.CancelFunc) {
+		ticker := time.NewTicker(10 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-PongCh: //收到 客户端响应
+				ticker.Reset(10 * time.Minute)
+				continue
+			case <-ticker.C: //已经超时，仍然未收到客户端的响应
+				//清理
+				delete(ws.cmdMap, token)
+				if c, ok := ws.connMap[token]; ok {
+					_ = c.Close()
+				}
+				delete(ws.connMap, token)
+				cancel()
+				return
+			}
+		}
+
+	}(PongCh, ws, token, cancel)
+
+	//定时发送 ping 命令
+	go func(ws *websocket.Conn, token string, ctx2 context.Context) {
+		ticker := time.NewTicker(2 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				if err := ws.WriteControl(websocket.PingMessage, []byte(token), time.Now().Add(10*time.Second)); err != nil {
+					log.Println("ping:", err)
+				}
+			case <-ctx2.Done():
+				return
+			}
+		}
+	}(c, token, cx)
+
+	//tx->push
+	//go ws.sendMessage(token, ws.cfg.KafkaCfg["Tx"], ws.cfg.BlockChain, cx)
+
+	//read cmd
 	for {
-		log := s.log.WithFields(logrus.Fields{
+
+		log := ws.log.WithFields(logrus.Fields{
 			"id":    time.Now().UnixMilli(),
 			"model": "ws.start",
 		})
 
 		mt, message, err := c.ReadMessage()
 		if err != nil {
-			log.Errorf("ReadMessage|err=%v", err)
-			continue
+			fmt.Printf("ReadMessage|err=%v", err)
+			cancel()
+			break
 		}
 		//log.Printf("ReadMessage: %s", message)
+		ws.handlerMessage(cx, token, c, mt, message, log)
+	}
 
-		go s.handlerMessage(c, mt, message, log)
+	//延迟时间，待其他服务清理
+	<-time.After(3 * time.Second)
+
+}
+
+// kafka->ws.push
+func (ws *WsHandler) sendMessage(token string, kafkaConfig *config.KafkaConfig, blockChain int64, ctx context.Context) {
+	receiver := make(chan *kafka.Message)
+	go func(ctx context.Context) {
+		broker := fmt.Sprintf("%v:%v", kafkaConfig.Host, kafkaConfig.Port)
+		group := fmt.Sprintf("group_push_%v", kafkaConfig.Group)
+		ws.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: kafkaConfig.Topic, Group: group, Partition: kafkaConfig.Partition, StartOffset: kafkaConfig.StartOffset}, receiver, ctx)
+	}(ctx)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case msg := <-receiver:
+			var tx service.Tx
+			err := json.Unmarshal(msg.Value, &tx)
+			if err != nil {
+				ws.log.Errorf("sendMessage|error=%v", err.Error())
+				continue
+			}
+			//消息过滤
+			//根据这个用户（token）最新的订阅命令，筛选符合条件的交易且推送出去
+			//todo filter
+			if v, ok := ws.cmdMap[token]; !ok {
+				//用户不在线
+				continue
+			} else {
+				//用户在线
+				if v.BlockChain != blockChain { //不是该链
+					continue
+				}
+				if _, ok := ws.cmdMap[token]; !ok { //没有订阅
+					continue
+				}
+
+				// 其他各类交易
+				//该用户订阅的地址 是否和该交易相匹配
+				//不匹配 则返回
+				list, err := ws.db.GetAddressByToken(blockChain, token)
+				if err != nil {
+					continue
+				}
+
+				has := false
+				for _, v := range list {
+
+					//todo 该交易是否是订阅的类型交易
+					//if v.TxType== tx.Type {
+					// has=true
+					//}
+
+					//todo 普通交易且 地址不包含订阅地址
+					if !strings.HasPrefix(tx.FromAddr, v.Address) && !strings.HasPrefix(tx.ToAddr, v.Address) {
+						has = true
+						continue
+					}
+					//todo 合约交易
+				}
+
+				if !has {
+					continue
+				}
+
+			}
+
+			wpm := service.WsPushMessage{Code: 1, BlockChain: blockChain, Data: tx}
+			bs, _ := json.Marshal(wpm)
+			err = ws.connMap[token].WriteMessage(websocket.TextMessage, bs)
+			if err != nil {
+				ws.log.Errorf("sendMessage|error=%v", err.Error())
+			}
+
+		}
+
+		time.Sleep(1 * time.Second)
 	}
 }
 
-func (s *WsHandler) handlerMessage(c *websocket.Conn, mt int, message []byte, log *logrus.Entry) {
+func (ws *WsHandler) handlerMessage(ctx context.Context, token string, c *websocket.Conn, mt int, message []byte, log *logrus.Entry) {
 
 	//根据命令不同执行不同函数
-	var msg WsReqMessage
-	var returnMsg WsRespMessage
+	var msg service.WsReqMessage
+	var returnMsg service.WsRespMessage
 
 	err := json.Unmarshal(message, &msg)
 	if err != nil {
-		errMsg := &WsRespMessage{Id: msg.Id, Code: msg.Code, Err: err.Error(), Params: msg.Params, Status: 1, Resp: nil}
-		s.returnMsg(errMsg, log, mt, c)
+		errMsg := &service.WsRespMessage{Id: msg.Id, Code: msg.Code, Err: err.Error(), Params: msg.Params, Status: 1, BlockChain: msg.BlockChain, Resp: nil}
+		ws.returnMsg(errMsg, log, mt, c)
 		return
 	}
 	//初始化返回
 	returnMsg.Id = msg.Id
 	returnMsg.Code = msg.Code
 	returnMsg.Params = msg.Params
+	returnMsg.BlockChain = msg.BlockChain
 	returnMsg.Status = 0
 
-	//最终返回
-	defer func(r *WsRespMessage) {
-		s.returnMsg(r, log, mt, c)
-	}(&returnMsg)
-
-	returnCh := make(chan interface{})
-	errCh := make(chan error)
-
-	log.Printf("request.WsReqMessage=%+v", msg)
-	blockChain, err := strconv.ParseInt(msg.Params["blockChain"], 0, 64)
-	if err != nil {
-		returnMsg.Status = 1
-		returnMsg.Err = err.Error()
-		returnMsg.Resp = nil
-		return
-	}
-	go s.requestMsg(&msg, log, errCh, returnCh, blockChain)
-
-	select {
-	case err = <-errCh:
-		{
+	//最新一次命令
+	if msg.Code == 1 || msg.Code == 3 {
+		//仅能保存一个订阅的命令
+		if _, ok := ws.cmdMap[token]; ok {
+			//已经订阅了，则返回订阅失败
 			returnMsg.Status = 1
-			returnMsg.Err = err.Error()
-			returnMsg.Resp = nil
+		} else {
+			//未订阅时，则订阅成功
+			ws.cmdMap[token] = msg
+			kafkaCtx, cancel := context.WithCancel(ctx)
+			ws.ctxMap[token] = cancel
+			go ws.sendMessage(token, ws.cfg.KafkaCfg["Tx"], ws.cfg.BlockChain, kafkaCtx)
 		}
-	case r := <-returnCh:
-		{
-			returnMsg.Status = 0
-			returnMsg.Resp = r
+	} else if msg.Code == 2 || msg.Code == 4 {
+		if f, ok := ws.ctxMap[token]; ok {
+			f()
 		}
+		delete(ws.ctxMap, token)
+		delete(ws.cmdMap, token)
 	}
+
+	//最终返回
+	defer func(r *service.WsRespMessage) {
+		ws.returnMsg(r, log, mt, c)
+	}(&returnMsg)
 }
 
-func (s *WsHandler) requestMsg(msg *WsReqMessage, log *logrus.Entry, errCh chan error, returnCh chan interface{}, blockChain int64) {
-	switch msg.Code {
-	case 1: //单笔交易
-		{
-			//set txHash value  from message
-			var txHash string
-			if v, ok := msg.Params["txHash"]; ok {
-				txHash = v
-			} else {
-				errMsg := fmt.Sprintf("msg.code=%v,err=%v", msg.Code, "not found txHash")
-				log.Errorf(errMsg)
-				errCh <- errors.New(errMsg)
-				return
-			}
-
-			//是否同步参数
-			sync := "0"
-			if v, ok := msg.Params["sync"]; ok {
-				sync = v
-			} else {
-				sync = "0"
-			}
-
-			//异步请求 sync="0"
-			if sync == "0" {
-				t, err := s.blockChainClients[blockChain].GetTxByHash(blockChain, txHash)
-				if err != nil {
-					errMsg := fmt.Sprintf("function=%v,msg.code=%v,err=%v", "GetTxByHash", msg.Code, err.Error())
-					log.Errorf(errMsg)
-					errCh <- errors.New(errMsg)
-					return
-				}
-				returnCh <- t
-				return
-			}
-
-			//同步请求 sync=1
-			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
-			defer cancel()
-			interrupt := true
-			tempCh := make(chan interface{})
-			go func(blockChain int64, txHash string, tempCh chan interface{}, cancel context.CancelFunc) {
-				for sync == "1" && interrupt {
-					t, err := s.blockChainClients[blockChain].GetTxByHash(blockChain, txHash)
-					if err != nil {
-						cancel()
-						break
-					}
-
-					r := gjson.Parse(t)
-					log.Println("result=", r.Get("result").String())
-					if !r.Get("result").Exists() || (r.Get("result").String() == "") {
-						time.Sleep(10 * time.Second)
-						continue
-					}
-
-					tempCh <- t
-				}
-			}(blockChain, txHash, tempCh, cancel)
-
-			select {
-			case <-ctx.Done():
-				interrupt = false
-				errMsg := fmt.Sprintf("function=%v,msg.code=%v,err=%v", "GetTxByHash", msg.Code, "timeout")
-				log.Errorf(errMsg)
-				errCh <- errors.New(errMsg)
-			case r := <-tempCh:
-				returnCh <- r
-			}
-
-		}
-
-	case 2: //单笔区块
-		{
-			//set blockHash value  from message
-			var blockHash string
-			if v, ok := msg.Params["blockHash"]; ok {
-				blockHash = v
-			} else {
-				errMsg := fmt.Sprintf("msg.code=%v,err=%v", msg.Code, "not found blockHash")
-				log.Errorf(errMsg)
-				errCh <- errors.New(errMsg)
-				return
-			}
-
-			block, err := s.blockChainClients[blockChain].GetBlockByHash(blockChain, blockHash)
-			if err != nil {
-				errMsg := fmt.Sprintf("function=%v,msg.code=%v,err=%v", "GetBlockByHash", msg.Code, err.Error())
-				log.Errorf(errMsg)
-				errCh <- errors.New(errMsg)
-				return
-			}
-			returnCh <- block
-		}
-	case 3: //单笔区块
-		{
-			//set blockHash value  from message
-			var number string
-			if v, ok := msg.Params["number"]; ok {
-				number = v
-			} else {
-				errMsg := fmt.Sprintf("msg.code=%v,err=%v", msg.Code, "not found number")
-				log.Errorf(errMsg)
-				errCh <- errors.New(errMsg)
-				return
-			}
-
-			block, err := s.blockChainClients[blockChain].GetBlockByNumber(blockChain, number)
-			if err != nil {
-				errMsg := fmt.Sprintf("function=%v,msg.code=%v,err=%v", "GetBlockByNumber", msg.Code, err.Error())
-				log.Errorf(errMsg)
-				errCh <- errors.New(errMsg)
-				return
-			}
-			returnCh <- block
-		}
-	case 4: //最新区块
-		{
-			block, err := s.blockChainClients[blockChain].LatestBlock(blockChain)
-			if err != nil {
-				errMsg := fmt.Sprintf("function=%v,msg.code=%v,err=%v", "LatestBlock", msg.Code, err.Error())
-				log.Errorf(errMsg)
-				errCh <- errors.New(errMsg)
-				return
-			}
-			returnCh <- block
-		}
-	case 8: //sendRawTx
-		{
-			var signed string
-			if v, ok := msg.Params["signed"]; ok {
-				signed = v
-			} else {
-				errMsg := fmt.Sprintf("msg.code=%v,err=%v", msg.Code, "not found signed")
-				log.Errorf(errMsg)
-				errCh <- errors.New(errMsg)
-				return
-			}
-
-			r, err := s.blockChainClients[blockChain].SendRawTransaction(blockChain, signed)
-			if err != nil {
-				errMsg := fmt.Sprintf("function=%v,msg.code=%v,err=%v", "SendRawTransaction", msg.Code, err.Error())
-				log.Errorf(errMsg)
-				errCh <- errors.New(errMsg)
-				return
-			}
-			returnCh <- r
-		}
-	case 9: //call
-		{
-			var jsonRpc string
-			if v, ok := msg.Params["jsonRpc"]; ok {
-				jsonRpc = v
-			} else {
-				errMsg := fmt.Sprintf("msg.code=%v,err=%v", msg.Code, "not found jsonRpc")
-				log.Errorf(errMsg)
-				errCh <- errors.New(errMsg)
-				return
-			}
-
-			r, err := s.blockChainClients[blockChain].SendJsonRpc(blockChain, jsonRpc)
-			if err != nil {
-				errMsg := fmt.Sprintf("function=%v,msg.code=%v,err=%v", "SendJsonRpc", msg.Code, err.Error())
-				log.Errorf(errMsg)
-				errCh <- errors.New(errMsg)
-				return
-			}
-			returnCh <- r
-		}
-	case 10: //主币余额查询
-		{
-			//set txHash value  from message
-			var addr string
-			if v, ok := msg.Params["address"]; ok {
-				addr = v
-			} else {
-				errMsg := fmt.Sprintf("msg.code=%v,err=%v", msg.Code, "not found addr")
-				log.Errorf(errMsg)
-				errCh <- errors.New(errMsg)
-				return
-			}
-
-			balance, err := s.blockChainClients[blockChain].Balance(blockChain, addr, "latest")
-			//err := s.chain.SubBalance(addr, balanceCh)
-			if err != nil {
-				errMsg := fmt.Sprintf("function=%v,msg.code=%v,err=%v", "GetMainBalance", msg.Code, err.Error())
-				log.Errorf(errMsg)
-				errCh <- errors.New(errMsg)
-				return
-			}
-			returnCh <- balance
-		}
-
-	case 11: //代币余额查询
-		{
-			//set txHash value  from message
-			var addr string
-			if v, ok := msg.Params["address"]; ok {
-				addr = v
-			} else {
-				errMsg := fmt.Sprintf("msg.code=%v,err=%v", msg.Code, "not found addr")
-				log.Errorf(errMsg)
-				errCh <- errors.New(errMsg)
-				return
-			}
-
-			var contract string
-			if v, ok := msg.Params["contract"]; ok {
-				contract = v
-			} else {
-				errMsg := fmt.Sprintf("msg.code=%v,err=%v", msg.Code, "not found contract")
-				log.Errorf(errMsg)
-				errCh <- errors.New(errMsg)
-				return
-			}
-
-			tokenBalance, err := s.blockChainClients[blockChain].TokenBalance(blockChain, addr, contract, "")
-			if err != nil {
-				errMsg := fmt.Sprintf("function=%v,msg.code=%v,err=%v", "GetTokenBalance", msg.Code, err.Error())
-				log.Errorf(errMsg)
-				errCh <- errors.New(errMsg)
-				return
-			}
-			returnCh <- tokenBalance
-		}
-	case 12: //nonce
-		{
-			//set txHash value  from message
-			var addr string
-			if v, ok := msg.Params["address"]; ok {
-				addr = v
-			} else {
-				errMsg := fmt.Sprintf("msg.code=%v,err=%v", msg.Code, "not found addr")
-				log.Errorf(errMsg)
-				errCh <- errors.New(errMsg)
-				return
-			}
-
-			nonce, err := s.blockChainClients[blockChain].Nonce(blockChain, addr, "latest")
-			if err != nil {
-				errMsg := fmt.Sprintf("function=%v,msg.code=%v,err=%v", "Nonce", msg.Code, err.Error())
-				log.Errorf(errMsg)
-				errCh <- errors.New(errMsg)
-				return
-			}
-			returnCh <- nonce
-		}
-
-	}
-}
-
-func (s *WsHandler) returnMsg(r *WsRespMessage, log *logrus.Entry, mt int, c *websocket.Conn) {
+func (ws *WsHandler) returnMsg(r *service.WsRespMessage, log *logrus.Entry, mt int, c *websocket.Conn) {
 	bs, err := json.Marshal(r)
 	if err != nil {
 		log.Errorf("response|err=%v", err)

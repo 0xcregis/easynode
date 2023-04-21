@@ -11,6 +11,9 @@ import (
 	collectConfig "github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service/cmd"
 	collectMonitor "github.com/uduncloud/easynode/collect/service/monitor"
+	storeConfig "github.com/uduncloud/easynode/store/config"
+	"github.com/uduncloud/easynode/store/service/push"
+	"github.com/uduncloud/easynode/store/service/store"
 	taskConfig "github.com/uduncloud/easynode/task/config"
 	"github.com/uduncloud/easynode/task/service/taskcreate"
 	taskapiConfig "github.com/uduncloud/easynode/taskapi/config"
@@ -37,6 +40,9 @@ func main() {
 	//start taskapi service
 	go startTaskApi()
 
+	//start store service
+	go startStore()
+
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.
 	quit := make(chan os.Signal)
@@ -51,6 +57,42 @@ func main() {
 	// the request it is currently handling
 	_, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+}
+
+func startStore() {
+	var configPath string
+	flag.StringVar(&configPath, "config", "./cmd/store/store_config.json", "The system file of config")
+	flag.Parse()
+	if len(configPath) < 1 {
+		panic("can not find config file")
+	}
+	cfg := storeConfig.LoadConfig(configPath)
+
+	log.Printf("%+v\n", cfg)
+
+	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/store/store", 24*time.Hour)
+
+	//是否存盘
+	store.NewStoreService(&cfg, xLog).Start()
+
+	//http 协议
+	e := gin.Default()
+	root := e.Group(cfg.RootPath)
+	srv := push.NewServer(&cfg, cfg.BlockChain, xLog)
+	root.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: xLog.Out}))
+	root.POST("/monitor/token", srv.NewToken)
+	root.POST("/monitor/address", srv.MonitorAddress)
+
+	//ws 协议
+	wsServer := push.NewWsHandler(&cfg, xLog)
+	root.Handle("GET", "/ws/:token", func(ctx *gin.Context) {
+		wsServer.Start(ctx, ctx.Writer, ctx.Request)
+	})
+
+	err := e.Run(fmt.Sprintf(":%v", cfg.Port))
+	if err != nil {
+		panic(err)
+	}
 }
 
 func startTaskApi() {
@@ -168,7 +210,6 @@ func startCollect() {
 	}
 
 	log.Printf("%+v\n", cfg)
-
 
 	//启动处理日志服务
 	collectMonitor.NewService(cfg.LogConfig).Start()

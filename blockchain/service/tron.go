@@ -27,9 +27,9 @@ func (t *Tron) GetCode(chainCode int64, address string) (string, error) {
 }
 
 func (t *Tron) GetAddressType(chainCode int64, address string) (string, error) {
-	start:=time.Now()
+	start := time.Now()
 	defer func() {
-		t.log.Printf("GetAddressType,Duration=%v",time.Now().Sub(start))
+		t.log.Printf("GetAddressType,Duration=%v", time.Now().Sub(start))
 	}()
 	req := `{ "value": "%v", "visible": true}`
 	req = fmt.Sprintf(req, address)
@@ -73,9 +73,9 @@ func (t *Tron) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string,
 }
 
 func (t *Tron) GetTransactionReceiptByHash(chainCode int64, hash string) (string, error) {
-	start:=time.Now()
+	start := time.Now()
 	defer func() {
-		t.log.Printf("GetTransactionReceiptByHash,Duration=%v",time.Now().Sub(start))
+		t.log.Printf("GetTransactionReceiptByHash,Duration=%v", time.Now().Sub(start))
 	}()
 	req := `{ "value": "%v"}`
 	req = fmt.Sprintf(req, hash)
@@ -87,6 +87,7 @@ func NewTron(cluster map[int64][]*config.NodeCluster, xlog *xlog.XLog) API {
 	for k, _ := range cluster {
 		if k == 205 {
 			blockChainClient = tron.NewChainClient()
+			break
 		}
 	}
 
@@ -142,9 +143,9 @@ func (t *Tron) GetBlockByNumber(chainCode int64, number string) (string, error) 
 }
 
 func (t *Tron) GetTxByHash(chainCode int64, hash string) (string, error) {
-	start:=time.Now()
+	start := time.Now()
 	defer func() {
-		t.log.Printf("GetTxByHash,Duration=%v",time.Now().Sub(start))
+		t.log.Printf("GetTxByHash,Duration=%v", time.Now().Sub(start))
 	}()
 	req := `{ "value": "%v"}`
 	req = fmt.Sprintf(req, hash)
@@ -162,9 +163,9 @@ func (t *Tron) SendJsonRpc(chainCode int64, req string) (string, error) {
 }
 
 func (t *Tron) Balance(chainCode int64, address string, tag string) (string, error) {
-	start:=time.Now()
+	start := time.Now()
 	defer func() {
-		t.log.Printf("Balance,Duration=%v",time.Now().Sub(start))
+		t.log.Printf("Balance,Duration=%v", time.Now().Sub(start))
 	}()
 	req := `{"address":"%v",  "visible": true}`
 	req = fmt.Sprintf(req, address)
@@ -185,9 +186,9 @@ func (t *Tron) Balance(chainCode int64, address string, tag string) (string, err
 }
 
 func (t *Tron) TokenBalance(chainCode int64, address string, contractAddr string, abi string) (string, error) {
-	start:=time.Now()
+	start := time.Now()
 	defer func() {
-		t.log.Printf("TokenBalance,Duration=%v",time.Now().Sub(start))
+		t.log.Printf("TokenBalance,Duration=%v", time.Now().Sub(start))
 	}()
 	cluster := t.BalanceCluster(chainCode)
 	if cluster == nil {

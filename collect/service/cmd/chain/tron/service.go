@@ -32,8 +32,8 @@ func (s *Service) Monitor() {
 func (s *Service) GetTx(txHash string, task *config.TxTask, eLog *logrus.Entry) *service.Tx {
 
 	//调用接口
-	//resp, err := s.txChainClient.GetTxByHash(int64(s.chain.BlockChainCode), txHash)
-	resp, err := tron.Eth_GetTransactionByHash(s.txChainClient, txHash, s.log)
+	resp, err := s.txChainClient.GetTxByHash(int64(s.chain.BlockChainCode), txHash)
+	//resp, err := tron.Eth_GetTransactionByHash(s.txChainClient, txHash, s.log)
 	if err != nil {
 		eLog.Errorf("Eth_GetTransactionByHash|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, err.Error(), txHash)
 		return nil

@@ -8,15 +8,17 @@ require (
 	github.com/eko/gocache/store/bigcache/v4 v4.1.2
 	github.com/eko/gocache/store/redis/v4 v4.2.0
 	github.com/ethereum/go-ethereum v1.11.2
-	github.com/fbsobreira/gotron-sdk v0.0.0-20230329170810-8ce6eac59a1d
+	github.com/fbsobreira/gotron-sdk v0.0.0-20230418195951-b7bfbf1c0ade
 	github.com/gin-gonic/gin v1.9.0
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/gorilla/websocket v1.5.0
 	github.com/redis/go-redis/v9 v9.0.2
 	github.com/segmentio/kafka-go v0.4.39
+	github.com/shengdoushi/base58 v1.0.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/sunjiangjun/xlog v0.0.0-20220118052705-b9e076d2ac69
 	github.com/tidwall/gjson v1.14.4
+	golang.org/x/crypto v0.7.0
 	google.golang.org/grpc v1.53.0
 	gorm.io/driver/clickhouse v0.5.0
 	gorm.io/driver/mysql v1.4.7
@@ -76,7 +78,6 @@ require (
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/rjeczalik/notify v0.9.3 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
-	github.com/shengdoushi/base58 v1.0.0 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
@@ -93,7 +94,6 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.23.0 // indirect
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
-	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0 // indirect
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect

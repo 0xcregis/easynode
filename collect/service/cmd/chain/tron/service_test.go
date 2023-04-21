@@ -12,7 +12,7 @@ import (
 func Init() (service.BlockChainInterface, config.Config, *xlog.XLog) {
 	cfg := config.LoadConfig("./../../../../../cmd/collect/config_tron.json")
 	x := xlog.NewXLogger()
-	return NewService(cfg.Chains[0], cfg.TaskDb, cfg.SourceDb, x), cfg, x
+	return NewService(cfg.Chains[0], x), cfg, x
 }
 
 func TestService_GetTx(t *testing.T) {

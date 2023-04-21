@@ -223,6 +223,7 @@ func NewEth(cluster map[int64][]*config.NodeCluster, xlog *xlog.XLog) API {
 	for k, _ := range cluster {
 		if k == 200 {
 			blockChainClient = ether.NewChainClient()
+			break
 		}
 	}
 	return &Ether{

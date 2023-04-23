@@ -108,12 +108,12 @@ func (t *Tron) GetBlockByHash(chainCode int64, hash string) (string, error) {
 
 	//var delTx bool = true
 	//if delTx {
-	mp := gjson.Parse(res).Map()
-	delete(mp, "transactions")
-	r, _ := json.Marshal(mp)
-	return string(r), nil
+	//mp := gjson.Parse(res).Map()
+	//delete(mp, "transactions")
+	//r, _ := json.Marshal(mp)
+	//return string(r), nil
 	//} else {
-	//	return res, nil
+	return res, nil
 	//}
 }
 
@@ -132,12 +132,12 @@ func (t *Tron) GetBlockByNumber(chainCode int64, number string) (string, error) 
 
 	//var delTx bool = true
 	//if delTx {
-	mp := gjson.Parse(res).Map()
-	delete(mp, "transactions")
-	r, _ := json.Marshal(mp)
-	return string(r), nil
+	//mp := gjson.Parse(res).Map()
+	//delete(mp, "transactions")
+	//r, _ := json.Marshal(mp)
+	//return string(r), nil
 	//} else {
-	//	return res, nil
+	return res, nil
 	//}
 
 }

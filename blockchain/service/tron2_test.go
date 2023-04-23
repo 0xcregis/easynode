@@ -8,7 +8,7 @@ import (
 )
 
 func Init() *Tron2 {
-	cfg := config.LoadConfig("./../../cmd/blockchain/config.json")
+	cfg := config.LoadConfig("./../../cmd/blockchain/config_tron.json")
 	return NewTron2(cfg.Cluster, xlog.NewXLogger())
 }
 

@@ -13,6 +13,7 @@ import (
 	"time"
 )
 
+// grpc.trongrid.io:50051
 type Tron2 struct {
 	log              *xlog.XLog
 	nodeCluster      map[int64][]*config.NodeCluster
@@ -113,7 +114,7 @@ func (t *Tron2) GetTransactionReceiptByHash(chainCode int64, hash string) (strin
 		return "", errors.New("conn error")
 	}
 
-	tx, err := t.blockChainClient.GetTransactionInfoByID(hash)
+	tx, err := c.GetTransactionInfoByID(hash)
 	if err != nil {
 		return "", err
 	}

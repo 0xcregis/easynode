@@ -106,6 +106,11 @@ type Tx struct {
 	Receipt          string `json:"receipt" gorm:"-"`
 }
 
+type TxInterface struct {
+	TxHash string      `json:"hash" gorm:"column:hash"`
+	Tx     interface{} `json:"tx"`
+}
+
 /**
 {
         "transactionHash": "0x5917da4788cdc1383215541744beb93fd804c1902e221d2c5555ce99d9bfff42",
@@ -158,6 +163,11 @@ type Receipt struct {
 	Logs              *Logs  `json:"logs" gorm:"column:logs"`
 	CreateTime        string `json:"createTime" gorm:"column:create_time"` // 2006-01-02
 	Status            string `json:"status" gorm:"column:status"`
+}
+
+type ReceiptInterface struct {
+	TransactionHash string      `json:"transactionHash" gorm:"column:transaction_hash"`
+	Receipt         interface{} `json:"receipt"`
 }
 
 type Logs []struct {
@@ -244,4 +254,10 @@ type Block struct {
 	ReceiptRoot     string   `json:"receiptsRoot" gorm:"column:receipts_root"`
 	Coinbase        string   `json:"miner" gorm:"column:miner"`
 	Nonce           string   `json:"nonce" gorm:"column:nonce"`
+}
+
+type BlockInterface struct {
+	BlockHash   string      `json:"hash" gorm:"column:hash"`
+	BlockNumber string      `json:"number" gorm:"column:block_number"`
+	Block       interface{} `json:"block"`
 }

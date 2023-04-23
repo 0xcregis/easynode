@@ -11,7 +11,7 @@ import (
 	"github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service"
 	"github.com/uduncloud/easynode/collect/service/cmd/chain/ether"
-	"github.com/uduncloud/easynode/collect/service/cmd/chain/tron"
+	"github.com/uduncloud/easynode/collect/service/cmd/chain/tron2"
 	"github.com/uduncloud/easynode/collect/service/cmd/db"
 	kafkaClient "github.com/uduncloud/easynode/common/kafka"
 	"github.com/uduncloud/easynode/common/util"
@@ -76,7 +76,7 @@ func getBlockChainService(c *config.Chain, logConfig *config.LogConfig) service.
 	if c.BlockChainCode == 200 {
 		srv = ether.NewService(c, x)
 	} else if c.BlockChainCode == 205 {
-		srv = tron.NewService(c, x)
+		srv = tron2.NewService(c, x)
 	}
 	//第三方节点监控
 	srv.Monitor()
@@ -376,7 +376,7 @@ func (c *Cmd) ExecTxTask(nodeId string, txCh chan *service.NodeTask, kf chan []*
 					return
 				}
 
-				var tx *service.Tx
+				var tx *service.TxInterface
 				if len(taskTx.TxHash) > 1 {
 					tx = c.blockChain.GetTx(taskTx.TxHash, c.chain.TxTask, log)
 				}
@@ -394,7 +394,7 @@ func (c *Cmd) ExecTxTask(nodeId string, txCh chan *service.NodeTask, kf chan []*
 
 				//写入receipt task
 				if c.chain.PullReceipt {
-					_ = c.taskStore.SendNodeTask([]*service.NodeTask{{BlockChain: c.chain.BlockChainCode, TxHash: tx.TxHash, BlockHash: tx.BlockHash, BlockNumber: tx.BlockNumber, TaskType: 3, TaskStatus: 0, NodeId: taskTx.NodeId}})
+					_ = c.taskStore.SendNodeTask([]*service.NodeTask{{BlockChain: c.chain.BlockChainCode, TxHash: tx.TxHash, BlockHash: "", BlockNumber: "", TaskType: 3, TaskStatus: 0, NodeId: taskTx.NodeId}})
 				}
 
 				//update status
@@ -422,8 +422,8 @@ func (c *Cmd) ExecTxTask(nodeId string, txCh chan *service.NodeTask, kf chan []*
 					return
 				}
 
-				var block *service.Block
-				var txList []*service.Tx
+				var block *service.BlockInterface
+				var txList []*service.TxInterface
 				if len(taskTx.BlockHash) > 10 {
 					block, txList = c.blockChain.GetBlockByHash(taskTx.BlockHash, c.chain.BlockTask, log)
 				} else if len(taskTx.BlockNumber) > 5 {
@@ -534,7 +534,7 @@ func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Mes
 				return
 			}
 
-			var block *service.Block
+			var block *service.BlockInterface
 			//var txList []*service.Tx
 			if len(taskBlock.BlockHash) > 10 {
 				block, _ = c.blockChain.GetBlockByHash(taskBlock.BlockHash, c.chain.BlockTask, log)
@@ -583,31 +583,51 @@ func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Mes
 
 }
 
-func (c *Cmd) HandlerBlock(block *service.Block) (*kafka.Message, error) {
+func (c *Cmd) HandlerBlock(block *service.BlockInterface) (*kafka.Message, error) {
 	k := c.chain.BlockTask.Kafka
-	b, err := json.Marshal(block)
-	if err != nil {
-		return nil, err
+	var r []byte
+	if v, ok := block.Block.(string); ok {
+		r = []byte(v)
+	} else if v, ok := block.Block.(*service.Block); ok {
+		b, err := json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		r = b
 	}
-	return &kafka.Message{Topic: k.Topic, Partition: k.Partition, Time: time.Now(), Key: []byte(block.BlockHash), Value: b}, nil
+	return &kafka.Message{Topic: k.Topic, Partition: k.Partition, Time: time.Now(), Key: []byte(block.BlockHash), Value: r}, nil
 }
 
-func (c *Cmd) HandlerTx(tx *service.Tx) (*kafka.Message, error) {
+func (c *Cmd) HandlerTx(tx *service.TxInterface) (*kafka.Message, error) {
 	k := c.chain.TxTask.Kafka
-	b, err := json.Marshal(tx)
-	if err != nil {
-		return nil, err
+
+	var r []byte
+	if v, ok := tx.Tx.(string); ok {
+		r = []byte(v)
+	} else if v, ok := tx.Tx.(*service.Tx); ok {
+		b, err := json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		r = b
 	}
-	return &kafka.Message{Topic: k.Topic, Partition: k.Partition, Time: time.Now(), Key: []byte(tx.TxHash), Value: b}, nil
+
+	return &kafka.Message{Topic: k.Topic, Partition: k.Partition, Time: time.Now(), Key: []byte(tx.TxHash), Value: r}, nil
 }
 
-func (c *Cmd) HandlerReceipt(receipt *service.Receipt) (*kafka.Message, error) {
+func (c *Cmd) HandlerReceipt(receipt *service.ReceiptInterface) (*kafka.Message, error) {
 	k := c.chain.ReceiptTask.Kafka
-	b, err := json.Marshal(receipt)
-	if err != nil {
-		return nil, err
+	var r []byte
+	if v, ok := receipt.Receipt.(string); ok {
+		r = []byte(v)
+	} else if v, ok := receipt.Receipt.(*service.Receipt); ok {
+		b, err := json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		r = b
 	}
-	return &kafka.Message{Topic: k.Topic, Partition: k.Partition, Time: time.Now(), Key: []byte(receipt.TransactionHash), Value: b}, nil
+	return &kafka.Message{Topic: k.Topic, Partition: k.Partition, Time: time.Now(), Key: []byte(receipt.TransactionHash), Value: r}, nil
 }
 
 func (c *Cmd) Stop() {

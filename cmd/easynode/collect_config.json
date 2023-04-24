@@ -1,48 +1,30 @@
 {
-  "NodeTaskDb": {
-    "Addr": "192.168.2.11",
-    "Port": 3306,
-    "User": "root",
-    "Password": "123456789",
-    "DbName": "easy_node2",
-    "Table": "node_task"
-  },
-  "NodeSourceDb": {
-    "Addr": "192.168.2.11",
-    "Port": 3306,
-    "User": "root",
-    "Password": "123456789",
-    "DbName": "easy_node2",
-    "Table": "node_source"
-  },
-  "NodeInfoDb": {
-    "Addr": "192.168.2.11",
-    "Port": 3306,
-    "User": "root",
-    "Password": "123456789",
-    "DbName": "easy_node2",
-    "Table": "node_info"
-  },
   "Log": {
     "Path": "./log/collect",
     "Delay": 2
   },
   "Chains": [
     {
-      "Etcd": {
-        "Host": "http://192.168.2.20:2379",
-        "Key": "eth",
-        "Ttl": 10
+      "TaskKafka": {
+        "Host": "192.168.2.20",
+        "Port": 9092,
+        "Topic": "11",
+        "StartOffset": -1
       },
       "Kafka": {
         "Host": "192.168.2.20",
         "Port": 9092
       },
+      "Redis": {
+        "Addr": "localhost",
+        "Port": 6379,
+        "DB": 0
+      },
       "BlockChainName": "eth",
       "BlockChainCode": 200,
-      "NodeWeight":1,
+      "NodeWeight": 1,
       "PullReceipt": false,
-      "PullTx": false,
+      "PullTx": true,
       "BlockTask": {
         "FromCluster": [
           {

@@ -11,6 +11,7 @@
       "Port": 9092,
       "Topic": "ether_tx2",
       "Group": "1",
+      "StartOffset": 0,
       "Partition": 0
     },
     "Block": {
@@ -18,6 +19,7 @@
       "Port": 9092,
       "Topic": "ether_block2",
       "Group": "1",
+      "StartOffset": 0,
       "Partition": 0
     },
     "Receipt": {
@@ -25,6 +27,7 @@
       "Port": 9092,
       "Topic": "ether_receipt2",
       "Group": "1",
+      "StartOffset": 0,
       "Partition": 0
     }
   },

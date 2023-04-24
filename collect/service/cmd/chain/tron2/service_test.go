@@ -28,7 +28,7 @@ func TestService_GetBlockByNumber(t *testing.T) {
 	s, cfg, x := Init()
 	b, t1 := s.GetBlockByNumber("0xF9CC56", cfg.Chains[0].BlockTask, x.WithFields(logrus.Fields{}))
 	log.Println(b)
-	log.Println(t1)
+	log.Println(t1[0])
 }
 
 func TestService_GetReceiptByBlock(t *testing.T) {

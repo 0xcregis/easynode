@@ -63,13 +63,22 @@ func (t *Tron) UnSubscribe(chainCode int64, subId string) (string, error) {
 }
 
 func (t *Tron) GetBlockReceiptByBlockNumber(chainCode int64, number string) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	start := time.Now()
+	defer func() {
+		t.log.Printf("GetBlockReceiptByBlockNumber,Duration=%v", time.Now().Sub(start))
+	}()
+	req := `{"num": %v}`
+
+	n, err := strconv.ParseInt(number, 0, 64)
+	if err != nil {
+		return "", err
+	}
+	req = fmt.Sprintf(req, n)
+	return t.SendReq(chainCode, req, "walletsolidity/gettransactioninfobyblocknum")
 }
 
 func (t *Tron) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	return "", nil
 }
 
 func (t *Tron) GetTransactionReceiptByHash(chainCode int64, hash string) (string, error) {
@@ -149,7 +158,7 @@ func (t *Tron) GetTxByHash(chainCode int64, hash string) (string, error) {
 	}()
 	req := `{ "value": "%v"}`
 	req = fmt.Sprintf(req, hash)
-	return t.SendReq(chainCode, req, "wallet/gettransactioninfobyid")
+	return t.SendReq(chainCode, req, "wallet/gettransactionbyid")
 }
 
 func (t *Tron) SendJsonRpc(chainCode int64, req string) (string, error) {

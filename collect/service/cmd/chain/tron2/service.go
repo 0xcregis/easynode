@@ -41,8 +41,14 @@ func (s *Service) GetTx(txHash string, task *config.TxTask, eLog *logrus.Entry) 
 		return nil
 	}
 
-	hash := gjson.Parse(resp).Get("id").String()
-	r := &service.TxInterface{TxHash: hash, Tx: resp}
+	hash := gjson.Parse(resp).Get("txID").String()
+	receipt := s.GetReceipt(hash, nil, eLog)
+
+	fullTx := make(map[string]interface{}, 2)
+	fullTx["tx"] = resp
+	fullTx["receipt"] = receipt.Receipt
+
+	r := &service.TxInterface{TxHash: hash, Tx: fullTx}
 	return r
 }
 
@@ -93,8 +99,15 @@ func (s *Service) GetReceiptByBlock(blockHash, number string, task *config.Recei
 		return nil
 	}
 
-	//todo 暂不支持
-	return nil
+	txs := gjson.Parse(resp).Array()
+	receiptList := make([]*service.ReceiptInterface, 0, len(txs))
+	for _, v := range txs {
+		hash := v.Get("id").String()
+		r := &service.ReceiptInterface{TransactionHash: hash, Receipt: v.String()}
+		receiptList = append(receiptList, r)
+	}
+
+	return receiptList
 }
 
 func (s *Service) GetBlockByNumber(blockNumber string, task *config.BlockTask, eLog *logrus.Entry) (*service.BlockInterface, []*service.TxInterface) {
@@ -119,11 +132,24 @@ func (s *Service) GetBlockByNumber(blockNumber string, task *config.BlockTask, e
 	blockID := gjson.Parse(resp).Get("blockID").String()
 	number := gjson.Parse(resp).Get("block_header.raw_data.number").String()
 	list := gjson.Parse(resp).Get("transactions").Array()
+
+	//根据区块高度，获取交易log
+	receipts := s.GetReceiptByBlock(blockID, number, nil, eLog)
+	mp := make(map[string]interface{}, len(receipts))
+	for _, v := range receipts {
+		mp[v.TransactionHash] = v.Receipt
+	}
+
 	txs := make([]*service.TxInterface, 0, len(list))
 	for _, tx := range list {
 		// 补充字段
 		hash := tx.Get("txID").String()
-		t := &service.TxInterface{TxHash: hash, Tx: tx.String()}
+		fullTx := make(map[string]interface{}, 2)
+		fullTx["tx"] = tx.String()
+		if v, ok := mp[hash]; ok {
+			fullTx["receipt"] = v
+		}
+		t := &service.TxInterface{TxHash: hash, Tx: fullTx}
 		txs = append(txs, t)
 	}
 	r := &service.BlockInterface{BlockHash: blockID, BlockNumber: number, Block: resp}
@@ -146,12 +172,25 @@ func (s *Service) GetBlockByHash(blockHash string, cfg *config.BlockTask, eLog *
 
 	blockID := gjson.Parse(resp).Get("blockID").String()
 	number := gjson.Parse(resp).Get("block_header.raw_data.number").String()
+
+	//根据区块高度，获取交易log
+	receipts := s.GetReceiptByBlock(blockID, number, nil, eLog)
+	mp := make(map[string]interface{}, len(receipts))
+	for _, v := range receipts {
+		mp[v.TransactionHash] = v.Receipt
+	}
+
 	list := gjson.Parse(resp).Get("transactions").Array()
 	txs := make([]*service.TxInterface, 0, len(list))
 	for _, tx := range list {
 		// 补充字段
 		hash := tx.Get("txID").String()
-		t := &service.TxInterface{TxHash: hash, Tx: tx.String()}
+		fullTx := make(map[string]interface{}, 2)
+		fullTx["tx"] = tx.String()
+		if v, ok := mp[hash]; ok {
+			fullTx["receipt"] = v
+		}
+		t := &service.TxInterface{TxHash: hash, Tx: fullTx}
 		txs = append(txs, t)
 	}
 	r := &service.BlockInterface{BlockHash: blockID, BlockNumber: number, Block: resp}

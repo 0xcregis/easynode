@@ -10,7 +10,7 @@
       "NodeKey": "RzxBjjh_c4y0LVHZ7GNm8zoXEZR3HYop",
       "BlockChainName": "eth",
       "BlockChainCode": 200,
-      "BlockMin": 17094424,
+      "BlockMin": 17113233,
       "BlockMax": 0
     },
     {
@@ -18,7 +18,7 @@
       "NodeKey": "244f918d-56b5-4a16-9665-9637598b1223",
       "BlockChainName": "tron",
       "BlockChainCode": 205,
-      "BlockMin": 50487532,
+      "BlockMin": 50563524,
       "BlockMax": 0
     }
   ]

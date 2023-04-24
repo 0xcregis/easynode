@@ -424,10 +424,10 @@ func (c *Cmd) ExecTxTask(nodeId string, txCh chan *service.NodeTask, kf chan []*
 
 				var block *service.BlockInterface
 				var txList []*service.TxInterface
-				if len(taskTx.BlockHash) > 10 {
-					block, txList = c.blockChain.GetBlockByHash(taskTx.BlockHash, c.chain.BlockTask, log)
-				} else if len(taskTx.BlockNumber) > 5 {
+				if len(taskTx.BlockNumber) > 5 {
 					block, txList = c.blockChain.GetBlockByNumber(taskTx.BlockNumber, c.chain.BlockTask, log)
+				} else if len(taskTx.BlockHash) > 10 {
+					block, txList = c.blockChain.GetBlockByHash(taskTx.BlockHash, c.chain.BlockTask, log)
 				}
 				if block == nil {
 					_ = c.taskStore.UpdateNodeTaskStatus(key, 2) //失败
@@ -536,11 +536,12 @@ func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Mes
 
 			var block *service.BlockInterface
 			//var txList []*service.Tx
-			if len(taskBlock.BlockHash) > 10 {
-				block, _ = c.blockChain.GetBlockByHash(taskBlock.BlockHash, c.chain.BlockTask, log)
-			} else if len(taskBlock.BlockNumber) > 5 {
+			if len(taskBlock.BlockNumber) > 5 {
 				block, _ = c.blockChain.GetBlockByNumber(taskBlock.BlockNumber, c.chain.BlockTask, log)
+			} else if len(taskBlock.BlockHash) > 10 {
+				block, _ = c.blockChain.GetBlockByHash(taskBlock.BlockHash, c.chain.BlockTask, log)
 			}
+
 			if block == nil {
 				_ = c.taskStore.UpdateNodeTaskStatus(key, 2) //失败
 				log.Errorf("GetBlockByHashOrGetBlockByNumber|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, "block is null", taskBlock.Id)
@@ -605,6 +606,12 @@ func (c *Cmd) HandlerTx(tx *service.TxInterface) (*kafka.Message, error) {
 	if v, ok := tx.Tx.(string); ok {
 		r = []byte(v)
 	} else if v, ok := tx.Tx.(*service.Tx); ok {
+		b, err := json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		r = b
+	} else if v, ok := tx.Tx.(map[string]interface{}); ok {
 		b, err := json.Marshal(v)
 		if err != nil {
 			return nil, err

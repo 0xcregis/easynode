@@ -9,6 +9,7 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
+	"github.com/tidwall/gjson"
 	kafkaClient "github.com/uduncloud/easynode/common/kafka"
 	"github.com/uduncloud/easynode/store/config"
 	"github.com/uduncloud/easynode/store/service"
@@ -170,12 +171,6 @@ func (ws *WsHandler) sendMessage(token string, kafkaConfig *config.KafkaConfig, 
 		case <-ctx.Done():
 			return
 		case msg := <-receiver:
-			var tx service.Tx
-			err := json.Unmarshal(msg.Value, &tx)
-			if err != nil {
-				ws.log.Errorf("sendMessage|error=%v", err.Error())
-				continue
-			}
 			//消息过滤
 			//根据这个用户（token）最新的订阅命令，筛选符合条件的交易且推送出去
 			//todo filter
@@ -195,35 +190,31 @@ func (ws *WsHandler) sendMessage(token string, kafkaConfig *config.KafkaConfig, 
 				//该用户订阅的地址 是否和该交易相匹配
 				//不匹配 则返回
 				list, err := ws.db.GetAddressByToken(blockChain, token)
-				if err != nil {
+				if err != nil || len(list) < 1 {
 					continue
 				}
 
-				has := false
-				for _, v := range list {
+				//检查地址 是否和交易 相关
+				{
+					has := false
+					if blockChain == 200 {
+						has = ws.CheckAddressForEther(msg, list)
+					}
 
-					//todo 该交易是否是订阅的类型交易
-					//if v.TxType== tx.Type {
-					// has=true
-					//}
+					if blockChain == 205 {
+						has = ws.CheckAddressForTron(msg, list)
+					}
 
-					//todo 普通交易且 地址不包含订阅地址
-					if !strings.HasPrefix(tx.FromAddr, v.Address) && !strings.HasPrefix(tx.ToAddr, v.Address) {
-						has = true
+					if !has {
 						continue
 					}
-					//todo 合约交易
-				}
-
-				if !has {
-					continue
 				}
 
 			}
 
-			wpm := service.WsPushMessage{Code: 1, BlockChain: blockChain, Data: tx}
+			wpm := service.WsPushMessage{Code: 1, BlockChain: blockChain, Data: string(msg.Value)}
 			bs, _ := json.Marshal(wpm)
-			err = ws.connMap[token].WriteMessage(websocket.TextMessage, bs)
+			err := ws.connMap[token].WriteMessage(websocket.TextMessage, bs)
 			if err != nil {
 				ws.log.Errorf("sendMessage|error=%v", err.Error())
 			}
@@ -232,6 +223,138 @@ func (ws *WsHandler) sendMessage(token string, kafkaConfig *config.KafkaConfig, 
 
 		time.Sleep(1 * time.Second)
 	}
+}
+
+func (ws *WsHandler) CheckAddressForEther(msg *kafka.Message, list []*service.MonitorAddress) bool {
+	root := gjson.ParseBytes(msg.Value)
+	fromAddr := root.Get("from").String()
+	toAddr := root.Get("to").String()
+	has := false
+	for _, v := range list {
+		//已经判断出该交易 符合要求了，不需要在检查其他地址了
+		if has {
+			break
+		}
+
+		// 该交易是否是订阅的类型交易
+		//if v.TxType== tx.Type {
+		// has=true
+		//break
+		//}
+
+		// 普通交易且 地址不包含订阅地址
+		if strings.HasPrefix(fromAddr, v.Address) || strings.HasPrefix(toAddr, v.Address) {
+			has = true
+			break
+		}
+
+		//合约交易
+		monitorAddr := strings.TrimLeft(v.Address, "0x") //去丢0x
+		if root.Get("receipt").Exists() {
+			//  "logs": [],
+			/**
+			    "logs": [
+			      {
+			          "transactionHash": "0x694d48dbc567a1797d11ab144fff32845aabb559c888bca1cde86ac09f0d65df",
+			          "address": "0x4d224452801aced8b2f0aebe155379bb5d594381",
+			          "blockHash": "0x4e3c2993fe3a2596969dceb6d2a03ccc3752284017ff799dbc6ad9212512a197",
+			          "blockNumber": "0x104b998",
+			          "data": "0x0000000000000000000000000000000000000000000000683a0239be6e144000",
+			          "logIndex": "0x4d",
+			          "removed": false,
+			          "topics": [
+			              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+			              "0x000000000000000000000000f5b7687c0cfd29637b34ca6f6a53ce843409e8b8",
+			              "0x000000000000000000000000ef455dc529b5343f0ec5b4b03f8af50c3f95441d"
+			          ],
+			          "transactionIndex": "0x1a"
+			      }
+			  ]
+			*/
+			list := root.Get("receipt").Get("logs").Array()
+			for _, v := range list {
+				topics := v.Get("topics").Array()
+				//Transfer()
+				if len(topics) == 3 /*&& topics[0].String() == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"*/ {
+					if strings.HasSuffix(topics[1].String(), monitorAddr) || strings.HasSuffix(topics[2].String(), monitorAddr) {
+						has = true
+						break
+					}
+
+				}
+
+			}
+
+		}
+	}
+	return has
+}
+
+func (ws *WsHandler) CheckAddressForTron(msg *kafka.Message, list []*service.MonitorAddress) bool {
+	root := gjson.ParseBytes(msg.Value)
+	tx := root.Get("tx").String()
+	txRoot := gjson.Parse(tx)
+	contracts := txRoot.Get("raw_data.contract").Array()
+	if len(contracts) < 1 {
+		return false
+	}
+	r := contracts[0]
+	txType := r.Get("type").String()
+
+	var fromAddr, toAddr string
+	var logs []gjson.Result
+	if txType == "TransferContract" {
+		fromAddr = r.Get("parameter.value.owner_address").String()
+		toAddr = r.Get("parameter.value.to_address").String()
+		//r.Get("parameter.value.amount").String()
+	} else if txType == "TriggerSmartContract" {
+
+		receipt := root.Get("receipt").String()
+		receiptRoot := gjson.Parse(receipt)
+		if receiptRoot.Get("receipt.result").String() != "SUCCESS" {
+			return false
+		}
+		logs = receiptRoot.Get("log").Array()
+	}
+
+	has := false
+	for _, v := range list {
+		//已经判断出该交易 符合要求了，不需要在检查其他地址了
+		if has {
+			break
+		}
+
+		// 该交易是否是订阅的类型交易
+		//if v.TxType== tx.Type {
+		// has=true
+		//break
+		//}
+
+		// 普通交易且 地址不包含订阅地址
+		if strings.HasSuffix(fromAddr, v.Address) || strings.HasSuffix(toAddr, v.Address) {
+			has = true
+			break
+		}
+
+		//合约交易
+		monitorAddr := strings.TrimLeft(v.Address, "0x") //去丢0x
+		if len(logs) > 0 {
+			for _, v := range logs {
+				topics := v.Get("topics").Array()
+				//Transfer()
+				if len(topics) == 3 /*&& topics[0].String() == "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"*/ {
+					if strings.HasSuffix(topics[1].String(), monitorAddr) || strings.HasSuffix(topics[2].String(), monitorAddr) {
+						has = true
+						break
+					}
+
+				}
+
+			}
+
+		}
+	}
+	return has
 }
 
 func (ws *WsHandler) handlerMessage(ctx context.Context, token string, c *websocket.Conn, mt int, message []byte, log *logrus.Entry) {
@@ -253,11 +376,24 @@ func (ws *WsHandler) handlerMessage(ctx context.Context, token string, c *websoc
 	returnMsg.BlockChain = msg.BlockChain
 	returnMsg.Status = 0
 
+	//最终返回
+	defer func(r *service.WsRespMessage) {
+		ws.returnMsg(r, log, mt, c)
+	}(&returnMsg)
+
+	//不支持
+	if msg.BlockChain != ws.cfg.BlockChain {
+		returnMsg.Status = 1
+		returnMsg.Err = fmt.Sprintf("the blockchain=%v", ws.cfg.BlockChain)
+		return
+	}
+
 	//最新一次命令
 	if msg.Code == 1 || msg.Code == 3 {
 		//仅能保存一个订阅的命令
 		if _, ok := ws.cmdMap[token]; ok {
 			//已经订阅了，则返回订阅失败
+			returnMsg.Err = fmt.Sprintf("sub cmd is already existed")
 			returnMsg.Status = 1
 		} else {
 			//未订阅时，则订阅成功
@@ -274,10 +410,6 @@ func (ws *WsHandler) handlerMessage(ctx context.Context, token string, c *websoc
 		delete(ws.cmdMap, token)
 	}
 
-	//最终返回
-	defer func(r *service.WsRespMessage) {
-		ws.returnMsg(r, log, mt, c)
-	}(&returnMsg)
 }
 
 func (ws *WsHandler) returnMsg(r *service.WsRespMessage, log *logrus.Entry, mt int, c *websocket.Conn) {

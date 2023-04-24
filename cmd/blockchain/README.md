@@ -25,7 +25,7 @@
 ### Building the source
 
 (以linux系统为例)
-- mkdir easynode
+- mkdir easynode & cd easynode
 - git clone https://github.com/0xcregis/easynode.git
 - cd easynode/cmd/blockchain
 - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o easynode_chain app.go

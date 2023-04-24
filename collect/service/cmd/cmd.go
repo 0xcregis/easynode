@@ -138,7 +138,7 @@ func (c *Cmd) HandlerNodeTaskFromKafka(nodeId string, blockChain int, blockCh ch
 
 	//taskKafka read
 	go func() {
-		group := fmt.Sprintf("group_%v_%v", blockChain, c.chain.TaskKafka.Topic)
+		group := fmt.Sprintf("group_%v_%v", blockChain, c.chain.TaskKafka.Group)
 		topic := fmt.Sprintf("task_%v", blockChain)
 		c.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: topic, Group: group, Partition: 0, StartOffset: c.chain.TaskKafka.StartOffset}, receiver, ctx)
 	}()

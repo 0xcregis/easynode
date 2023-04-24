@@ -21,6 +21,7 @@ type Kafka struct {
 	Port        int    `json:"Port"`
 	Topic       string `json:"Topic"`
 	Partition   int    `json:"Partition"`
+	Group       string `json:"Group"`
 	StartOffset int64  `json:"StartOffset"`
 }
 
@@ -41,17 +42,17 @@ type ReceiptTask struct {
 
 type Chain struct {
 	//Etcd           *Etcd        `json:"Etcd"`
-	BlockChainName string       `json:"BlockChainName"`
-	BlockChainCode int          `json:"BlockChainCode"`
-	NodeWeight     int          `json:"NodeWeight"`
-	PullReceipt    bool         `json:"PullReceipt"`
-	PullTx         bool         `json:"PullTx"`
-	Kafka          *Kafka       `json:"Kafka"`     //结果数据Kafka
-	TaskKafka      *Kafka       `json:"TaskKafka"` //任务kafka
-	BlockTask      *BlockTask   `json:"BlockTask"`
-	TxTask         *TxTask      `json:"TxTask"`
-	ReceiptTask    *ReceiptTask `json:"ReceiptTask"`
-	Redis          *Redis       `json:"Redis"`
+	BlockChainName string `json:"BlockChainName"`
+	BlockChainCode int    `json:"BlockChainCode"`
+	//NodeWeight     int          `json:"NodeWeight"`
+	PullReceipt bool         `json:"PullReceipt"`
+	PullTx      bool         `json:"PullTx"`
+	Kafka       *Kafka       `json:"Kafka"`     //结果数据Kafka
+	TaskKafka   *Kafka       `json:"TaskKafka"` //任务kafka
+	BlockTask   *BlockTask   `json:"BlockTask"`
+	TxTask      *TxTask      `json:"TxTask"`
+	ReceiptTask *ReceiptTask `json:"ReceiptTask"`
+	Redis       *Redis       `json:"Redis"`
 }
 
 type Redis struct {

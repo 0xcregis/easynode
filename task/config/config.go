@@ -1,7 +1,6 @@
 package config
 
 type Config struct {
-	NodeTaskDb          *NodeTaskDb    `json:"NodeTaskDb"`
 	AutoCreateBlockTask bool           `json:"AutoCreateBlockTask"`
 	BlockConfigs        []*BlockConfig `json:"Chains"`
 	TaskKafka           *Kafka         `json:"TaskKafka"`
@@ -12,15 +11,6 @@ type Kafka struct {
 	Port      int    `json:"Port"`
 	Topic     string `json:"Topic"`
 	Partition int    `json:"Partition"`
-}
-
-type NodeTaskDb struct {
-	User     string `json:"User" gorm:"column:User"`
-	Table    string `json:"Table" gorm:"column:Table"`
-	Port     int    `json:"Port" gorm:"column:Port"`
-	DbName   string `json:"DbName" gorm:"column:DbName"`
-	Addr     string `json:"Addr" gorm:"column:Addr"`
-	Password string `json:"Password" gorm:"column:Password"`
 }
 
 /**

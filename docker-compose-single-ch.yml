@@ -66,8 +66,9 @@ services:
       context: .
       dockerfile: ./docker-compose-single.yml
     ports:
-      - "9001:9001"
-      - "9002:9002"
+      - "9011:9001"
+      - "9012:9002"
+      - "9013:9003"
     volumes:
       - ./easynode:/app
     depends_on:

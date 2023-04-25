@@ -24,3 +24,5 @@ go.work
 /log/
 /data/
 .idea/*
+/clickhouse_data/
+/redis-data/

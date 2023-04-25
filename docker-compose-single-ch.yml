@@ -3,6 +3,7 @@ version: "2"
 services:
   easyzookeeper:
     image: docker.io/bitnami/zookeeper:3.8
+    user: root
     restart: always
     networks:
       - easynode_net
@@ -14,6 +15,7 @@ services:
       - ALLOW_ANONYMOUS_LOGIN=yes
   easykafka:
     image: docker.io/bitnami/kafka:3.3
+    user: root
     restart: always
     networks:
       - easynode_net
@@ -30,6 +32,7 @@ services:
       - easyzookeeper
   kafka_manager:
     image: hlebalbau/kafka-manager:stable
+    user: root
     restart: always
     networks:
       - easynode_net
@@ -41,6 +44,7 @@ services:
       - easykafka
   redis:
      image: bitnami/redis:7.0
+     user: root
      restart: always
      networks:
       - easynode_net
@@ -52,6 +56,7 @@ services:
       - ./redis-data:/bitnami/redis/data
   clickhouse:
     image: bitnami/clickhouse:23
+    user: root
     restart: always
     environment:
       - CLICKHOUSE_ADMIN_USER=test

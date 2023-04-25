@@ -1,7 +1,7 @@
 -- 创建数据库：不同公链需要创建不同的数据库
-CREATE DATABASE ether;
+CREATE DATABASE ether2;
 
-CREATE TABLE IF NOT EXISTS  ether.address
+CREATE TABLE IF NOT EXISTS  ether2.address
 (
 
     `token` String,
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS  ether.address
 ) ENGINE = ReplacingMergeTree ORDER BY id  SETTINGS index_granularity = 8192;
 
 -- 创建交易表
-CREATE TABLE IF NOT EXISTS ether.tx
+CREATE TABLE IF NOT EXISTS ether2.tx
 (
     id UInt64,--时间戳
     hash String,
@@ -37,12 +37,11 @@ CREATE TABLE IF NOT EXISTS ether.tx
     block_hash String,
     tx_type String,
     transaction_index String
-) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/tx', '{replica}',id)
-    ORDER BY hash;
+) ENGINE = ReplacingMergeTree(id) ORDER BY hash;
 
 
 /**创建区块表*/
-CREATE TABLE IF NOT EXISTS ether.block
+CREATE TABLE IF NOT EXISTS ether2.block
 (id UInt64,--时间戳
  hash String,
  block_time String,
@@ -63,12 +62,11 @@ CREATE TABLE IF NOT EXISTS ether.block
  miner String,
  transactions String,
  nonce String
-) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/block', '{replica}',id)
-    ORDER BY hash;
+) ENGINE = ReplacingMergeTree(id) ORDER BY hash;
 
 
 /**创建区块表*/
-CREATE TABLE IF NOT EXISTS ether.receipt
+CREATE TABLE IF NOT EXISTS ether2.receipt
 (id UInt64,--时间戳
  block_hash String,
  logs_bloom String,
@@ -85,5 +83,4 @@ CREATE TABLE IF NOT EXISTS ether.receipt
  logs String,
  create_time String,
  status String
-) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/receipt', '{replica}',id)
-    ORDER BY transaction_hash;
+) ENGINE = ReplacingMergeTree(id) ORDER BY transaction_hash;

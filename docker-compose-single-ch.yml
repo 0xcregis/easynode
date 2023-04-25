@@ -39,8 +39,20 @@ services:
       - ZK_HOSTS=zookeeper:2181
     depends_on:
       - kafka
+  redis:
+     image: bitnami/redis:7.0
+     restart: always
+     networks:
+      - easynode_net
+     ports:
+      - "6379:6379"
+     environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+     volumes:
+      - ./redis-data:/bitnami/redis/data
   clickhouse:
     image: bitnami/clickhouse:23
+    restart: always
     environment:
       - CLICKHOUSE_ADMIN_USER=test
       - CLICKHOUSE_ADMIN_PASSWORD=test

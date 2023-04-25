@@ -22,11 +22,12 @@ ENV TZ Asia/Shanghai
 
 WORKDIR /app
 COPY --from=builder /app/easynode /app/easynode
-COPY ./cmd/easynode/blockchain_config.json .
-COPY ./cmd/easynode/collect_config.json .
-COPY ./cmd/easynode/task_config.json .
-COPY ./cmd/easynode/taskapi_config.json .
+COPY ./cmd/easynode/blockchain_config.json ./config
+COPY ./cmd/easynode/collect_config.json ./config
+COPY ./cmd/easynode/task_config.json ./config
+COPY ./cmd/easynode/taskapi_config.json ./config
+COPY ./cmd/easynode/store_config.json ./config
 
-EXPOSE 9001 9002
+EXPOSE 9001 9002 9003
 
-ENTRYPOINT ["./easynode","-collect_config","./collect_config.json","-task_config","./task_config.json","-blockchain_config","./blockchain_config.json","-taskapi_config","./taskapi_config.json"]
+ENTRYPOINT ["./easynode","-collect_config","./config/collect_config.json","-task_config","./config/task_config.json","-blockchain_config","./config/blockchain_config.json","-taskapi_config","./config/taskapi_config.json","-store_config","./config/store_config.json"]

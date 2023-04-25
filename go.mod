@@ -8,7 +8,6 @@ require (
 	github.com/eko/gocache/store/bigcache/v4 v4.1.2
 	github.com/eko/gocache/store/redis/v4 v4.2.0
 	github.com/ethereum/go-ethereum v1.11.2
-	github.com/fbsobreira/gotron-sdk v0.0.0-20230418195951-b7bfbf1c0ade
 	github.com/gin-gonic/gin v1.9.0
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/gorilla/websocket v1.5.0

@@ -7,7 +7,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/fbsobreira/gotron-sdk/pkg/common"
 )
 
 const (
@@ -31,11 +30,11 @@ func (a Address) Bytes() []byte {
 
 // Hex get bytes from address in string
 func (a Address) Hex() string {
-	return common.BytesToHexString(a[:])
+	return BytesToHexString(a[:])
 }
 
 func (a Address) Base58() string {
-	return common.EncodeCheck(a.Bytes())
+	return EncodeCheck(a.Bytes())
 }
 
 // BigToAddress returns Address with byte values of b.
@@ -49,7 +48,7 @@ func BigToAddress(b *big.Int) Address {
 // HexToAddress returns Address with byte values of s.
 // If s is larger than len(h), s will be cropped from the left.
 func HexToAddress(s string) Address {
-	addr, err := common.FromHex(s)
+	addr, err := FromHex(s)
 	if err != nil {
 		return nil
 	}
@@ -58,7 +57,7 @@ func HexToAddress(s string) Address {
 
 // Base58ToAddress returns Address with byte values of s.
 func Base58ToAddress(s string) (Address, error) {
-	addr, err := common.DecodeCheck(s)
+	addr, err := DecodeCheck(s)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +78,7 @@ func (a Address) String() string {
 	if a[0] == 0 {
 		return new(big.Int).SetBytes(a.Bytes()).String()
 	}
-	return common.EncodeCheck(a.Bytes())
+	return EncodeCheck(a.Bytes())
 }
 
 // PubkeyToAddress returns address from ecdsa public key

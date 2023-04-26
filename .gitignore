@@ -25,7 +25,9 @@ go.work
 /data/
 .idea/*
 /clickhouse_data/
+/clickhouse-data/
 /redis-data/
+/redis_data/
 /config/
 
 /kafka_data/

@@ -26,3 +26,8 @@ go.work
 .idea/*
 /clickhouse_data/
 /redis-data/
+/config/
+
+/kafka_data/
+/zookeeper_data/
+/easynode

@@ -44,7 +44,7 @@
        9092:9092
    kafka_manager:
 
-       9003:9000
+       9093:9000
    clickhouse:
      
        user:test
@@ -82,14 +82,20 @@
    docker build -f Dockerfile -t easynode:1.0 . 
    
    //查看image 是否生成
-   easynode % docker images |grep easynode
+   docker images |grep easynode
    
    ``````
    - 启动 easynode服务
    
    ``````
-   docker run --name easynode -p 9001:9001 -p 9002:9002 -p 9003:9003 --network easynode_net -v ./config:/app/config -d easynode:1.0
-   ``````
+    docker run --name easynode -p 9001:9001 -p 9002:9002 -p 9003:9003 --network easynode_easynode_net -v /Users/sunhongtao/workspace/go/easynode_github/easynode/config:/app/config/ -v /Users/sunhongtao/workspace/go/easynode_github/easynode/log/:/app/log/ -d easynode:1.0
+  
+    OR
+    
+    go build -o easynode ./cmd/easynode/app.go
+   ./easynode -collect ./config/collect_config.json -task ./config/task_config.json -blockchain ./config/blockchain_config.json -taskapi ./config/taskapi_config.json -store ./config/store_config.json
+
+  ``````
 
    notes:
 

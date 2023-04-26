@@ -22,14 +22,14 @@ func OpenCK(user, password, addr, dbName string, port int, xlog *xlog.XLog) (*go
 	//	dbName,
 	//	"Asia%2FShanghai")
 	//dsn := "user:pass@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local"
-
 	//PostgresSQL
 	//dsn := "host=%v user=%v password=%v dbname=%v port=%v sslmode=disable TimeZone=Asia/Shanghai"
 	//dsn = fmt.Sprintf(dsn, addr, user, password, dbName, port)
 
 	dsn := "clickhouse://%v:%v@%v:%v/%v"
-
 	dsn = fmt.Sprintf(dsn, user, password, addr, port, dbName)
+
+	//dsn = fmt.Sprintf(dsn, addr, port, dbName, user, password)
 
 	l := logger.New(log.New(xlog.Out, "\r\n", log.LstdFlags), logger.Config{
 		SlowThreshold:             200 * time.Millisecond,

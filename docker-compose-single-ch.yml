@@ -1,9 +1,10 @@
 version: "2"
 
 services:
-  easyzookeeper:
+  easyzk:
     image: docker.io/bitnami/zookeeper:3.8
     user: root
+    hostname: easyzk
     restart: always
     networks:
       - easynode_net
@@ -16,7 +17,9 @@ services:
   easykafka:
     image: docker.io/bitnami/kafka:3.3
     user: root
+    hostname: easykafka
     restart: always
+    privileged: true
     networks:
       - easynode_net
     ports:
@@ -26,10 +29,10 @@ services:
     environment:
       - KAFKA_CFG_LISTENERS=PLAINTEXT://easykafka:9092
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://easykafka:9092
-      - KAFKA_CFG_ZOOKEEPER_CONNECT=easyzookeeper:2181
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=easyzk:2181
       - ALLOW_PLAINTEXT_LISTENER=yes
     depends_on:
-      - easyzookeeper
+      - easyzk
   kafka_manager:
     image: hlebalbau/kafka-manager:stable
     user: root
@@ -37,14 +40,16 @@ services:
     networks:
       - easynode_net
     ports:
-      - "9003:9000"
+      - "9093:9000"
     environment:
-      - ZK_HOSTS=easyzookeeper:2181
+      - ZK_HOSTS=easyzk:2181
     depends_on:
       - easykafka
+      - easyzk
   redis:
      image: bitnami/redis:7.0
      user: root
+     hostname: redis
      restart: always
      networks:
       - easynode_net
@@ -56,8 +61,10 @@ services:
       - ./redis-data:/bitnami/redis/data
   clickhouse:
     image: bitnami/clickhouse:23
+    hostname: clickhouse
     user: root
     restart: always
+    privileged: true
     environment:
       - CLICKHOUSE_ADMIN_USER=test
       - CLICKHOUSE_ADMIN_PASSWORD=test
@@ -77,7 +84,7 @@ services:
     networks:
       - easynode_net
     depends_on:
-      - easyzookeeper
+      - easyzk
 
 volumes:
   zookeeper_data:

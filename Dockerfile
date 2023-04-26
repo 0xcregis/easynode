@@ -19,15 +19,13 @@ FROM alpine
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/cadok-certificates.crt
 COPY --from=builder /usr/share/zoneinfo/Asia/Shanghai /usr/share/zoneinfo/Asia/Shanghai
 ENV TZ Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 
 WORKDIR /app
+CMD  mkdir config
 COPY --from=builder /app/easynode /app/easynode
-COPY ./cmd/easynode/blockchain_config.json ./config
-COPY ./cmd/easynode/collect_config.json ./config
-COPY ./cmd/easynode/task_config.json ./config
-COPY ./cmd/easynode/taskapi_config.json ./config
-COPY ./cmd/easynode/store_config.json ./config
 
 EXPOSE 9001 9002 9003
 
-ENTRYPOINT ["./easynode","-collect_config","./config/collect_config.json","-task_config","./config/task_config.json","-blockchain_config","./config/blockchain_config.json","-taskapi_config","./config/taskapi_config.json","-store_config","./config/store_config.json"]
+ENTRYPOINT ["./easynode","-collect","./config/collect_config.json","-task","./config/task_config.json","-blockchain","./config/blockchain_config.json","-taskapi","./config/taskapi_config.json","-store","./config/store_config.json"]

@@ -22,7 +22,6 @@
       },
       "BlockChainName": "eth",
       "BlockChainCode": 200,
-      "NodeWeight": 1,
       "PullReceipt": false,
       "PullTx": true,
       "BlockTask": {

@@ -101,7 +101,7 @@
 
    1. network easynode_net : 需要和 docker-compose-single-ch.yml 中保持一致
     
-   2. v ./config:/app/config : 把配置文件挂载到镜像中，默认配置文件的名称不可变
+   2. v ./config/* : 把配置文件挂载到镜像中，默认配置文件的名称不可变
 
    3. ./config的目录结构如下，每个配置文件的具体配置 详见 (/easynode/cmd/easynode/README.md) 
 

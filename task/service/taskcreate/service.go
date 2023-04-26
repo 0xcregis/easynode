@@ -30,6 +30,8 @@ func (s *Service) Start() {
 
 	go s.startKafka()
 
+	go s.updateLatestBlock()
+
 	go func() {
 		for true {
 			//处理自产生区块任务，包括：区块
@@ -44,6 +46,42 @@ func (s *Service) startKafka() {
 	s.kafkaClient.Write(kafkaClient.Config{Brokers: []string{broker}}, s.sendCh, nil)
 }
 
+func (s *Service) updateLatestBlock() {
+	log := s.log.WithFields(logrus.Fields{
+		"model": "updateLatestBlock",
+		"id":    time.Now().UnixMilli(),
+	})
+	blockConfigs := s.config.BlockConfigs
+	if len(blockConfigs) < 1 {
+		log.Warnf("config.BlockConfigs|info=%v", "chain config is null")
+		return
+	}
+
+	for true {
+
+		for _, v := range blockConfigs {
+
+			log.Infof("blockConfig=%+v", v)
+
+			//获取公链最新区块高度
+			if v.BlockChainCode == 200 {
+				//ether
+				err := s.GetLastBlockNumberForEther(v)
+				if err != nil {
+					log.Errorf("GetLastBlockNumberForEther|err=%v", err)
+				}
+			} else if v.BlockChainCode == 205 {
+				//tron
+				err := s.GetLastBlockNumberForTron(v)
+				if err != nil {
+					log.Errorf("GetLastBlockNumberForTron|err=%v", err)
+				}
+			}
+		}
+
+		<-time.After(30 * time.Second)
+	}
+}
 func (s *Service) startCreateBlockProc() {
 	log := s.log.WithFields(logrus.Fields{
 		"model": "startCreateBlockProc",
@@ -56,22 +94,6 @@ func (s *Service) startCreateBlockProc() {
 	}
 
 	for _, v := range blockConfigs {
-		log.Infof("blockConfig=%+v", v)
-		//获取公链最新区块高度
-		if v.BlockChainCode == 200 {
-			//ether
-			err := s.GetLastBlockNumberForEther(v)
-			if err != nil {
-				log.Errorf("GetLastBlockNumberForEther|err=%v", err)
-			}
-		} else if v.BlockChainCode == 205 {
-			//tron
-			err := s.GetLastBlockNumberForTron(v)
-			if err != nil {
-				log.Errorf("GetLastBlockNumberForTron|err=%v", err)
-			}
-		}
-
 		//生成最新的区块任务
 		err := s.NewBlockTask(*v, log)
 		if err != nil {
@@ -87,7 +109,7 @@ func (s *Service) GetLastBlockNumberForEther(v *config.BlockConfig) error {
 		return err
 	}
 	if lastNumber > 1 {
-		_ = s.store.UpdateLastNumber(v.BlockChainCode, lastNumber)
+		return s.store.UpdateLastNumber(v.BlockChainCode, lastNumber)
 	}
 	return nil
 }
@@ -98,7 +120,7 @@ func (s *Service) GetLastBlockNumberForTron(v *config.BlockConfig) error {
 		return err
 	}
 	if lastNumber > 1 {
-		_ = s.store.UpdateLastNumber(v.BlockChainCode, lastNumber)
+		return s.store.UpdateLastNumber(v.BlockChainCode, lastNumber)
 	}
 	return nil
 }

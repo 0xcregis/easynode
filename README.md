@@ -88,9 +88,9 @@
    - 启动 easynode服务
    
    ``````
-    docker run --name easynode -p 9001:9001 -p 9002:9002 -p 9003:9003 --network easynode_easynode_net -v /Users/sunhongtao/workspace/go/easynode_github/easynode/config:/app/config/ -v /Users/sunhongtao/workspace/go/easynode_github/easynode/log/:/app/log/ -d easynode:1.0
-  
-    OR
+    docker run --name easynode -p 9001:9001 -p 9002:9002 -p 9003:9003 --network easynode_easynode_net -v /root/easy_node/easynode/config/:/app/config/ -v /root/app/log/:/app/log/ -v /root/app/data:/app/data/ -d easynode:1.0  
+    
+    #OR
     
     go build -o easynode ./cmd/easynode/app.go
    ./easynode -collect ./config/collect_config.json -task ./config/task_config.json -blockchain ./config/blockchain_config.json -taskapi ./config/taskapi_config.json -store ./config/store_config.json

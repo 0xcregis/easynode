@@ -24,7 +24,6 @@ type BlockNumber struct {
 	ChainCode    int64     `json:"chain_code" gorm:"column:chain_code"`       // 公链代码
 	RecentNumber int64     `json:"recent_number" gorm:"column:recent_number"` // 已处理的高度
 	LatestNumber int64     `json:"latest_number" gorm:"column:latest_number"` // 区块链的最新高度
-	CreateTime   time.Time `json:"create_time" gorm:"column:create_time"`
 	LogTime      time.Time `json:"log_time" gorm:"column:log_time"`
 }
 

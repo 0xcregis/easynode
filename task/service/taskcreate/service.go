@@ -36,7 +36,7 @@ func (s *Service) Start() {
 		for true {
 			//处理自产生区块任务，包括：区块
 			s.startCreateBlockProc()
-			<-time.After(10 * time.Second)
+			<-time.After(40 * time.Second)
 		}
 	}()
 }
@@ -79,7 +79,7 @@ func (s *Service) updateLatestBlock() {
 			}
 		}
 
-		<-time.After(30 * time.Second)
+		<-time.After(20 * time.Second)
 	}
 }
 func (s *Service) startCreateBlockProc() {

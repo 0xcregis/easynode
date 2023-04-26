@@ -1,6 +1,6 @@
 # easynode
 
-### overview
+### Overview
 该系统使访问各种公链更简易、更稳定，使用用户专注与自己的业务。包含一些子服务
 
  - blockchain: 直接访问公链，选择最优节点。对外提供 http、ws 类型协议与其交互
@@ -10,13 +10,13 @@
  - taskapi: 接收用户自定义的任务
  - store: 接收用户提交的监控地址、接收用户的订阅、主动推送符合条件的交易 和 数据落盘
 
-## Load Source
+### Load Source
 
 - mkdir easynode & cd easynode
 - git clone https://github.com/0xcregis/easynode.git 或 git clone -b feature/xxx https://github.com/0xcregis/easynode.git
 - cd easynode
 
-### install & deploy
+### Install & Deploy
 
  ####  Dependent Environment
    
@@ -117,9 +117,61 @@
     
    4. 如果配置文件名称需要改变，请 docker run --entrypoint /bin/sh 命令
 
- - usage
+ ### Usage
  
 请参考 /easynode/cmd/easynode/README.md
+
+ 1. 添加监控地址
+   
+    ``````
+    # 生成token
+    curl --location --request POST '192.168.2.9:9003/api/store/monitor/token' \
+    --header 'Content-Type: application/json' \
+    --data-raw '{
+        "blockChain": 200
+    }'
+    
+    #提交监控地址
+    curl --location --request POST '192.168.2.9:9003/api/store/monitor/address' \
+    --header 'Content-Type: application/json' \
+    --data-raw '{
+        "blockChain": 200,
+        "address": "0x28c6c06298d514db089934071355e5743bf21d61",
+        "token": "5fe5f231-7051-4caf-9b52-108db92edbb4",
+        "txType": 12
+    }'
+    
+    ``````
+  2. 提交订阅并接受返回 
+
+   ``````
+   url: ws://localhost:9003/api/store/ws/{token}
+   
+   入参：
+           {
+             "id":1001,
+             "code":1,
+             "blockChain":200,
+             "Params":{}
+            }
+   
+   返回：
+   
+            {
+              "Id": 1001,
+              "Code": 1,
+              "blockChain": 200,
+              "Status": 0,
+              "Err": "",
+              "Params": {
+              },
+              "Resp": null
+            }
+            
+                        
+   
+   ``````
+ 
 
 
  

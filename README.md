@@ -117,6 +117,26 @@
     
    4. 如果配置文件名称需要改变，请 docker run --entrypoint /bin/sh 命令
 
+
+   - Check
+   
+   ``````
+   #查看 app 容器
+   
+   docker ps |grep easynode
+   
+   # 查看app 的命令行日志
+   
+   docker logs 24a81a2a8e89
+   
+   # 查看Kafka 
+   docker exec -it 25032fc8414e kafka-topics.sh --list --bootstrap-server easykafka:9092
+
+   #查看kakfa 数据
+   docker exec -it 25032fc8414e kafka-console-consumer.sh --group g1 --topic ether_tx   --bootstrap-server easykafka:9092
+   
+   ``````
+
  ### Usage
  
 请参考 /easynode/cmd/easynode/README.md

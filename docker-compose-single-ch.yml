@@ -57,7 +57,7 @@ services:
      environment:
       - ALLOW_EMPTY_PASSWORD=yes
      volumes:
-      - ./redis-data:/bitnami/redis/data
+      - ./redis_data:/bitnami/redis/data
   clickhouse:
     image: bitnami/clickhouse:23
     hostname: clickhouse
@@ -81,6 +81,10 @@ services:
       - "9009:9009"
     networks:
       - easynode_net
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
     depends_on:
       - easyzk
 

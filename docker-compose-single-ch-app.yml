@@ -87,6 +87,26 @@ services:
         hard: 262144
     depends_on:
       - easyzk
+  blockchain_node:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: blockchain_node
+    networks:
+     - easynode_net
+    ports:
+     - "9001:9001"
+     - "9002:9002"
+     - "9003:9003"
+    volumes:
+     - ./config/:/app/config/
+     - /root/app/log/:/app/log/
+     - /root/app/data:/app/data/
+    depends_on:
+     - easyzk
+     - easykafka
+     - redis
+     - clickhouse
 
 volumes:
   zookeeper_data:

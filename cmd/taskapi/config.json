@@ -5,12 +5,9 @@
     200,
     205
   ],
-  "TaskDb": {
-    "Addr": "192.168.2.11",
-    "Port": 3306,
-    "User": "root",
-    "Password": "123456789",
-    "DbName": "easy_node"
+  "TaskKafka": {
+    "Host": "192.168.2.20",
+    "Port": 9092
   },
   "ClickhouseDb": {
     "200": {

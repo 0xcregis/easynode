@@ -1,0 +1,12 @@
+{
+  "RootPath": "/api/task",
+  "Port": 9001,
+  "BlockChain": [
+    200,
+    205
+  ],
+  "TaskKafka": {
+    "Host": "easykafka",
+    "Port": 9092
+  }
+}

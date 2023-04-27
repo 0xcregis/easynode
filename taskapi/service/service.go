@@ -6,52 +6,33 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
+	"github.com/uduncloud/easynode/common/util"
 	"github.com/uduncloud/easynode/taskapi/config"
-	"github.com/uduncloud/easynode/taskapi/service/db"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 	"io/ioutil"
 	"time"
 )
 
 type Server struct {
-	db         *gorm.DB
-	chDb       map[int64]*gorm.DB
-	chConfig   map[int64]*config.ClickhouseDb
 	log        *xlog.XLog
 	blockChain []int64
+	nodeId     string
+	cfg        *config.Config
+	db         DbApiInterface
 }
 
-func NewServer(dbConfig *config.TaskDb, chConfig map[int64]*config.ClickhouseDb, blockChain []int64, log *xlog.XLog) *Server {
-	g, err := db.Open(dbConfig.User, dbConfig.Password, dbConfig.Addr, dbConfig.DbName, dbConfig.Port, log)
+func NewServer(cfg *config.Config, blockChain []int64, log *xlog.XLog) *Server {
+	db := NewChService(cfg, log)
+	nodeId, err := util.GetLocalNodeId()
 	if err != nil {
 		panic(err)
 	}
-
-	mp := make(map[int64]*gorm.DB, 2)
-	for k, v := range chConfig {
-		c, err := db.OpenCK(v.User, v.Password, v.Addr, v.DbName, v.Port, log)
-		if err != nil {
-			panic(err)
-		}
-		mp[k] = c
-	}
 	return &Server{
+		db:         db,
+		cfg:        cfg,
+		nodeId:     nodeId,
 		log:        log,
-		db:         g,
-		chDb:       mp,
-		chConfig:   chConfig,
 		blockChain: blockChain,
 	}
-}
-
-func (s *Server) GetActiveNodes(c *gin.Context) {
-	list, err := s.GetActiveNodesFromDB()
-	if err != nil {
-		s.Error(c, c.Request.URL.Path, err.Error())
-		return
-	}
-	s.Success(c, list, c.Request.URL.Path)
 }
 
 func (s *Server) PushBlockTask(c *gin.Context) {
@@ -84,9 +65,8 @@ func (s *Server) PushBlockTask(c *gin.Context) {
 		return
 	}
 
-	nodeSource := &NodeSource{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, SourceType: 2}
-
-	err = s.AddNodeSource(nodeSource)
+	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 2, TaskStatus: 0, NodeId: s.nodeId}
+	err = s.db.AddNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
@@ -123,9 +103,8 @@ func (s *Server) PushSyncTxTask(c *gin.Context) {
 		return
 	}
 
-	nodeSource := &NodeSource{BlockChain: blockChain, TxHash: txHash, SourceType: 1}
-
-	err = s.AddNodeSource(nodeSource)
+	task := &NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 1, TaskStatus: 0, NodeId: s.nodeId}
+	err = s.db.AddNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
@@ -141,7 +120,7 @@ func (s *Server) PushSyncTxTask(c *gin.Context) {
 		for has {
 			//轮询的查询clickhouse
 
-			tx, err := s.QueryTxFromCh(blockChain, txHash)
+			tx, err := s.db.QueryTxFromCh(blockChain, txHash)
 			if err == nil && tx != nil {
 				has = false
 				respCh <- tx
@@ -203,9 +182,8 @@ func (s *Server) PushTxTask(c *gin.Context) {
 		return
 	}
 
-	nodeSource := &NodeSource{BlockChain: blockChain, TxHash: txHash, SourceType: 1}
-
-	err = s.AddNodeSource(nodeSource)
+	task := &NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 1, TaskStatus: 0, NodeId: s.nodeId}
+	err = s.db.AddNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
@@ -244,9 +222,8 @@ func (s *Server) PushTxsTask(c *gin.Context) {
 		return
 	}
 
-	nodeSource := &NodeSource{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, SourceType: 1}
-
-	err = s.AddNodeSource(nodeSource)
+	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 1, TaskStatus: 0, NodeId: s.nodeId}
+	err = s.db.AddNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
@@ -284,9 +261,8 @@ func (s *Server) PushReceiptTask(c *gin.Context) {
 		return
 	}
 
-	nodeSource := &NodeSource{BlockChain: blockChain, TxHash: txHash, SourceType: 3}
-
-	err = s.AddNodeSource(nodeSource)
+	task := &NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 3, TaskStatus: 0, NodeId: s.nodeId}
+	err = s.db.AddNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
@@ -325,44 +301,14 @@ func (s *Server) PushReceiptsTask(c *gin.Context) {
 		return
 	}
 
-	nodeSource := &NodeSource{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, SourceType: 3}
-
-	err = s.AddNodeSource(nodeSource)
+	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 3, TaskStatus: 0, NodeId: s.nodeId}
+	err = s.db.AddNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
 	}
 
 	s.Success(c, nil, c.Request.URL.Path)
-}
-
-func (s *Server) AddNodeSourceList(sources []*NodeSource) error {
-	return s.db.Table(NodeSourceTable).Omit("create_time,id").Clauses(clause.Insert{Modifier: "IGNORE"}).CreateInBatches(sources, 10).Error
-}
-
-func (s *Server) AddNodeSource(source *NodeSource) error {
-	return s.db.Table(NodeSourceTable).Omit("create_time,id").Clauses(clause.Insert{Modifier: "IGNORE"}).Create(source).Error
-}
-
-func (s *Server) GetActiveNodesFromDB() ([]string, error) {
-	t := time.Now().Add(-5 * time.Minute).Format(TimeFormat)
-	var nodeList []string
-	err := s.db.Table(NodeInfoTable).Select("node_id").Where("create_time>?", t).Pluck("node_id", &nodeList).Error
-
-	if err != nil {
-		return nil, err
-	}
-
-	return nodeList, nil
-}
-
-func (s *Server) QueryTxFromCh(blockChain int64, txHash string) (*Tx, error) {
-	var tx Tx
-	err := s.chDb[blockChain].Table(s.chConfig[blockChain].TxTable).Where("hash=?", txHash).Scan(&tx).Error
-	if err != nil || tx.Id < 1 {
-		return nil, errors.New("no record")
-	}
-	return &tx, nil
 }
 
 const (

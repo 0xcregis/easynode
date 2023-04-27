@@ -22,7 +22,7 @@ func main() {
 
 	log.Printf("%+v\n", cfg)
 
-	xLog := xlog.NewXLogger().BuildOutType(1).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/blockchain", 24*time.Hour)
+	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/blockchain/chain", 24*time.Hour)
 
 	e := gin.Default()
 
@@ -38,6 +38,7 @@ func main() {
 	root.POST("/:chain/block/hash", srv.GetBlockByHash)
 	root.POST("/:chain/block/number", srv.GetBlockByNumber)
 	root.POST("/:chain/tx/hash", srv.GetTxByHash)
+	root.POST("/:chain/receipts/hash", srv.GetTxReceiptByHash)
 	root.POST("/:chain/account/balance", srv.GetBalance)
 	root.POST("/:chain/account/tokenBalance", srv.GetTokenBalance)
 	root.POST("/:chain/account/nonce", srv.GetNonce)

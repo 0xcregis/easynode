@@ -5,8 +5,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
+	blockChainConfig "github.com/uduncloud/easynode/blockchain/config"
+	"github.com/uduncloud/easynode/blockchain/service"
 	"github.com/uduncloud/easynode/task/config"
-	"github.com/uduncloud/easynode/task/net/ether"
 	"github.com/uduncloud/easynode/task/util"
 	"time"
 )
@@ -21,13 +22,18 @@ func NewEther(log *xlog.XLog) *Ether {
 	}
 }
 
-func (e *Ether) GetLastBlockNumber(v *config.BlockConfig) (int64, error) {
+func (e *Ether) GetLatestBlockNumber(v *config.BlockConfig) (int64, error) {
 	log := e.log.WithFields(logrus.Fields{
 		"id":    time.Now().UnixMilli(),
-		"model": "GetLastBlockNumber",
+		"model": "GetLatestBlockNumber",
 	})
+
+	clusters := map[int64][]*blockChainConfig.NodeCluster{200: {{NodeUrl: v.NodeHost, NodeToken: v.NodeKey}}}
+	/**
+	  {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0x1019b4c\"}
+	*/
 	var lastNumber int64
-	jsonResult, err := ether.Eth_GetBlockNumber(v.NodeHost, v.NodeKey)
+	jsonResult, err := service.NewEth(clusters, e.log).LatestBlock(200)
 	if err != nil {
 		log.Errorf("Eth_GetBlockNumber|err=%v", err)
 		return 0, err
@@ -35,7 +41,6 @@ func (e *Ether) GetLastBlockNumber(v *config.BlockConfig) (int64, error) {
 		log.Printf("Eth_GetBlockNumber|resp=%v", jsonResult)
 	}
 
-	//获取链的最新区块高度
 	number := gjson.Parse(jsonResult).Get("result").String()
 	lastNumber, err = util.HexToInt(number)
 	if err != nil {

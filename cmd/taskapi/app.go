@@ -13,7 +13,7 @@ import (
 
 func main() {
 	var configPath string
-	flag.StringVar(&configPath, "config", "./config.json", "The system file of config")
+	flag.StringVar(&configPath, "config", "./cmd/taskapi/config.json", "The system file of config")
 	flag.Parse()
 	if len(configPath) < 1 {
 		panic("can not find config file")
@@ -22,7 +22,7 @@ func main() {
 
 	log.Printf("%+v\n", cfg)
 
-	xLog := xlog.NewXLogger().BuildOutType(1).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/task_api", 24*time.Hour)
+	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/taskapi/task_api", 24*time.Hour)
 
 	e := gin.Default()
 
@@ -30,9 +30,9 @@ func main() {
 
 	root.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: xLog.Out}))
 
-	srv := service.NewServer(cfg.TaskDb, cfg.ClickhouseDb, cfg.BlockChain, xLog)
+	srv := service.NewServer(&cfg, cfg.BlockChain, xLog)
 
-	root.GET("/node", srv.GetActiveNodes)
+	//root.GET("/node", srv.GetActiveNodes)
 	root.POST("/block", srv.PushBlockTask)
 
 	root.POST("/tx", srv.PushTxTask)

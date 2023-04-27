@@ -4,9 +4,8 @@ import (
 	"context"
 	"flag"
 	"github.com/uduncloud/easynode/collect/config"
-	"github.com/uduncloud/easynode/collect/service/cmd/task"
+	"github.com/uduncloud/easynode/collect/service/cmd"
 	"github.com/uduncloud/easynode/collect/service/monitor"
-	"github.com/uduncloud/easynode/collect/service/nodeinfo"
 	"log"
 	"os"
 	"os/signal"
@@ -16,7 +15,7 @@ import (
 
 func main() {
 	var configPath string
-	flag.StringVar(&configPath, "config", "./config.json", "The system file of config")
+	flag.StringVar(&configPath, "config", "./cmd/collect/config_tron.json", "The system file of config")
 	flag.Parse()
 	if len(configPath) < 1 {
 		panic("can not find config file")
@@ -30,16 +29,12 @@ func main() {
 
 	log.Printf("%+v\n", cfg)
 
-	//上传节点信息 服务
-	nodeinfo.NewService(cfg.NodeInfoDb, cfg.Chains, cfg.LogConfig).Start()
-
 	//启动处理日志服务
 	monitor.NewService(cfg.LogConfig).Start()
 
 	//启动公链服务
 	for _, v := range cfg.Chains {
-		//GetBlockChainService(v, cfg.TaskDb, cfg.SourceDb).Start()
-		task.NewService(v, cfg.TaskDb, cfg.SourceDb, cfg.LogConfig).Start()
+		cmd.NewService(v, cfg.LogConfig).Start()
 	}
 
 	// Wait for interrupt signal to gracefully shutdown the server with

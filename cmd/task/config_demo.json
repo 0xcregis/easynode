@@ -7,30 +7,7 @@
     "DbName": "easy_node",
     "Table": "node_task"
   },
-  "NodeSourceDb": {
-    "Addr": "192.168.2.11",
-    "Port": 3306,
-    "User": "root",
-    "Password": "123456789",
-    "DbName": "easy_node",
-    "Table": "node_source"
-  },
-  "NodeInfoDb": {
-    "Addr": "192.168.2.11",
-    "Port": 3306,
-    "User": "root",
-    "Password": "123456789",
-    "DbName": "easy_node",
-    "Table": "node_info"
-  },
-  "NodeErrorDb": {
-    "Addr": "192.168.2.11",
-    "Port": 3306,
-    "User": "root",
-    "Password": "123456789",
-    "DbName": "easy_node",
-    "Table": "node_error"
-  },
+  "AutoCreateBlockTask": true,
   "Chains": [
     {
       "NodeHost": "https://eth-mainnet.g.alchemy.com/v2",
@@ -41,7 +18,7 @@
       "BlockMax":16125881
     },
     {
-      "NodeHost": "https://api.trongrid.io/jsonrpc",
+      "NodeHost": "https://api.trongrid.io",
       "NodeKey": "*********************",
       "BlockChainName": "tron",
       "BlockChainCode": 205,

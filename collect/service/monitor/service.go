@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service"
-	"github.com/uduncloud/easynode/collect/util"
+	"github.com/uduncloud/easynode/common/util"
 	"path"
 	"time"
 )
@@ -15,6 +15,7 @@ type Service struct {
 
 func (s *Service) Start() {
 
+	//监控服务
 	go func() {
 
 		for true {
@@ -32,10 +33,6 @@ func (s *Service) Start() {
 				cmdLog := fmt.Sprintf("%v_%v", "cmd_log", datePath)
 				_ = util.DeleteFile(path.Join(p, cmdLog))
 
-				//
-				nodeInfoLog := fmt.Sprintf("%v_%v", "node_info_log", datePath)
-				_ = util.DeleteFile(path.Join(p, nodeInfoLog))
-
 				chainInfoLog := fmt.Sprintf("%v_%v", "chain_info_log", datePath)
 				_ = util.DeleteFile(path.Join(p, chainInfoLog))
 
@@ -51,8 +48,8 @@ func (s *Service) Stop() {
 	panic("implement me")
 }
 
-func NewService(config *config.LogConfig) *Service {
+func NewService(logConfig *config.LogConfig) *Service {
 	return &Service{
-		logConfig: *config,
+		logConfig: *logConfig,
 	}
 }

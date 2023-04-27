@@ -4,8 +4,15 @@ type Config struct {
 	RootPath     string                  `json:"RootPath"`
 	Port         int                     `json:"Port"`
 	BlockChain   []int64                 `json:"BlockChain"`
-	TaskDb       *TaskDb                 `json:"TaskDb"`
 	ClickhouseDb map[int64]*ClickhouseDb `json:"ClickhouseDb"`
+	TaskKafka    *Kafka                  `json:"TaskKafka"`
+}
+
+type Kafka struct {
+	Host      string `json:"Host"`
+	Port      int    `json:"Port"`
+	Topic     string `json:"Topic"`
+	Partition int    `json:"Partition"`
 }
 
 type TaskDb struct {

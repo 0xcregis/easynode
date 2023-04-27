@@ -1,0 +1,45 @@
+{
+  "RootPath": "/api/store",
+  "Port": 9003,
+  "BlockChain": 200,
+  "BlockStore": false,
+  "TxStore": false,
+  "ReceiptStore": false,
+  "Kafka": {
+    "Tx": {
+      "Host": "192.168.2.20",
+      "Port": 9092,
+      "Topic": "ether_tx2",
+      "Group": "1",
+      "StartOffset": 0,
+      "Partition": 0
+    },
+    "Block": {
+      "Host": "192.168.2.20",
+      "Port": 9092,
+      "Topic": "ether_block2",
+      "Group": "1",
+      "StartOffset": 0,
+      "Partition": 0
+    },
+    "Receipt": {
+      "Host": "192.168.2.20",
+      "Port": 9092,
+      "Topic": "ether_receipt2",
+      "Group": "1",
+      "StartOffset": 0,
+      "Partition": 0
+    }
+  },
+  "ClickhouseDb": {
+    "Addr": "192.168.2.11",
+    "Port": 9000,
+    "User": "test",
+    "Password": "test",
+    "DbName": "ether2",
+    "TxTable": "tx",
+    "BlockTable": "block",
+    "ReceiptTable": "receipt",
+    "AddressTable": "address"
+  }
+}

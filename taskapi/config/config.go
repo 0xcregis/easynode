@@ -5,7 +5,7 @@ type Config struct {
 	Port         int                     `json:"Port"`
 	BlockChain   []int64                 `json:"BlockChain"`
 	ClickhouseDb map[int64]*ClickhouseDb `json:"ClickhouseDb"`
-	Kafka        *Kafka                  `json:"Kafka"`
+	TaskKafka    *Kafka                  `json:"TaskKafka"`
 }
 
 type Kafka struct {

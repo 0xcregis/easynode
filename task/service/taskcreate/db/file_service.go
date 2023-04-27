@@ -50,6 +50,7 @@ func (t *TaskCreateFile) UpdateLastNumber(blockChainCode int64, latestNumber int
 		_ = json.Unmarshal(bs, &mp)
 		if _, ok := mp[blockChainCode]; ok {
 			mp[blockChainCode].LatestNumber = latestNumber
+			mp[blockChainCode].LogTime = time.Now()
 		} else {
 			bn := service.BlockNumber{LatestNumber: latestNumber, ChainCode: blockChainCode, LogTime: time.Now()}
 			mp[blockChainCode] = &bn
@@ -74,6 +75,7 @@ func (t *TaskCreateFile) UpdateRecentNumber(blockChainCode int64, recentNumber i
 		_ = json.Unmarshal(bs, &mp)
 		if _, ok := mp[blockChainCode]; ok {
 			mp[blockChainCode].RecentNumber = recentNumber
+			mp[blockChainCode].LogTime = time.Now()
 		} else {
 			bn := service.BlockNumber{RecentNumber: recentNumber, ChainCode: blockChainCode, LogTime: time.Now()}
 			mp[blockChainCode] = &bn

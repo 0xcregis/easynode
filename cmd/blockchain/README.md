@@ -26,8 +26,8 @@
 
 (以linux系统为例)
 - mkdir easynode & cd easynode
-- git https://github.com/uduncloud/easynode_chain.git
-- cd easynode_chain
+- git clone https://github.com/0xcregis/easynode.git
+- cd easynode/cmd/blockchain
 - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o easynode_chain app.go
   (mac下编译linux程序为例，其他交叉编译的命令请自行搜索)
 
@@ -56,6 +56,7 @@
 
 ### usages
 
+- http 协议
 ``````
 //发送交易接口
 curl -X POST \
@@ -134,7 +135,112 @@ curl -X POST \
     "method": "eth_getBalance"
 }'
 
+//根据hash 查询区块
+curl -X POST \
+  http://127.0.0.1:9002/api/chain/205/block/hash \
+  -H 'Content-Type: application/json' \
+  -H 'Postman-Token: 49c02db3-51a2-4a23-8fbd-f78c50cbd8c7' \
+  -H 'cache-control: no-cache' \
+  -d '{
+	"hash":"0000000002f2f66e7256eaffa627b521c380f7dcc4d354bf6c7a5ed8e0c4ea72"
+}'
+
+//根据高度 查询区块
+curl -X POST \
+  http://127.0.0.1:9002/api/chain/205/block/number \
+  -H 'Content-Type: application/json' \
+  -H 'Postman-Token: 3f33d2b1-9a01-4a48-9f9a-c49334ac2903' \
+  -H 'cache-control: no-cache' \
+  -d '{
+	"number":"49477110"
+}'
+
+//查询交易
+curl -X POST \
+  http://127.0.0.1:9002/api/chain/205/tx/hash \
+  -H 'Content-Type: application/json' \
+  -H 'Postman-Token: 72b4bc45-c235-4361-b88b-2ccffd42a384' \
+  -H 'cache-control: no-cache' \
+  -d '{
+	"hash":"89afac2142e025a13987ed183444ec90e9dcb8028bc7bc0757a21c654aa78b31"
+}'
+
+//查询收据
+curl -X POST \
+  http://127.0.0.1:9002/api/chain/205/receipts/hash \
+  -H 'Content-Type: application/json' \
+  -H 'Postman-Token: 9e33035b-fef4-4dfd-a7f3-fd0d2f3de318' \
+  -H 'cache-control: no-cache' \
+  -d '{
+	"hash":"89afac2142e025a13987ed183444ec90e9dcb8028bc7bc0757a21c654aa78b31"
+}'
 
 ``````
 
+- ws 协议
 
+``````
+入参结构体：
+type WsReqMessage struct {
+	Id     int64
+	Code   int64
+	Params map[string]string
+}
+
+输出结构体：
+type WsRespMessage struct {
+	Id     int64
+	Code   int64
+	Status int //0:成功 1：失败
+	Err    string
+	Params map[string]string
+	Resp   interface{}
+}
+
+1. code=1 //交易查询
+   params:
+   blockChain int //公链编号
+   txHash string //交易hash
+   
+2. code=2 //区块查询
+   params:
+   blockChain int //公链编号
+   blockHash string //区块hash  
+   
+3. code=3 //区块查询
+   params:
+   blockChain int //公链编号
+   number string //区块高度 
+   
+4. code=4 //最新区块
+   params:
+   blockChain int //公链编号
+            
+
+5. code=8 //广播交易
+   params:
+   blockChain int //公链编号
+   signed string //签名后交易
+   
+6. code=9 //jsonRpc 请求
+   params:
+   blockChain int //公链编号
+   jsonRpc string //jsonRpc  
+   
+7. code=10 //主币余额查询
+   params:
+   blockChain int //公链编号
+   address string //账户
+ 
+ 8. code=11 //代币余额查询
+   params:
+   blockChain int //公链编号
+   address string //账户  
+   contract string //代币合约  
+   
+ 9. code=12 //nonce
+   params:
+   blockChain int //公链编号
+   address string //账户  
+     
+``````

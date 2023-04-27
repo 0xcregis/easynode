@@ -55,7 +55,7 @@ func NewChService(cfg *config.Config, log *xlog.XLog) DbApiInterface {
 }
 
 func (m *ClickhouseDb) startKafka() {
-	broker := fmt.Sprintf("%v:%v", m.cfg.Kafka.Host, m.cfg.Kafka.Port)
+	broker := fmt.Sprintf("%v:%v", m.cfg.TaskKafka.Host, m.cfg.TaskKafka.Port)
 	m.kafkaClient.Write(kafkaClient.Config{Brokers: []string{broker}}, m.sendCh, nil)
 }
 

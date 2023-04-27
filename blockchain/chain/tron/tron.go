@@ -3,11 +3,9 @@ package tron
 import (
 	"errors"
 	"fmt"
-	"github.com/fbsobreira/gotron-sdk/pkg/address"
-	"github.com/fbsobreira/gotron-sdk/pkg/client"
 	"github.com/tidwall/gjson"
 	"github.com/uduncloud/easynode/blockchain/chain"
-	"google.golang.org/grpc"
+	"github.com/uduncloud/easynode/common/util"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -68,7 +66,7 @@ func (t *Tron) EthSendRequestToChain(host string, token string, query string) (s
 	return string(body), nil
 }
 
-func (t *Tron) SendRequestToChain(host string, token string, query string) (string, error) {
+func (t *Tron) SendRequestToChainByHttp(host string, token string, query string) (string, error) {
 	payload := strings.NewReader(query)
 
 	query = strings.Replace(query, "\t", "", -1)
@@ -118,12 +116,12 @@ func (t *Tron) GetTokenBalanceByHttp(host string, token string, contractAddress 
 			}
 			`
 
-	userAddr, err := address.Base58ToAddress(userAddress)
+	userAddr, err := util.Base58ToAddress(userAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	contractAddr, err := address.Base58ToAddress(contractAddress)
+	contractAddr, err := util.Base58ToAddress(contractAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +130,7 @@ func (t *Tron) GetTokenBalanceByHttp(host string, token string, contractAddress 
 	m := "0000000000000000000000000000000000000000000000000000000000000000"
 	params := m[:len(m)-len(c2)] + c2
 	query = fmt.Sprintf(query, userAddr.Hex(), contractAddr.Hex(), params)
-	resp, err := t.SendRequestToChain(host, token, query)
+	resp, err := t.SendRequestToChainByHttp(host, token, query)
 	if err != nil {
 		return nil, err
 	}
@@ -149,42 +147,5 @@ func (t *Tron) GetTokenBalanceByHttp(host string, token string, contractAddress 
 }
 
 func (t *Tron) GetTokenBalance(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {
-
-	//host = "grpc.trongrid.io:50051"
-	conn := client.NewGrpcClient(host)
-	_ = conn.SetAPIKey(key) // todo 没有发现设置意义
-	err := conn.Start(grpc.WithInsecure())
-	if err != nil {
-		return nil, err
-	}
-	mp := make(map[string]interface{}, 2)
-	balance, err := conn.TRC20ContractBalance(userAddress, contractAddress)
-
-	if err != nil {
-		log.Println("err=", err)
-	} else {
-		mp["balance"] = balance.String()
-	}
-
-	name, err := conn.TRC20GetName(contractAddress)
-	if err != nil {
-		log.Println("err=", err)
-	} else {
-		mp["name"] = name
-	}
-
-	symbol, err := conn.TRC20GetSymbol(contractAddress)
-	if err != nil {
-		log.Println("err=", err)
-	} else {
-		mp["symbol"] = symbol
-	}
-
-	decimals, err := conn.TRC20GetDecimals(contractAddress)
-	if err != nil {
-		log.Println("err=", err)
-	} else {
-		mp["decimals"] = decimals
-	}
-	return mp, nil
+	return nil, nil
 }

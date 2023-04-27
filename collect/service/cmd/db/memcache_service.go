@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/allegro/bigcache/v3"
 	"github.com/eko/gocache/lib/v4/cache"
@@ -25,6 +26,27 @@ type Service struct {
 	kafkaCh     chan []*kafka.Message
 }
 
+func (s *Service) GetNodeTask(key string) (*service.NodeTask, error) {
+	task, err := s.cacheClient.Get(context.Background(), key)
+	if err == nil && task != "" {
+		t := service.NodeTask{}
+		json.Unmarshal([]byte(task), &t)
+		return &t, nil
+	} else {
+		return nil, errors.New("no record")
+	}
+}
+
+func (s *Service) ResetNodeTask(oldKey, key string) error {
+	task, err := s.GetNodeTask(oldKey)
+	if err != nil {
+		return err
+	}
+	_ = s.cacheClient.Delete(context.Background(), oldKey)
+	s.StoreExecTask(key, task)
+	return nil
+}
+
 // StoreExecTask key which tx:tx_txHash,receipt:receipt_txHash, block: block_number_blockHash
 func (s *Service) StoreExecTask(key string, task *service.NodeTask) {
 	bs, _ := json.Marshal(task)
@@ -34,7 +56,7 @@ func (s *Service) StoreExecTask(key string, task *service.NodeTask) {
 	}
 }
 
-func (s *Service) AddNodeTask(list []*service.NodeTask) error {
+func (s *Service) SendNodeTask(list []*service.NodeTask) error {
 	resultList := make([]*kafka.Message, 0)
 	for _, v := range list {
 		v.CreateTime = time.Now()
@@ -74,7 +96,7 @@ func (s *Service) UpdateNodeTaskStatus(key string, status int) error {
 
 func (s *Service) UpdateNodeTaskStatusWithBatch(keys []string, status int) error {
 	for _, v := range keys {
-		s.UpdateNodeTaskStatus(v, status)
+		_ = s.UpdateNodeTaskStatus(v, status)
 	}
 	return nil
 }

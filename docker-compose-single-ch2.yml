@@ -1,0 +1,98 @@
+version: "2"
+
+services:
+  easyzk:
+    image: docker.io/bitnami/zookeeper:3.8
+    user: root
+    hostname: easyzk
+    restart: always
+    networks:
+      - easynode_net
+    ports:
+      - "2181:2181"
+    volumes:
+      - ./zookeeper_data:/bitnami
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+  easykafka:
+    image: docker.io/bitnami/kafka:3.4
+    user: root
+    hostname: easykafka
+    restart: always
+    networks:
+      - easynode_net
+    ports:
+      - "9092:9092"
+    volumes:
+      - ./kafka_data:/bitnami
+    environment:
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://easykafka:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://easykafka:9092
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=easyzk:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_ENABLE_KRAFT=no
+    depends_on:
+      - easyzk
+  kafka_manager:
+    image: hlebalbau/kafka-manager:stable
+    restart: always
+    networks:
+      - easynode_net
+    ports:
+      - "9093:9000"
+    environment:
+      - ZK_HOSTS=easyzk:2181
+    depends_on:
+      - easykafka
+      - easyzk
+  redis:
+     image: bitnami/redis:7.0
+     user: root
+     hostname: redis
+     restart: always
+     networks:
+      - easynode_net
+     ports:
+      - "6379:6379"
+     environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+     volumes:
+      - ./redis_data:/bitnami/redis/data
+  clickhouse:
+    image: bitnami/clickhouse:23
+    hostname: clickhouse
+    user: root
+    restart: always
+    environment:
+      - CLICKHOUSE_ADMIN_USER=test
+      - CLICKHOUSE_ADMIN_PASSWORD=test
+      - CLICKHOUSE_HTTP_PORT=8123
+      - CLICKHOUSE_TCP_PORT=9000
+      - CLICKHOUSE_MYSQL_PORT=9004
+      - CLICKHOUSE_POSTGRESQL_PORT=9005
+      - CLICKHOUSE_INTERSERVER_HTTP_PORT=9009
+    volumes:
+      - ./clickhouse_data:/bitnami/clickhouse
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+      - "9004:9004"
+      - "9005:9005"
+      - "9009:9009"
+    networks:
+      - easynode_net
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    depends_on:
+      - easyzk
+
+volumes:
+  zookeeper_data:
+    driver: local
+  kafka_data:
+    driver: local
+networks:
+   easynode_net:
+     driver: bridge  

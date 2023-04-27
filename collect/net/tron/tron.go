@@ -12,6 +12,46 @@ import (
 	"time"
 )
 
+func Eth_GetCode(client chainService.API, chainCode int64, address string) (string, error) {
+	query := `{
+				"id": 1,
+				"jsonrpc": "2.0",
+				"method": "eth_getCode",
+				"params": [
+					"%v",
+					"latest"
+				]
+			}`
+	query = fmt.Sprintf(query, address)
+	return client.SendJsonRpc(chainCode, query)
+}
+
+func Eth_GetAddressType(client chainService.API, chainCode int64, address string) (string, error) {
+	query := `{
+				"id": 1,
+				"jsonrpc": "2.0",
+				"method": "eth_getCode",
+				"params": [
+					"%v",
+					"latest"
+				]
+			}`
+	query = fmt.Sprintf(query, address)
+	resp, err := client.SendJsonRpc(chainCode, query)
+	if err != nil {
+		return "", err
+	}
+
+	code := gjson.Parse(resp).Get("result").String()
+	if len(code) > 5 {
+		//合约地址
+		return "0x12", nil
+	} else {
+		//外部地址
+		return "0x11", nil
+	}
+}
+
 func Eth_GetBlockByHash(client chainService.API, blockHash string, log *xlog.XLog) (string, error) {
 
 	start := time.Now()

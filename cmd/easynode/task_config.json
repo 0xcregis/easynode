@@ -1,11 +1,7 @@
 {
-  "NodeTaskDb": {
-    "Addr": "192.168.2.11",
-    "Port": 3306,
-    "User": "root",
-    "Password": "123456789",
-    "DbName": "easy_node2",
-    "Table": "node_task"
+  "TaskKafka": {
+    "Host": "192.168.2.20",
+    "Port": 9092
   },
   "AutoCreateBlockTask": true,
   "Chains": [
@@ -14,16 +10,16 @@
       "NodeKey": "RzxBjjh_c4y0LVHZ7GNm8zoXEZR3HYop",
       "BlockChainName": "eth",
       "BlockChainCode": 200,
-      "BlockMin": 16939000,
-      "BlockMax":0
+      "BlockMin": 17113233,
+      "BlockMax": 0
     },
     {
       "NodeHost": "https://api.trongrid.io",
       "NodeKey": "244f918d-56b5-4a16-9665-9637598b1223",
       "BlockChainName": "tron",
       "BlockChainCode": 205,
-      "BlockMin": 49851410,
-      "BlockMax":0
+      "BlockMin": 50563524,
+      "BlockMax": 0
     }
   ]
 }

@@ -20,6 +20,33 @@ type Tron struct {
 	blockChainClient chain.BlockChain
 }
 
+func (t *Tron) GetCode(chainCode int64, address string) (string, error) {
+	req := `{ "value": "%v", "visible": true}`
+	req = fmt.Sprintf(req, address)
+	return t.SendReq(chainCode, req, "wallet/getcontract")
+}
+
+func (t *Tron) GetAddressType(chainCode int64, address string) (string, error) {
+	start := time.Now()
+	defer func() {
+		t.log.Printf("GetAddressType,Duration=%v", time.Now().Sub(start))
+	}()
+	req := `{ "value": "%v", "visible": true}`
+	req = fmt.Sprintf(req, address)
+	resp, err := t.SendReq(chainCode, req, "wallet/getcontract")
+	if err != nil {
+		return "", err
+	}
+
+	if gjson.Parse(resp).Get("code_hash").Exists() {
+		//合约地址
+		return "0x12", nil
+	} else {
+		//外部地址
+		return "0x11", nil
+	}
+}
+
 func (t *Tron) SubscribePendingTx(chainCode int64, receiverCh chan string, sendCh chan string) (string, error) {
 	//TODO implement me
 	panic("implement me")
@@ -36,16 +63,29 @@ func (t *Tron) UnSubscribe(chainCode int64, subId string) (string, error) {
 }
 
 func (t *Tron) GetBlockReceiptByBlockNumber(chainCode int64, number string) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	start := time.Now()
+	defer func() {
+		t.log.Printf("GetBlockReceiptByBlockNumber,Duration=%v", time.Now().Sub(start))
+	}()
+	req := `{"num": %v}`
+
+	n, err := strconv.ParseInt(number, 0, 64)
+	if err != nil {
+		return "", err
+	}
+	req = fmt.Sprintf(req, n)
+	return t.SendReq(chainCode, req, "walletsolidity/gettransactioninfobyblocknum")
 }
 
 func (t *Tron) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	return "", nil
 }
 
 func (t *Tron) GetTransactionReceiptByHash(chainCode int64, hash string) (string, error) {
+	start := time.Now()
+	defer func() {
+		t.log.Printf("GetTransactionReceiptByHash,Duration=%v", time.Now().Sub(start))
+	}()
 	req := `{ "value": "%v"}`
 	req = fmt.Sprintf(req, hash)
 	return t.SendReq(chainCode, req, "wallet/gettransactioninfobyid")
@@ -56,6 +96,7 @@ func NewTron(cluster map[int64][]*config.NodeCluster, xlog *xlog.XLog) API {
 	for k, _ := range cluster {
 		if k == 205 {
 			blockChainClient = tron.NewChainClient()
+			break
 		}
 	}
 
@@ -76,12 +117,12 @@ func (t *Tron) GetBlockByHash(chainCode int64, hash string) (string, error) {
 
 	//var delTx bool = true
 	//if delTx {
-	mp := gjson.Parse(res).Map()
-	delete(mp, "transactions")
-	r, _ := json.Marshal(mp)
-	return string(r), nil
+	//mp := gjson.Parse(res).Map()
+	//delete(mp, "transactions")
+	//r, _ := json.Marshal(mp)
+	//return string(r), nil
 	//} else {
-	//	return res, nil
+	return res, nil
 	//}
 }
 
@@ -100,20 +141,24 @@ func (t *Tron) GetBlockByNumber(chainCode int64, number string) (string, error) 
 
 	//var delTx bool = true
 	//if delTx {
-	mp := gjson.Parse(res).Map()
-	delete(mp, "transactions")
-	r, _ := json.Marshal(mp)
-	return string(r), nil
+	//mp := gjson.Parse(res).Map()
+	//delete(mp, "transactions")
+	//r, _ := json.Marshal(mp)
+	//return string(r), nil
 	//} else {
-	//	return res, nil
+	return res, nil
 	//}
 
 }
 
 func (t *Tron) GetTxByHash(chainCode int64, hash string) (string, error) {
+	start := time.Now()
+	defer func() {
+		t.log.Printf("GetTxByHash,Duration=%v", time.Now().Sub(start))
+	}()
 	req := `{ "value": "%v"}`
 	req = fmt.Sprintf(req, hash)
-	return t.SendReq(chainCode, req, "wallet/gettransactioninfobyid")
+	return t.SendReq(chainCode, req, "wallet/gettransactionbyid")
 }
 
 func (t *Tron) SendJsonRpc(chainCode int64, req string) (string, error) {
@@ -127,6 +172,10 @@ func (t *Tron) SendJsonRpc(chainCode int64, req string) (string, error) {
 }
 
 func (t *Tron) Balance(chainCode int64, address string, tag string) (string, error) {
+	start := time.Now()
+	defer func() {
+		t.log.Printf("Balance,Duration=%v", time.Now().Sub(start))
+	}()
 	req := `{"address":"%v",  "visible": true}`
 	req = fmt.Sprintf(req, address)
 	res, err := t.SendReq(chainCode, req, "wallet/getaccount")
@@ -146,6 +195,10 @@ func (t *Tron) Balance(chainCode int64, address string, tag string) (string, err
 }
 
 func (t *Tron) TokenBalance(chainCode int64, address string, contractAddr string, abi string) (string, error) {
+	start := time.Now()
+	defer func() {
+		t.log.Printf("TokenBalance,Duration=%v", time.Now().Sub(start))
+	}()
 	cluster := t.BalanceCluster(chainCode)
 	if cluster == nil {
 		//不存在节点
@@ -195,7 +248,7 @@ func (t *Tron) SendReq(blockChain int64, reqBody string, url string) (string, er
 
 	if blockChain == 205 {
 		url = fmt.Sprintf("%v/%v", cluster.NodeUrl, url)
-		return t.blockChainClient.SendRequestToChain(url, cluster.NodeToken, reqBody)
+		return t.blockChainClient.SendRequestToChainByHttp(url, cluster.NodeToken, reqBody)
 	}
 
 	return "", errors.New("blockChainCode is error")

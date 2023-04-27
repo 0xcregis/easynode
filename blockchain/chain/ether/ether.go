@@ -42,7 +42,7 @@ func NewChainClient() chain.BlockChain {
 	return &Ether{}
 }
 
-func (e *Ether) SendRequestToChain(host string, token string, query string) (string, error) {
+func (e *Ether) SendRequestToChainByHttp(host string, token string, query string) (string, error) {
 	//TODO implement me
 	panic("implement me")
 }

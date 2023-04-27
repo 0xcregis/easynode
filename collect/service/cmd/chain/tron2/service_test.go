@@ -1,4 +1,4 @@
-package tron
+package tron2
 
 import (
 	"github.com/sirupsen/logrus"
@@ -12,7 +12,7 @@ import (
 func Init() (service.BlockChainInterface, config.Config, *xlog.XLog) {
 	cfg := config.LoadConfig("./../../../../../cmd/collect/config_tron.json")
 	x := xlog.NewXLogger()
-	return NewService(cfg.Chains[0], cfg.TaskDb, cfg.SourceDb, x), cfg, x
+	return NewService(cfg.Chains[0], x), cfg, x
 }
 
 func TestService_GetTx(t *testing.T) {
@@ -28,7 +28,7 @@ func TestService_GetBlockByNumber(t *testing.T) {
 	s, cfg, x := Init()
 	b, t1 := s.GetBlockByNumber("0xF9CC56", cfg.Chains[0].BlockTask, x.WithFields(logrus.Fields{}))
 	log.Println(b)
-	log.Println(t1)
+	log.Println(t1[0])
 }
 
 func TestService_GetReceiptByBlock(t *testing.T) {

@@ -23,6 +23,50 @@ type Ether struct {
 	blockChainClient chain.BlockChain
 }
 
+func (e *Ether) GetCode(chainCode int64, address string) (string, error) {
+	query := `{
+				"id": 1,
+				"jsonrpc": "2.0",
+				"method": "eth_getCode",
+				"params": [
+					"%v",
+					"latest"
+				]
+			}`
+	query = fmt.Sprintf(query, address)
+	return e.SendEthReq(chainCode, query)
+}
+
+func (e *Ether) GetAddressType(chainCode int64, address string) (string, error) {
+	start := time.Now()
+	defer func() {
+		e.log.Printf("GetAddressType,Duration=%v", time.Now().Sub(start))
+	}()
+	query := `{
+				"id": 1,
+				"jsonrpc": "2.0",
+				"method": "eth_getCode",
+				"params": [
+					"%v",
+					"latest"
+				]
+			}`
+	query = fmt.Sprintf(query, address)
+	resp, err := e.SendEthReq(chainCode, query)
+	if err != nil {
+		return "", err
+	}
+
+	code := gjson.Parse(resp).Get("result").String()
+	if len(code) > 5 {
+		//合约地址
+		return "0x12", nil
+	} else {
+		//外部地址
+		return "0x11", nil
+	}
+}
+
 func (e *Ether) SubscribePendingTx(chainCode int64, receiverCh chan string, sendCh chan string) (string, error) {
 
 	query := `{"jsonrpc":  "2.0",  "id":  1,  "method":  "eth_subscribe",  "params":  ["newPendingTransactions"]}`
@@ -102,6 +146,10 @@ func (e *Ether) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string
 }
 
 func (e *Ether) GetTransactionReceiptByHash(chainCode int64, hash string) (string, error) {
+	start := time.Now()
+	defer func() {
+		e.log.Printf("GetTransactionReceiptByHash,Duration=%v", time.Now().Sub(start))
+	}()
 	query := `{
 				"id": 1,
 				"jsonrpc": "2.0",
@@ -147,6 +195,10 @@ func (e *Ether) GetBlockByNumber(chainCode int64, number string) (string, error)
 }
 
 func (e *Ether) GetTxByHash(chainCode int64, hash string) (string, error) {
+	start := time.Now()
+	defer func() {
+		e.log.Printf("GetTxByHash,Duration=%v", time.Now().Sub(start))
+	}()
 	req := `
 		{
 		  "id": 1,
@@ -171,6 +223,7 @@ func NewEth(cluster map[int64][]*config.NodeCluster, xlog *xlog.XLog) API {
 	for k, _ := range cluster {
 		if k == 200 {
 			blockChainClient = ether.NewChainClient()
+			break
 		}
 	}
 	return &Ether{
@@ -180,6 +233,10 @@ func NewEth(cluster map[int64][]*config.NodeCluster, xlog *xlog.XLog) API {
 	}
 }
 func (e *Ether) Balance(chainCode int64, address string, tag string) (string, error) {
+	start := time.Now()
+	defer func() {
+		e.log.Printf("Balance,Duration=%v", time.Now().Sub(start))
+	}()
 	if len(tag) < 1 {
 		tag = "latest"
 	}
@@ -198,6 +255,10 @@ func (e *Ether) Balance(chainCode int64, address string, tag string) (string, er
 }
 
 func (e *Ether) TokenBalance(chainCode int64, address string, contractAddr string, abi string) (string, error) {
+	start := time.Now()
+	defer func() {
+		e.log.Printf("TokenBalance,Duration=%v", time.Now().Sub(start))
+	}()
 	cluster := e.BalanceCluster(chainCode)
 	if cluster == nil {
 		//不存在节点

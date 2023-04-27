@@ -11,6 +11,9 @@ import (
 	collectConfig "github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service/cmd"
 	collectMonitor "github.com/uduncloud/easynode/collect/service/monitor"
+	storeConfig "github.com/uduncloud/easynode/store/config"
+	"github.com/uduncloud/easynode/store/service/push"
+	"github.com/uduncloud/easynode/store/service/store"
 	taskConfig "github.com/uduncloud/easynode/task/config"
 	"github.com/uduncloud/easynode/task/service/taskcreate"
 	taskapiConfig "github.com/uduncloud/easynode/taskapi/config"
@@ -24,18 +27,32 @@ import (
 
 // 将 collect,blockchain,task,task_api 集成为一个 app 并运行
 func main() {
+	var collectPath string
+	var taskPath string
+	var blockchainPath string
+	var taskapiPath string
+	var storePath string
+	flag.StringVar(&collectPath, "collect", "./collect_config.json", "The system file of config")
+	flag.StringVar(&taskPath, "task", "./task_config.json", "The system file of config")
+	flag.StringVar(&blockchainPath, "blockchain", "./blockchain_config.json", "The system file of config")
+	flag.StringVar(&taskapiPath, "taskapi", "./taskapi_config.json", "The system file of config")
+	flag.StringVar(&storePath, "store", "./store_config.json", "The system file of config")
+	flag.Parse()
 
 	//start collect service
-	go startCollect()
+	go startCollect(collectPath)
 
 	//start task service
-	go startTask()
+	go startTask(taskPath)
 
 	//start blockchain service
-	go startBlockchain()
+	go startBlockchain(blockchainPath)
 
 	//start taskapi service
-	go startTaskApi()
+	go startTaskApi(taskapiPath)
+
+	//start store service
+	go startStore(storePath)
 
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.
@@ -53,10 +70,42 @@ func main() {
 	defer cancel()
 }
 
-func startTaskApi() {
-	var configPath string
-	flag.StringVar(&configPath, "taskapi_config", "./cmd/easynode/taskapi_config.json", "The system file of config")
-	flag.Parse()
+func startStore(configPath string) {
+
+	if len(configPath) < 1 {
+		panic("can not find config file")
+	}
+	cfg := storeConfig.LoadConfig(configPath)
+
+	log.Printf("%+v\n", cfg)
+
+	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/store/store", 24*time.Hour)
+
+	//是否存盘
+	store.NewStoreService(&cfg, xLog).Start()
+
+	//http 协议
+	e := gin.Default()
+	root := e.Group(cfg.RootPath)
+	srv := push.NewServer(&cfg, cfg.BlockChain, xLog)
+	root.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: xLog.Out}))
+	root.POST("/monitor/token", srv.NewToken)
+	root.POST("/monitor/address", srv.MonitorAddress)
+
+	//ws 协议
+	wsServer := push.NewWsHandler(&cfg, xLog)
+	root.Handle("GET", "/ws/:token", func(ctx *gin.Context) {
+		wsServer.Start(ctx, ctx.Writer, ctx.Request)
+	})
+
+	err := e.Run(fmt.Sprintf(":%v", cfg.Port))
+	if err != nil {
+		panic(err)
+	}
+}
+
+func startTaskApi(configPath string) {
+
 	if len(configPath) < 1 {
 		panic("can not find config file")
 	}
@@ -64,7 +113,7 @@ func startTaskApi() {
 
 	log.Printf("%+v\n", cfg)
 
-	xLog := xlog.NewXLogger().BuildOutType(1).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/task_api", 24*time.Hour)
+	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/taskapi/task_api", 24*time.Hour)
 
 	e := gin.Default()
 
@@ -90,10 +139,8 @@ func startTaskApi() {
 	}
 }
 
-func startBlockchain() {
-	var configPath string
-	flag.StringVar(&configPath, "blockchain_config", "./cmd/easynode/blockchain_config.json", "The system file of config")
-	flag.Parse()
+func startBlockchain(configPath string) {
+
 	if len(configPath) < 1 {
 		panic("can not find config file")
 	}
@@ -101,7 +148,7 @@ func startBlockchain() {
 
 	log.Printf("%+v\n", cfg)
 
-	xLog := xlog.NewXLogger().BuildOutType(1).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/blockchain", 24*time.Hour)
+	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/blockchain/chain", 24*time.Hour)
 
 	e := gin.Default()
 
@@ -136,10 +183,8 @@ func startBlockchain() {
 	}
 }
 
-func startTask() {
-	var configPath string
-	flag.StringVar(&configPath, "task_config", "./cmd/easynode/task_config.json", "The system file of config")
-	flag.Parse()
+func startTask(configPath string) {
+
 	if len(configPath) < 1 {
 		panic("can not find config file")
 	}
@@ -153,10 +198,8 @@ func startTask() {
 	}
 }
 
-func startCollect() {
-	var configPath string
-	flag.StringVar(&configPath, "collect_config", "./cmd/easynode/collect_config.json", "The system file of config")
-	flag.Parse()
+func startCollect(configPath string) {
+
 	if len(configPath) < 1 {
 		panic("can not find config file")
 	}
@@ -169,10 +212,8 @@ func startCollect() {
 
 	log.Printf("%+v\n", cfg)
 
-	x := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/node_info", cfg.LogConfig.Path), 24*time.Hour)
-
 	//启动处理日志服务
-	collectMonitor.NewService(cfg.LogConfig, x).Start()
+	collectMonitor.NewService(cfg.LogConfig).Start()
 
 	//启动公链服务
 	for _, v := range cfg.Chains {

@@ -10,16 +10,16 @@ import (
 )
 
 type Config struct {
-	Brokers   []string
-	Topic     string
-	Group     string
-	Partition int
+	Brokers     []string
+	Topic       string
+	Group       string
+	Partition   int
+	StartOffset int64
 }
 
 type EasyKafka struct {
-	log   *xlog.XLog
-	query chan int
-	Logf  func(string, ...interface{})
+	log  *xlog.XLog
+	Logf func(string, ...interface{})
 }
 
 func NewEasyKafka(xLog *xlog.XLog) *EasyKafka {
@@ -27,15 +27,16 @@ func NewEasyKafka(xLog *xlog.XLog) *EasyKafka {
 		//xLog.Printf("kafka|msg=%v , other=%v", msg, a)
 		fmt.Println(msg, a)
 	}
-	query := make(chan int, 5)
 	return &EasyKafka{
-		log:   xLog,
-		Logf:  f,
-		query: query,
+		log:  xLog,
+		Logf: f,
 	}
 }
 
-func (easy *EasyKafka) Read(c *Config, ch chan *kafka.Message) {
+func (easy *EasyKafka) Read(c *Config, ch chan *kafka.Message, ctx context.Context) {
+	//if c.StartOffset == 0 {
+	//	c.StartOffset = kafka.LastOffset
+	//}
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:     c.Brokers,
 		Topic:       c.Topic,
@@ -43,37 +44,53 @@ func (easy *EasyKafka) Read(c *Config, ch chan *kafka.Message) {
 		GroupID:     c.Group,
 		MinBytes:    10e3, // 10KB
 		MaxBytes:    10e6, // 10MB
+		StartOffset: c.StartOffset,
 		Logger:      kafka.LoggerFunc(easy.Logf),
 		ErrorLogger: kafka.LoggerFunc(easy.Logf),
 	})
 	//r.SetOffset(0)
 
+	defer func() {
+		if err := r.Close(); err != nil {
+			easy.log.Fatal("kafka|read| failed to close reader:", err)
+		}
+	}()
+
 	errCh := make(chan int)
 
+	interrupt := true
+
 	go func(r *kafka.Reader, ch chan *kafka.Message, errCh chan int) {
-		for {
+		for interrupt {
 			m, err := r.ReadMessage(context.Background())
 			if err != nil {
 				easy.log.Errorf("kafka|read|ReadMessage err:%v", err)
 				errCh <- 1
 				break
 			}
-			easy.log.Printf("message at offset %d: %s = %s\n", m.Offset, string(m.Key), string(m.Value))
+			easy.log.Printf("kafka|read message at offset %d: %s ", m.Offset, string(m.Key))
 			ch <- &m
 		}
+
 	}(r, ch, errCh)
 
-	<-errCh
-	if err := r.Close(); err != nil {
-		easy.log.Fatal("kafka|read| failed to close reader:", err)
+	select {
+	case <-errCh:
+		break
+	case <-ctx.Done():
+		break
 	}
+	interrupt = false
+	time.Sleep(2 * time.Second)
 }
 
 func (easy *EasyKafka) WriteBatch(c *Config, ch chan []*kafka.Message, resp chan []*kafka.Message) {
+	query := make(chan int, 5)
 	for true {
-		easy.query <- 1
+		query <- 1
 		go func(c *Config, ch chan []*kafka.Message, resp chan []*kafka.Message) {
 			easy.Write(*c, ch, resp)
+			<-query
 		}(c, ch, resp)
 	}
 }
@@ -95,7 +112,6 @@ func (easy *EasyKafka) Write(c Config, ch chan []*kafka.Message, resp chan []*ka
 		if err := w.Close(); err != nil {
 			easy.log.Fatal("kafka|write| failed to close writer:", err)
 		}
-		<-easy.query
 	}()
 
 	running := true

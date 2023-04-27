@@ -68,10 +68,11 @@ services:
       - CLICKHOUSE_USER=test
       - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
       - CLICKHOUSE_PASSWORD=test
-      - CLICKHOUSE_DB=ether
+      - CLICKHOUSE_DB=easynode
     volumes:
       - ./clickhouse_data/data:/var/lib/clickhouse
       - ./clickhouse_data/log:/var/log/clickhouse-server
+      - ./scripts:/docker-entrypoint-initdb.d
     ports:
       - "8123:8123"
       - "9000:9000"

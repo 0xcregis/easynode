@@ -1,5 +1,5 @@
 -- 创建数据库：不同公链需要创建不同的数据库
-CREATE DATABASE tron;
+CREATE DATABASE IF NOT EXISTS tron;
 
 CREATE TABLE IF NOT EXISTS  tron.address
 (

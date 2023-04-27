@@ -1,5 +1,5 @@
 -- 创建数据库：不同公链需要创建不同的数据库
-CREATE DATABASE ether;
+CREATE DATABASE IF NOT EXISTS ether;
 
 -- 创建交易表
 CREATE TABLE IF NOT EXISTS ether.tx

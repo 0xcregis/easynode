@@ -1,5 +1,5 @@
 -- 创建数据库：不同公链需要创建不同的数据库
-CREATE DATABASE ether2;
+CREATE DATABASE IF NOT EXISTS ether2;
 
 CREATE TABLE IF NOT EXISTS  ether2.address
 (

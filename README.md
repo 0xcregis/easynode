@@ -18,19 +18,35 @@
 
 ### Install & Deploy
 
+ #### Init Config & Database
+
+   - ./scripts :数据库初始化脚本,主要修改数据库名称即可（database）
+   - ./config :系统启动需要的配置文件 ，主要修改各个公链的节点地址 和 数据库名称（store_config.json）
+
+   1. clickhouse的工具 [Dbeaver](https://dbeaver.io/download/)
+   2. 每个配置文件 详细说明，请参考 /easynode/cmd/easynode/README.md
+
+
  ####  Dependent Environment
    
    执行下面命令，在执行之前确保 docker,docker-compose 都已经安装
 
    ``````
-   //启动命令
+   #启动命令(仅启动依赖的环境)
    docker-compose -f docker-compose-single-ch.yml up -d
    
-   //查看命令
+   #启动命令(启动依赖环境和 应用程序)
+   docker-compose -f docker-compose-single-ch-app.yml up -d
+   
+   #查看命令
    docker-compose -f docker-compose-single-ch.yml ps
      
-   //删除命令
+   #删除命令
    docker-compose -f docker-compose-single-ch.yml down  
+   docker-compose -f docker-compose-single-ch.yml down -v 
+   
+   #重新构建
+   docker-compose -f docker-compose-single-ch-app.yml build blockchain_node
 
    ``````
    
@@ -57,23 +73,24 @@
    redis:
 
       6379:6379
+   
+   blockchain_node:
+
+     9001:9001
+     9002:9002
+     9003:9003
+   
 
  notes:
 
   1. [docker 安装和使用](https://docs.docker.com/get-docker/)
   2. [docker-compose 安装和使用](https://docs.docker.com/compose/)
   3. docker-compose-single-ch.yml 启动的仅仅是单节点服务，如需要 多kafka 节点、多clickhouse节点不适用该文件
-   
- #### Init Database
 
-   使用命令行或工具，关联到上一步已经安装的 clickhouse服务，使用工具执行ch.sql脚本
-   (./build/ch_ether.sql) 
-
-   notes：
- 
-  1. clickhouse的工具 [Dbeaver](https://dbeaver.io/download/)
 
  #### Deploy & Run Application
+   
+  *（如果 上一步 执行 [docker-compose -f docker-compose-single-ch-app.yml up -d] ）则 不需要次步骤 *
 
    - 创建easynode docker image
   
@@ -118,7 +135,7 @@
    4. 如果配置文件名称需要改变，请 docker run --entrypoint /bin/sh 命令
 
 
-   - Check
+ ### Check
    
    ``````
    #查看 app 容器
@@ -127,7 +144,7 @@
    
    # 查看app 的命令行日志
    
-   docker logs 24a81a2a8e89
+   docker logs -n 10 24a81a2a8e89
    
    # 查看Kafka 
    docker exec -it 25032fc8414e kafka-topics.sh --list --bootstrap-server easykafka:9092
@@ -139,7 +156,7 @@
 
  ### Usage
  
-请参考 /easynode/cmd/easynode/README.md
+ 请参考 /easynode/cmd/easynode/README.md
 
  1. 添加监控地址
    

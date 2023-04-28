@@ -15,20 +15,26 @@ type ClickhouseDb struct {
 	cfg  *config.Config
 }
 
-func (m *ClickhouseDb) NewTx(tx *service.Tx) error {
-	return m.chDb.Table(m.cfg.ClickhouseDb.TxTable).Create(tx).Error
+func (m *ClickhouseDb) NewTx(txs []*service.Tx) error {
+	return m.chDb.Table(m.cfg.ClickhouseDb.TxTable).Create(txs).Error
 }
 
-func (m *ClickhouseDb) NewBlock(block *service.Block) error {
-	bs, _ := json.Marshal(block.Transactions)
-	block.TransactionList = string(bs)
-	return m.chDb.Table(m.cfg.ClickhouseDb.BlockTable).Create(block).Error
+func (m *ClickhouseDb) NewBlock(blocks []*service.Block) error {
+
+	for _, v := range blocks {
+		bs, _ := json.Marshal(v.Transactions)
+		v.TransactionList = string(bs)
+	}
+
+	return m.chDb.Table(m.cfg.ClickhouseDb.BlockTable).Create(blocks).Error
 }
 
-func (m *ClickhouseDb) NewReceipt(receipt *service.Receipt) error {
-	bs, _ := json.Marshal(receipt.Logs)
-	receipt.LogList = string(bs)
-	return m.chDb.Table(m.cfg.ClickhouseDb.BlockTable).Create(receipt).Error
+func (m *ClickhouseDb) NewReceipt(receipts []*service.Receipt) error {
+	for _, v := range receipts {
+		bs, _ := json.Marshal(v.Logs)
+		v.LogList = string(bs)
+	}
+	return m.chDb.Table(m.cfg.ClickhouseDb.BlockTable).Create(receipts).Error
 }
 
 func NewChService(cfg *config.Config, log *xlog.XLog) service.DbMonitorAddressInterface {

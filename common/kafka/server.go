@@ -68,7 +68,7 @@ func (easy *EasyKafka) Read(c *Config, ch chan *kafka.Message, ctx context.Conte
 				errCh <- 1
 				break
 			}
-			easy.log.Printf("kafka|read message at offset %d: %s ", m.Offset, string(m.Key))
+			//easy.log.Printf("kafka|read message at offset %d: %s ", m.Offset, string(m.Key))
 			ch <- &m
 		}
 

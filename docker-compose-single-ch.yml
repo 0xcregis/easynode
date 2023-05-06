@@ -24,7 +24,7 @@ services:
     ports:
       - "9092:9092"
     volumes:
-      - kafka_data:/bitnami
+      - ./kafka_data:/bitnami
     environment:
       - KAFKA_CFG_LISTENERS=PLAINTEXT://easykafka:9092
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://easykafka:9092
@@ -95,4 +95,4 @@ volumes:
     driver: local
 networks:
    easynode_net:
-     driver: bridge  
+     driver: bridge

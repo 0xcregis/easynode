@@ -1,43 +1,65 @@
-# easynode
 
-### Overview
-该系统使访问各种公链更简易、更稳定，使用用户专注与自己的业务。包含一些子服务
+## Overview
+该系统使访问各种公链更简易、更稳定，使用用户专注与自己的业务。包含以下子服务
 
- - blockchain: 直接访问公链，选择最优节点。对外提供 http、ws 类型协议与其交互
- - collect: 任务(包括：交易任务、区块任务、收据任务)的具体执行者，对公链返回的数据验证、解析后，
- 发送到指定的Kafka上
- - task: 时时根据公链最新高度，产生区块任务
- - taskapi: 接收用户自定义的任务
- - store: 接收用户提交的监控地址、接收用户的订阅、主动推送符合条件的交易 和 数据落盘
+- blockchain: 直接访问公链，选择最优节点。对外提供 http、ws 类型协议与其交互
+- collect: 任务(包括：交易任务、区块任务、收据任务)的具体执行者，对公链返回的数据验证、解析后，
+  发送到指定的Kafka上
+- task: 时时根据公链最新高度，产生区块任务
+- taskapi: 接收用户自定义的任务
+- store: 接收用户提交的监控地址、接收用户的订阅、主动推送符合条件的交易 和 数据落盘
 
-### Load Source
+## Getting Started
 
-- mkdir easynode & cd easynode
-- git clone https://github.com/0xcregis/easynode.git 或 git clone -b feature/xxx https://github.com/0xcregis/easynode.git
-- cd easynode
+### 1. Prerequisites
 
-### Install & Deploy
+#### Hardware Requirements
 
- #### Init Config & Database
+- CPU With 4+ Cores
+- 16GB+ RAM
+- 200GB of free storage,Recommended that high performance SSD with at least 512GB free space
 
-   - ./scripts :数据库初始化脚本,主要修改数据库名称即可（database）
-   - ./config :系统启动需要的配置文件 ，主要修改各个公链的节点地址 和 数据库名称（store_config.json）
+#### Software Requirements
 
-   1. clickhouse的工具 [Dbeaver](https://dbeaver.io/download/)
-   2. 每个配置文件 详细说明，请参考 /easynode/cmd/easynode/README.md
+- go version>=1.20  [install](https://golang.google.cn/doc/install)
+- git : Install the latest version of git if it is not already installed. [install](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+- cURL :Install the latest version of cURL if it is not already installed. [install](https://everything.curl.dev/get)
+- docker : Install the latest version of Docker if it is not already installed. [install](https://docs.docker.com/desktop/install/linux-install/)
+- docker-compose: Install the latest version of Docker-compose if it is not already installed. [install](https://docs.docker.com/compose/install/)
+
+### 2. Download The Source
+
+``````
+ mkdir easynode && cd easynode
+ 
+ git clone https://github.com/0xcregis/easynode.git
+ 
+ cd easynode
+``````
+
+### 3. Init Config & Database
+
+- ./scripts :数据库初始化脚本,主要修改数据库名称即可（database）默认:ether2
+- ./config :系统启动需要的配置文件,
+    - blockchain_config.json,collect_config.json :主要修改各个公链的节点地址
+    - store_config.json ： DbName 字段
+    - task_config.json ：BlockMin、BlockMax等字段
+
+1. clickhouse的工具 [Dbeaver](https://dbeaver.io/download/)
+2. config 中每个配置文件 [详细说明](https://github.com/0xcregis/easynode/blob/main/cmd/easynode/README.md)
 
 
- ####  Dependent Environment
-   
-   执行下面命令，在执行之前确保 docker,docker-compose 都已经安装
+### 4. Start Dependent Environment
 
-   ``````
-   #启动命令(仅启动依赖的环境)
+- 初始化easynode 运行需要的环境
+
+``````
    docker-compose -f docker-compose-single-ch.yml up -d
-   
-   #启动命令(启动依赖环境和 应用程序)
-   docker-compose -f docker-compose-single-ch-app.yml up -d
-   
+``````
+
+- 可能用到的其他命令
+
+``````
    #查看命令
    docker-compose -f docker-compose-single-ch.yml ps
      
@@ -46,81 +68,44 @@
    docker-compose -f docker-compose-single-ch.yml down -v 
    
    #重新构建
-   docker-compose -f docker-compose-single-ch-app.yml build blockchain_node
+   docker-compose -f docker-compose-single-ch-app.yml build easynode
 
-   ``````
-   
- 运行上述命令后，会启动一些服务和端口
+   #启动命令(启动依赖环境和 应用程序)
+   docker-compose -f docker-compose-single-ch-app.yml up -d
   
-   zk: 
+``````
 
-       2181:2181
-   kafka:
+notes:
 
-       9092:9092
-   kafka_manager:
-
-       9093:9000
-   clickhouse:
-     
-       user:test
-       pwd:test
-       http.port:8123
-       tcp.port:9000
-       mysql.port:9004
-       postgre.port:9005
-
-   redis:
-
-      6379:6379
-   
-   blockchain_node:
-
-     9001:9001
-     9002:9002
-     9003:9003
-   
-
- notes:
-
-  1. [docker 安装和使用](https://docs.docker.com/get-docker/)
-  2. [docker-compose 安装和使用](https://docs.docker.com/compose/)
-  3. docker-compose-single-ch.yml 启动的仅仅是单节点服务，如需要 多kafka 节点、多clickhouse节点不适用该文件
+- clickhouse 的默认：账户：test,密码：test
 
 
- #### Deploy & Run Application
-   
-  *（如果 上一步 执行 [docker-compose -f docker-compose-single-ch-app.yml up -d] ）则 不需要次步骤 *
 
-   - 创建easynode docker image
-  
-   ``````
-   //创建image
+### 5. Build & Run Application
+
+- build image
+
+``````
+   #创建image
    docker build -f Dockerfile -t easynode:1.0 . 
    
-   //查看image 是否生成
+   #查看image
    docker images |grep easynode
    
-   ``````
-   - 启动 easynode服务
-   
-   ``````
+``````
+- run easynode
+
+``````
     docker run --name easynode -p 9001:9001 -p 9002:9002 -p 9003:9003 --network easynode_easynode_net -v /root/easy_node/easynode/config/:/app/config/ -v /root/app/log/:/app/log/ -v /root/app/data:/app/data/ -d easynode:1.0  
-    
-    #OR
-    
-    go build -o easynode ./cmd/easynode/app.go
-   ./easynode -collect ./config/collect_config.json -task ./config/task_config.json -blockchain ./config/blockchain_config.json -taskapi ./config/taskapi_config.json -store ./config/store_config.json
+``````
 
-  ``````
+notes:
 
-   notes:
+1. network easynode_net : 需要和 docker-compose-single-ch.yml 中保持一致
 
-   1. network easynode_net : 需要和 docker-compose-single-ch.yml 中保持一致
-    
-   2. v ./config/* : 把配置文件挂载到镜像中，默认配置文件的名称不可变
+2.  -v 文件挂载 : 容器的路径不可变，宿主路径改成本机可用的绝对路径
 
-   3. ./config的目录结构如下，每个配置文件的具体配置 详见 (/easynode/cmd/easynode/README.md) 
+3. ./config的目录结构如下，每个配置文件的具体配置 [详见](https://github.com/0xcregis/easynode/blob/main/cmd/easynode/README.md)且文件名称不可变
 
   ``````
        ./config
@@ -131,45 +116,61 @@
           ./taskapi_config.json
 
    ``````
+
+4. 如果 *步骤4* 执行 docker-compose-single-ch-app.yml 则 可以跳过 *步骤5*
+
+### 6. Check
+
+- 检查运行环境是否启动
+
+``````
+     docker-compose -f docker-compose-single-ch.yml ps
+``````
+
+- 检查Kafka数据
+
+``````
+     # 查看Kafka 
+     docker exec -it 25032fc8414e kafka-topics.sh --list --bootstrap-server easykafka:9092
     
-   4. 如果配置文件名称需要改变，请 docker run --entrypoint /bin/sh 命令
+     #查看kakfa 数据
+     docker exec -it 25032fc8414e kafka-console-consumer.sh --group g1 --topic ether_tx   --bootstrap-server easykafka:9092
+``````
+
+- 检查 easynode 是否正常
+
+ ``````
+    #查看 app 容器
+    
+    docker ps |grep easynode
+    
+    # 查看app 的命令行日志
+    
+    docker logs -n 10 24a81a2a8e89
+ ``````
 
 
- ### Check
-   
-   ``````
-   #查看 app 容器
-   
-   docker ps |grep easynode
-   
-   # 查看app 的命令行日志
-   
-   docker logs -n 10 24a81a2a8e89
-   
-   # 查看Kafka 
-   docker exec -it 25032fc8414e kafka-topics.sh --list --bootstrap-server easykafka:9092
+notes:
 
-   #查看kakfa 数据
-   docker exec -it 25032fc8414e kafka-console-consumer.sh --group g1 --topic ether_tx   --bootstrap-server easykafka:9092
-   
-   ``````
+- easynode的 9001 端口 [使用说明](https://github.com/0xcregis/easynode/blob/main/cmd/taskapi/README.md)
+- easynode的 9002 端口 [使用说明](https://github.com/0xcregis/easynode/blob/main/cmd/blockchain/README.md)
+- easynode的 9003 端口 [使用说明](https://github.com/0xcregis/easynode/blob/main/cmd/store/README.md)
 
- ### Usage
- 
- 请参考 /easynode/cmd/easynode/README.md
 
- 1. 添加监控地址
-   
-    ``````
+## Usage
+
+1. 添加监控地址
+
+ ``````
     # 生成token
-    curl --location --request POST '192.168.2.9:9003/api/store/monitor/token' \
+    curl --location --request POST 'http://localhost:9003/api/store/monitor/token' \
     --header 'Content-Type: application/json' \
     --data-raw '{
         "blockChain": 200
     }'
     
     #提交监控地址
-    curl --location --request POST '192.168.2.9:9003/api/store/monitor/address' \
+    curl --location --request POST 'http://localhost:9003/api/store/monitor/address' \
     --header 'Content-Type: application/json' \
     --data-raw '{
         "blockChain": 200,
@@ -178,10 +179,11 @@
         "txType": 12
     }'
     
-    ``````
-  2. 提交订阅并接受返回 
+ ``````
 
-   ``````
+2. 提交订阅并接受返回
+
+``````
    url: ws://localhost:9003/api/store/ws/{token}
    
    入参：
@@ -207,8 +209,5 @@
             
                         
    
-   ``````
- 
-
-
- 
+``````
+[更多](https://github.com/0xcregis/easynode/blob/main/cmd/easynode/README.md)

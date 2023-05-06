@@ -1,6 +1,6 @@
 
 集成 collect,blockchain,task,task_api,store等服务到一个application, 该app拥有easynode全部功能模块
- 
+
 ## Prerequisites
 - go version >=1.20
 
@@ -17,32 +17,32 @@
 ## config.json 详解
 
 - blockchain_config.json
-  
-  请参考easynode/cmd/blockchain/config.json
+
+  请参考[blockchain](https://github.com/0xcregis/easynode/blob/main/cmd/blockchain/README.md)
 
 
 - collect_config.json
 
-  请参考easynode/cmd/collect/config.json
+  请参考[collect](https://github.com/0xcregis/easynode/blob/main/cmd/collect/README.md)
 
 
 - store_config.json
- 
-  请参考easynode/cmd/store/config.json
+
+  请参考[store](https://github.com/0xcregis/easynode/blob/main/cmd/store/README.md)
 
 
 - task_config.json
 
-  请参考easynode/cmd/task/config.json
+  请参考[task](https://github.com/0xcregis/easynode/blob/main/cmd/task/README.md)
 
 
 - taskapi_config.json
 
-  请参考easynode/cmd/taskapi/config.json
+  请参考[taskapi](https://github.com/0xcregis/easynode/blob/main/cmd/taskapi/README.md)
 
 ## run command
 
- ./easynode [OPTIONS]
+./easynode [OPTIONS]
 
 ``````
 -collect_config  string  config path of collect server
@@ -62,25 +62,25 @@
 ## usages
 
 - blockchain 服务的使用
-  
-  请参考 easynode/cmd/blockchain/README.md
+
+  请参考 [blockchain](https://github.com/0xcregis/easynode/blob/main/cmd/blockchain/README.md)
 
 
 - collect 服务的使用
 
-  请参考 easynode/cmd/collect/README.md
+  请参考 [collect](https://github.com/0xcregis/easynode/blob/main/cmd/collect/README.md)
 
 
 - task 服务的使用
 
-  请参考 easynode/cmd/task/README.md
+  请参考 [task](https://github.com/0xcregis/easynode/blob/main/cmd/task/README.md)
 
 
 - taskapi 服务的使用
 
-  请参考 easynode/cmd/taskapi/README.md
+  请参考 [taskapi](https://github.com/0xcregis/easynode/blob/main/cmd/taskapi/README.md)
 
 
 - store 服务的使用
 
-  请参考 easynode/cmd/store/README.md
+  请参考 [store](https://github.com/0xcregis/easynode/blob/main/cmd/store/README.md)

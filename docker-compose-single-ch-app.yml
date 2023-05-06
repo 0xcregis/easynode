@@ -24,7 +24,7 @@ services:
     ports:
       - "9092:9092"
     volumes:
-      - kafka_data:/bitnami
+      - ./kafka_data:/bitnami
     environment:
       - KAFKA_CFG_LISTENERS=PLAINTEXT://easykafka:9092
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://easykafka:9092
@@ -87,11 +87,11 @@ services:
         hard: 262144
     depends_on:
       - easyzk
-  blockchain_node:
+  easynode:
     build:
       context: .
       dockerfile: Dockerfile
-    image: blockchain_node
+    image: easynode
     networks:
      - easynode_net
     ports:
@@ -100,8 +100,8 @@ services:
      - "9003:9003"
     volumes:
      - ./config/:/app/config/
-     - /root/app/log/:/app/log/
-     - /root/app/data:/app/data/
+     - ./app/log/:/app/log/
+     - ./app/data:/app/data/
     depends_on:
      - easyzk
      - easykafka
@@ -115,4 +115,4 @@ volumes:
     driver: local
 networks:
    easynode_net:
-     driver: bridge  
+     driver: bridge

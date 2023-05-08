@@ -22,7 +22,7 @@ import (
 
 type WsHandler struct {
 	log     *xlog.XLog
-	cfg     *config.Config
+	cfg     map[int64]*config.Chain
 	kafka   *kafkaClient.EasyKafka
 	db      service.DbMonitorAddressInterface
 	connMap map[string]*websocket.Conn
@@ -33,10 +33,14 @@ type WsHandler struct {
 func NewWsHandler(cfg *config.Config, xlog *xlog.XLog) *WsHandler {
 	kfk := kafkaClient.NewEasyKafka(xlog)
 	db := NewChService(cfg, xlog)
+	mp := make(map[int64]*config.Chain, 2)
+	for _, v := range cfg.Chains {
+		mp[v.BlockChain] = v
+	}
 	return &WsHandler{
 		log:     xlog,
 		db:      db,
-		cfg:     cfg,
+		cfg:     mp,
 		kafka:   kfk,
 		connMap: make(map[string]*websocket.Conn, 5),
 		cmdMap:  make(map[string]service.WsReqMessage, 5),
@@ -382,9 +386,9 @@ func (ws *WsHandler) handlerMessage(ctx context.Context, token string, c *websoc
 	}(&returnMsg)
 
 	//不支持
-	if msg.BlockChain != ws.cfg.BlockChain {
+	if _, ok := ws.cfg[msg.BlockChain]; !ok {
 		returnMsg.Status = 1
-		returnMsg.Err = fmt.Sprintf("the blockchain=%v", ws.cfg.BlockChain)
+		returnMsg.Err = fmt.Sprintf("the blockchain(%v) has not support", msg.BlockChain)
 		return
 	}
 
@@ -400,7 +404,7 @@ func (ws *WsHandler) handlerMessage(ctx context.Context, token string, c *websoc
 			ws.cmdMap[token] = msg
 			kafkaCtx, cancel := context.WithCancel(ctx)
 			ws.ctxMap[token] = cancel
-			go ws.sendMessage(token, ws.cfg.KafkaCfg["Tx"], ws.cfg.BlockChain, kafkaCtx)
+			go ws.sendMessage(token, ws.cfg[msg.BlockChain].KafkaCfg["Tx"], msg.BlockChain, kafkaCtx)
 		}
 	} else if msg.Code == 2 || msg.Code == 4 {
 		if f, ok := ws.ctxMap[token]; ok {

@@ -87,7 +87,7 @@ func startStore(configPath string) {
 	//http 协议
 	e := gin.Default()
 	root := e.Group(cfg.RootPath)
-	srv := push.NewServer(&cfg, cfg.BlockChain, xLog)
+	srv := push.NewServer(&cfg, xLog)
 	root.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: xLog.Out}))
 	root.POST("/monitor/token", srv.NewToken)
 	root.POST("/monitor/address", srv.MonitorAddress)

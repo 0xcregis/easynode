@@ -223,16 +223,16 @@ type Block struct {
 
 type WsReqMessage struct {
 	Id         int64
-	Code       int64 //1:订阅普通资产转移交易，2:取消订阅普通资产转移交易 3:订阅合约调用资产转移交易 4:取消订阅合约调用资产转移交易
-	BlockChain int64 `json:"blockChain"`
+	Code       int64   //1:订阅资产转移交易，2:取消订阅资产转移交易
+	BlockChain []int64 `json:"blockChain"`
 	Params     map[string]string
 }
 
 type WsRespMessage struct {
 	Id         int64
 	Code       int64
-	BlockChain int64 `json:"blockChain"`
-	Status     int   //0:成功 1：失败
+	BlockChain []int64 `json:"blockChain"`
+	Status     int     //0:成功 1：失败
 	Err        string
 	Params     map[string]string
 	Resp       interface{}

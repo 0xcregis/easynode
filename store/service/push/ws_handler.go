@@ -161,6 +161,12 @@ func (ws *WsHandler) Start(ctx *gin.Context, w http.ResponseWriter, r *http.Requ
 
 }
 
+func (ws *WsHandler) sendMessageEx(token string, kafkaConfig map[int64]*config.KafkaConfig, ctx context.Context) {
+	for b, k := range kafkaConfig {
+		go ws.sendMessage(token, k, b, ctx)
+	}
+}
+
 // kafka->ws.push
 func (ws *WsHandler) sendMessage(token string, kafkaConfig *config.KafkaConfig, blockChain int64, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
@@ -178,14 +184,11 @@ func (ws *WsHandler) sendMessage(token string, kafkaConfig *config.KafkaConfig, 
 			//消息过滤
 			//根据这个用户（token）最新的订阅命令，筛选符合条件的交易且推送出去
 			//todo filter
-			if v, ok := ws.cmdMap[token]; !ok {
+			if _, ok := ws.cmdMap[token]; !ok {
 				//用户不在线
 				continue
 			} else {
 				//用户在线
-				if v.BlockChain != blockChain { //不是该链
-					continue
-				}
 				if _, ok := ws.cmdMap[token]; !ok { //没有订阅
 					continue
 				}
@@ -386,14 +389,25 @@ func (ws *WsHandler) handlerMessage(ctx context.Context, token string, c *websoc
 	}(&returnMsg)
 
 	//不支持
-	if _, ok := ws.cfg[msg.BlockChain]; !ok {
-		returnMsg.Status = 1
-		returnMsg.Err = fmt.Sprintf("the blockchain(%v) has not support", msg.BlockChain)
-		return
+	for _, blockchain := range msg.BlockChain {
+		if _, ok := ws.cfg[blockchain]; !ok {
+			returnMsg.Status = 1
+			returnMsg.Err = fmt.Sprintf("the blockchain(%v) has not support", msg.BlockChain)
+			return
+		}
+	}
+
+	// 订阅链的配置
+	txKafkaParams := make(map[int64]*config.KafkaConfig, 2)
+	for _, b := range msg.BlockChain {
+		if c, ok := ws.cfg[b]; ok {
+			f := c.KafkaCfg["Tx"]
+			txKafkaParams[b] = f
+		}
 	}
 
 	//最新一次命令
-	if msg.Code == 1 || msg.Code == 3 {
+	if msg.Code == 1 {
 		//仅能保存一个订阅的命令
 		if _, ok := ws.cmdMap[token]; ok {
 			//已经订阅了，则返回订阅失败
@@ -404,9 +418,9 @@ func (ws *WsHandler) handlerMessage(ctx context.Context, token string, c *websoc
 			ws.cmdMap[token] = msg
 			kafkaCtx, cancel := context.WithCancel(ctx)
 			ws.ctxMap[token] = cancel
-			go ws.sendMessage(token, ws.cfg[msg.BlockChain].KafkaCfg["Tx"], msg.BlockChain, kafkaCtx)
+			ws.sendMessageEx(token, txKafkaParams, kafkaCtx)
 		}
-	} else if msg.Code == 2 || msg.Code == 4 {
+	} else if msg.Code == 2 {
 		if f, ok := ws.ctxMap[token]; ok {
 			f()
 		}

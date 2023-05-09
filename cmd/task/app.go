@@ -14,7 +14,7 @@ import (
 
 func main() {
 	var configPath string
-	flag.StringVar(&configPath, "config", "./cmd/task/config.json", "The system file of config")
+	flag.StringVar(&configPath, "task", "./cmd/task/config.json", "The system file of config")
 	flag.Parse()
 	if len(configPath) < 1 {
 		panic("can not find config file")

@@ -4,8 +4,8 @@
   "Chains": [
     {
       "BlockChain": 205,
-      "BlockStore": false,
-      "TxStore": false,
+      "BlockStore": true,
+      "TxStore": true,
       "ReceiptStore": false,
       "Kafka": {
         "Tx": {

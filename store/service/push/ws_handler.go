@@ -179,6 +179,12 @@ func (ws *WsHandler) sendMessage(token string, kafkaConfig *config.KafkaConfig, 
 	for {
 		select {
 		case <-ctx.Done():
+			if _, ok := ws.ctxMap[token]; ok {
+				delete(ws.ctxMap, token)
+			}
+			if _, ok := ws.cmdMap[token]; ok {
+				delete(ws.cmdMap, token)
+			}
 			return
 		case msg := <-receiver:
 			//消息过滤

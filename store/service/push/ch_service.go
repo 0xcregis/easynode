@@ -16,11 +16,22 @@ type ClickhouseDb struct {
 }
 
 func (m *ClickhouseDb) NewTx(blockchain int64, txs []*service.Tx) error {
+	if _, ok := m.chDb[blockchain]; !ok {
+		return errors.New("the server has not support this blockchain")
+	}
+	if _, ok := m.cfg[blockchain]; !ok {
+		return errors.New("the server has not support this blockchain")
+	}
 	return m.chDb[blockchain].Table(m.cfg[blockchain].ClickhouseDb.TxTable).Create(txs).Error
 }
 
 func (m *ClickhouseDb) NewBlock(blockchain int64, blocks []*service.Block) error {
-
+	if _, ok := m.chDb[blockchain]; !ok {
+		return errors.New("the server has not support this blockchain")
+	}
+	if _, ok := m.cfg[blockchain]; !ok {
+		return errors.New("the server has not support this blockchain")
+	}
 	for _, v := range blocks {
 		bs, _ := json.Marshal(v.Transactions)
 		v.TransactionList = string(bs)
@@ -30,6 +41,12 @@ func (m *ClickhouseDb) NewBlock(blockchain int64, blocks []*service.Block) error
 }
 
 func (m *ClickhouseDb) NewReceipt(blockchain int64, receipts []*service.Receipt) error {
+	if _, ok := m.chDb[blockchain]; !ok {
+		return errors.New("the server has not support this blockchain")
+	}
+	if _, ok := m.cfg[blockchain]; !ok {
+		return errors.New("the server has not support this blockchain")
+	}
 	for _, v := range receipts {
 		bs, _ := json.Marshal(v.Logs)
 		v.LogList = string(bs)
@@ -58,10 +75,23 @@ func NewChService(cfg *config.Config, log *xlog.XLog) service.DbMonitorAddressIn
 }
 
 func (m *ClickhouseDb) AddMonitorAddress(blockchain int64, address *service.MonitorAddress) error {
+	if _, ok := m.chDb[blockchain]; !ok {
+		return errors.New("the server has not support this blockchain")
+	}
+	if _, ok := m.cfg[blockchain]; !ok {
+		return errors.New("the server has not support this blockchain")
+	}
 	return m.chDb[blockchain].Table(m.cfg[blockchain].ClickhouseDb.AddressTable).Create(address).Error
 }
 
 func (m *ClickhouseDb) GetAddressByToken(blockchain int64, token string) ([]*service.MonitorAddress, error) {
+	if _, ok := m.chDb[blockchain]; !ok {
+		return nil, errors.New("the server has not support this blockchain")
+	}
+	if _, ok := m.cfg[blockchain]; !ok {
+		return nil, errors.New("the server has not support this blockchain")
+	}
+
 	var list []*service.MonitorAddress
 	err := m.chDb[blockchain].Table(m.cfg[blockchain].ClickhouseDb.AddressTable).Where("token=? and block_chain=?", token, blockchain).Scan(&list).Error
 	if err != nil || len(list) < 1 {

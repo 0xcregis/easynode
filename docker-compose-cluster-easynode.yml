@@ -8,7 +8,7 @@ services:
     ports:
       - "9002:9002"
     volumes:
-      - ./config/blockchain_config.json:/app/config/
+      - ./config/:/app/config/
       - ./app/log/:/app/log/
       - ./app/data:/app/data/
   collect:
@@ -17,7 +17,7 @@ services:
       dockerfile: Dockerfile_Collect
     image: collect
     volumes:
-      - ./config/collect_config.json:/app/config/
+      - ./config/:/app/config/
       - ./app/log/:/app/log/
       - ./app/data:/app/data/
   store:
@@ -28,7 +28,7 @@ services:
     ports:
       - "9003:9003"
     volumes:
-      - ./config/store_config.json:/app/config/
+      - ./config/:/app/config/
       - ./app/log/:/app/log/
       - ./app/data:/app/data/
   task:
@@ -37,7 +37,7 @@ services:
       dockerfile: Dockerfile_Task
     image: task
     volumes:
-      - ./config/task_config.json:/app/config/
+      - ./config/:/app/config/
       - ./app/log/:/app/log/
       - ./app/data:/app/data/
   taskapi:
@@ -48,10 +48,10 @@ services:
     ports:
       - "9001:9001"
     volumes:
-      - ./config/taskapi_config.json:/app/config/
+      - ./config/:/app/config/
       - ./app/log/:/app/log/
       - ./app/data:/app/data/
 networks:
    default:
     external:
-     name: sunhongtao
+     name: easynode_easynode_net

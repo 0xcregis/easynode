@@ -40,7 +40,7 @@
 ### 3. Init Config & Database
 
 - ./scripts :数据库初始化脚本,主要修改数据库名称即可（database）默认:ether2
-- ./config :系统启动需要的配置文件,
+- ./config :系统启动需要的配置文件,以下文件和字段常需要修改
     - blockchain_config.json,collect_config.json :主要修改各个公链的节点地址
     - store_config.json ： DbName 字段
     - task_config.json ：BlockMin、BlockMax等字段
@@ -56,6 +56,12 @@
 ``````
    docker-compose -f docker-compose-single-base.yml up -d
 ``````
+
+  *快捷部署也可以执行如下命令*
+``````
+   docker-compose -f docker-compose-single-base-app.yml up -d
+``````
+  *快捷模式部署，则可以跳过步骤5，但其常适用于简单的业务需求*
 
 - 可能用到的其他命令
 
@@ -82,7 +88,20 @@ notes:
 
 
 ### 5. Build & Run Application
+ 
+为提高easynode适用范围，采用组件化的设计思想，因此我们为easynode提供多种运行和部署方式。
 
+#### 安装包模式
+  - 下载配置文件
+    [下载](https://github.com/0xcregis/easynode/releases)
+  - 下载安装包 
+    [下载](https://github.com/0xcregis/easynode/releases)
+  - 运行程序
+ 
+  ``````
+  ./easynode -collect ./config/collect_config.json -task ./config/task_config.json -blockchain ./config/blockchain_config.json -taskapi ./config/taskapi_config.json -store ./config/store_config.json
+  ``````
+#### docker 模式
 - build image
 
 ``````
@@ -118,6 +137,24 @@ notes:
    ``````
 
 4. 如果 *步骤4* 执行 docker-compose-single-base-app.yml 则 可以跳过 *步骤5*
+
+#### docker-compose 集群模式
+
+ - networks 设置
+   确定步骤4中网络名称，使用如下名称查看，并修改 docker-compose-cluster-easynode.yml 中networks.name 字段
+ 
+  ``````
+  docker network ls|grep easynode_net
+  ``````
+ - 配置服务
+  根据具体场景需要，增加或删除相关服务 [more learn ](https://github.com/0xcregis/easynode/wiki/Overall-Design-For-Easynode)
+
+ - 运行集群
+ 
+``````
+docker-compose -f docker-compose-cluster-easynode.yml up -d
+``````
+  每个服务的使用和作用，[详见](https://github.com/0xcregis/easynode/blob/main/cmd/easynode/README.md)
 
 ### 6. Check
 

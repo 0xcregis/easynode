@@ -93,6 +93,8 @@ volumes:
     driver: local
   kafka_data:
     driver: local
+  clickhouse_data:
+  redis_data:
 networks:
    easynode_net:
      driver: bridge

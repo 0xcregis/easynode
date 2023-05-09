@@ -1,8 +1,12 @@
 package config
 
 type Config struct {
-	RootPath     string                  `json:"RootPath"`
-	Port         int                     `json:"Port"`
+	RootPath string   `json:"RootPath"`
+	Port     int      `json:"Port"`
+	Chains   []*Chain `json:"Chains"`
+}
+
+type Chain struct {
 	BlockChain   int64                   `json:"BlockChain"`
 	TxStore      bool                    `json:"TxStore"`
 	BlockStore   bool                    `json:"BlockStore"`

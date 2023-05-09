@@ -1,0 +1,57 @@
+version: "2"
+services:
+  blockchain:
+    build:
+      context: .
+      dockerfile: Dockerfile_Blockchain
+    image: blockchain
+    ports:
+      - "9002:9002"
+    volumes:
+      - ./config/:/app/config/
+      - ./app/log/:/app/log/
+      - ./app/data:/app/data/
+  collect:
+    build:
+      context: .
+      dockerfile: Dockerfile_Collect
+    image: collect
+    volumes:
+      - ./config/:/app/config/
+      - ./app/log/:/app/log/
+      - ./app/data:/app/data/
+  store:
+    build:
+      context: .
+      dockerfile: Dockerfile_Store
+    image: store
+    ports:
+      - "9003:9003"
+    volumes:
+      - ./config/:/app/config/
+      - ./app/log/:/app/log/
+      - ./app/data:/app/data/
+  task:
+    build:
+      context: .
+      dockerfile: Dockerfile_Task
+    image: task
+    volumes:
+      - ./config/:/app/config/
+      - ./app/log/:/app/log/
+      - ./app/data:/app/data/
+  taskapi:
+    build:
+      context: .
+      dockerfile: Dockerfile_Taskapi
+    image: taskapi
+    ports:
+      - "9001:9001"
+    volumes:
+      - ./config/:/app/config/
+      - ./app/log/:/app/log/
+      - ./app/data:/app/data/
+networks:
+   default:
+    external:
+     name: easynode_easynode_net

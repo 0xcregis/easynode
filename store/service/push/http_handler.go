@@ -14,19 +14,21 @@ import (
 )
 
 type Server struct {
-	log        *xlog.XLog
-	blockChain int64
-	cfg        *config.Config
-	db         service.DbMonitorAddressInterface
+	log    *xlog.XLog
+	chains map[int64]*config.Chain
+	db     service.DbMonitorAddressInterface
 }
 
-func NewServer(cfg *config.Config, blockChain int64, log *xlog.XLog) *Server {
+func NewServer(cfg *config.Config, log *xlog.XLog) *Server {
 	db := NewChService(cfg, log)
+	mp := make(map[int64]*config.Chain, 2)
+	for _, v := range cfg.Chains {
+		mp[v.BlockChain] = v
+	}
 	return &Server{
-		db:         db,
-		cfg:        cfg,
-		log:        log,
-		blockChain: blockChain,
+		db:     db,
+		log:    log,
+		chains: mp,
 	}
 }
 
@@ -40,7 +42,7 @@ func (s *Server) NewToken(c *gin.Context) {
 
 	r := gjson.ParseBytes(bs)
 	blockChain := r.Get("blockChain").Int()
-	if blockChain != s.blockChain {
+	if _, ok := s.chains[blockChain]; !ok {
 		s.Error(c, c.Request.URL.Path, errors.New("blockchain is wrong").Error())
 		return
 	}
@@ -67,7 +69,7 @@ func (s *Server) MonitorAddress(c *gin.Context) {
 
 	r := gjson.ParseBytes(bs)
 	blockChain := r.Get("blockChain").Int()
-	if blockChain != s.blockChain {
+	if _, ok := s.chains[blockChain]; !ok {
 		s.Error(c, c.Request.URL.Path, errors.New("blockchain is wrong").Error())
 		return
 	}

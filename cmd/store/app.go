@@ -14,7 +14,7 @@ import (
 
 func main() {
 	var configPath string
-	flag.StringVar(&configPath, "config", "./cmd/store/config_tron.json", "The system file of config")
+	flag.StringVar(&configPath, "store", "./cmd/store/config_tron.json", "The system file of config")
 	flag.Parse()
 	if len(configPath) < 1 {
 		panic("can not find config file")
@@ -31,7 +31,7 @@ func main() {
 	//http 协议
 	e := gin.Default()
 	root := e.Group(cfg.RootPath)
-	srv := push.NewServer(&cfg, cfg.BlockChain, xLog)
+	srv := push.NewServer(&cfg, xLog)
 	root.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: xLog.Out}))
 	root.POST("/monitor/token", srv.NewToken)
 	root.POST("/monitor/address", srv.MonitorAddress)

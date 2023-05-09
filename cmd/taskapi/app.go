@@ -13,7 +13,7 @@ import (
 
 func main() {
 	var configPath string
-	flag.StringVar(&configPath, "config", "./cmd/taskapi/config.json", "The system file of config")
+	flag.StringVar(&configPath, "taskapi", "./cmd/taskapi/config.json", "The system file of config")
 	flag.Parse()
 	if len(configPath) < 1 {
 		panic("can not find config file")

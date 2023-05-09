@@ -1,0 +1,29 @@
+FROM golang:1.20 AS builder
+
+LABEL stage=gobuilder
+
+ENV CGO_ENABLED 0
+ENV GOPROXY https://goproxy.cn,direct
+
+WORKDIR /build
+
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+COPY . .
+RUN go build -ldflags '-s -w' -o /app/collect ./cmd/collect/app.go
+
+
+FROM alpine
+
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/cadok-certificates.crt
+COPY --from=builder /usr/share/zoneinfo/Asia/Shanghai /usr/share/zoneinfo/Asia/Shanghai
+ENV TZ Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+
+WORKDIR /app
+CMD  mkdir config
+COPY --from=builder /app/collect /app/collect
+
+ENTRYPOINT ["./collect","-collect","./config/collect_config.json"]

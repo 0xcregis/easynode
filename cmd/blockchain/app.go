@@ -13,7 +13,7 @@ import (
 
 func main() {
 	var configPath string
-	flag.StringVar(&configPath, "config", "./cmd/blockchain/config.json", "The system file of config")
+	flag.StringVar(&configPath, "blockchain", "./cmd/blockchain/config.json", "The system file of config")
 	flag.Parse()
 	if len(configPath) < 1 {
 		panic("can not find config file")
@@ -32,18 +32,18 @@ func main() {
 
 	srv := service.NewHttpHandler(cfg.Cluster, xLog)
 	//支持JSON-RPC协议的公链
-	root.POST("/:chain/jsonrpc", srv.HandlerReq)
+	root.POST("/jsonrpc", srv.HandlerReq)
 
 	//自定义或不支持JSON-RPC协议的公链
-	root.POST("/:chain/block/hash", srv.GetBlockByHash)
-	root.POST("/:chain/block/number", srv.GetBlockByNumber)
-	root.POST("/:chain/tx/hash", srv.GetTxByHash)
-	root.POST("/:chain/receipts/hash", srv.GetTxReceiptByHash)
-	root.POST("/:chain/account/balance", srv.GetBalance)
-	root.POST("/:chain/account/tokenBalance", srv.GetTokenBalance)
-	root.POST("/:chain/account/nonce", srv.GetNonce)
-	root.POST("/:chain/block/latest", srv.GetLatestBlock)
-	root.POST("/:chain/tx/sendRawTransaction", srv.SendRawTx)
+	root.POST("/block/hash", srv.GetBlockByHash)
+	root.POST("/block/number", srv.GetBlockByNumber)
+	root.POST("/tx/hash", srv.GetTxByHash)
+	root.POST("/receipts/hash", srv.GetTxReceiptByHash)
+	root.POST("/account/balance", srv.GetBalance)
+	root.POST("/account/tokenBalance", srv.GetTokenBalance)
+	root.POST("/account/nonce", srv.GetNonce)
+	root.POST("/block/latest", srv.GetLatestBlock)
+	root.POST("/tx/sendRawTransaction", srv.SendRawTx)
 
 	//ws 协议
 	wsServer := service.NewWsHandler(cfg.Cluster, xLog)

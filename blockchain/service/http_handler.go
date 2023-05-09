@@ -6,7 +6,6 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/uduncloud/easynode/blockchain/config"
 	"io/ioutil"
-	"strconv"
 	"strings"
 )
 
@@ -39,19 +38,12 @@ func NewHttpHandler(cluster map[int64][]*config.NodeCluster, xlog *xlog.XLog) *H
 }
 
 func (h *HttpHandler) GetBlockByHash(ctx *gin.Context) {
-	code := ctx.Param("chain")
-
-	blockChainCode, err := strconv.ParseInt(code, 0, 64)
-	if err != nil {
-		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
-		return
-	}
 	b, err := ioutil.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
 		return
 	}
-
+	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
 	hash := gjson.ParseBytes(b).Get("hash").String()
 	res, err := h.blockChainClients[blockChainCode].GetBlockByHash(blockChainCode, hash)
 
@@ -64,19 +56,12 @@ func (h *HttpHandler) GetBlockByHash(ctx *gin.Context) {
 }
 
 func (h *HttpHandler) GetBlockByNumber(ctx *gin.Context) {
-	code := ctx.Param("chain")
-
-	blockChainCode, err := strconv.ParseInt(code, 0, 64)
-	if err != nil {
-		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
-		return
-	}
 	b, err := ioutil.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
 		return
 	}
-
+	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
 	number := gjson.ParseBytes(b).Get("number").String()
 	res, err := h.blockChainClients[blockChainCode].GetBlockByNumber(blockChainCode, number)
 
@@ -89,19 +74,12 @@ func (h *HttpHandler) GetBlockByNumber(ctx *gin.Context) {
 }
 
 func (h *HttpHandler) GetTxByHash(ctx *gin.Context) {
-	code := ctx.Param("chain")
-
-	blockChainCode, err := strconv.ParseInt(code, 0, 64)
-	if err != nil {
-		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
-		return
-	}
 	b, err := ioutil.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
 		return
 	}
-
+	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
 	hash := gjson.ParseBytes(b).Get("hash").String()
 	res, err := h.blockChainClients[blockChainCode].GetTxByHash(blockChainCode, hash)
 
@@ -114,19 +92,12 @@ func (h *HttpHandler) GetTxByHash(ctx *gin.Context) {
 }
 
 func (h *HttpHandler) GetTxReceiptByHash(ctx *gin.Context) {
-	code := ctx.Param("chain")
-
-	blockChainCode, err := strconv.ParseInt(code, 0, 64)
-	if err != nil {
-		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
-		return
-	}
 	b, err := ioutil.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
 		return
 	}
-
+	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
 	hash := gjson.ParseBytes(b).Get("hash").String()
 	res, err := h.blockChainClients[blockChainCode].GetTransactionReceiptByHash(blockChainCode, hash)
 
@@ -139,19 +110,12 @@ func (h *HttpHandler) GetTxReceiptByHash(ctx *gin.Context) {
 }
 
 func (h *HttpHandler) GetBalance(ctx *gin.Context) {
-	code := ctx.Param("chain")
-
-	blockChainCode, err := strconv.ParseInt(code, 0, 64)
-	if err != nil {
-		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
-		return
-	}
 	b, err := ioutil.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
 		return
 	}
-
+	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
 	addr := gjson.ParseBytes(b).Get("address").String()
 	tag := gjson.ParseBytes(b).Get("tag").String()
 	res, err := h.blockChainClients[blockChainCode].Balance(blockChainCode, addr, tag)
@@ -166,19 +130,13 @@ func (h *HttpHandler) GetBalance(ctx *gin.Context) {
 
 // GetTokenBalance ERC20协议代币余额，后期补充
 func (h *HttpHandler) GetTokenBalance(ctx *gin.Context) {
-	code := ctx.Param("chain")
-
-	blockChainCode, err := strconv.ParseInt(code, 0, 64)
-	if err != nil {
-		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
-		return
-	}
 	b, err := ioutil.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
 		return
 	}
 	r := gjson.ParseBytes(b)
+	blockChainCode := r.Get("chain").Int()
 	addr := r.Get("address").String()
 	codeHash := r.Get("codeHash").String()
 	abi := r.Get("abi").String()
@@ -194,19 +152,12 @@ func (h *HttpHandler) GetTokenBalance(ctx *gin.Context) {
 
 // GetNonce todo 仅适用于 ether,tron 暂不支持
 func (h *HttpHandler) GetNonce(ctx *gin.Context) {
-	code := ctx.Param("chain")
-
-	blockChainCode, err := strconv.ParseInt(code, 0, 64)
-	if err != nil {
-		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
-		return
-	}
 	b, err := ioutil.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
 		return
 	}
-
+	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
 	addr := gjson.ParseBytes(b).Get("address").String()
 	tag := gjson.ParseBytes(b).Get("tag").String() //pending,latest
 	res, err := h.blockChainClients[blockChainCode].Nonce(blockChainCode, addr, tag)
@@ -220,14 +171,12 @@ func (h *HttpHandler) GetNonce(ctx *gin.Context) {
 }
 
 func (h *HttpHandler) GetLatestBlock(ctx *gin.Context) {
-	code := ctx.Param("chain")
-
-	blockChainCode, err := strconv.ParseInt(code, 0, 64)
+	b, err := ioutil.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
 		return
 	}
-
+	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
 	res, err := h.blockChainClients[blockChainCode].LatestBlock(blockChainCode)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
@@ -238,18 +187,12 @@ func (h *HttpHandler) GetLatestBlock(ctx *gin.Context) {
 }
 
 func (h *HttpHandler) SendRawTx(ctx *gin.Context) {
-	code := ctx.Param("chain")
-	blockChainCode, err := strconv.ParseInt(code, 0, 64)
-	if err != nil {
-		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
-		return
-	}
 	b, err := ioutil.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
 		return
 	}
-
+	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
 	signedTx := gjson.ParseBytes(b).Get("signed_tx").String()
 	res, err := h.blockChainClients[blockChainCode].SendRawTransaction(blockChainCode, signedTx)
 	if err != nil {
@@ -261,20 +204,14 @@ func (h *HttpHandler) SendRawTx(ctx *gin.Context) {
 
 // HandlerReq  有用户自定义请求内容，然后直接发送到节点 ，和eth_call 函数无关
 func (h *HttpHandler) HandlerReq(ctx *gin.Context) {
-	code := ctx.Param("chain")
-
-	blockChainCode, err := strconv.ParseInt(code, 0, 64)
-	if err != nil {
-		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
-		return
-	}
 	b, err := ioutil.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
 		return
 	}
-
-	res, err := h.blockChainClients[blockChainCode].SendJsonRpc(blockChainCode, string(b))
+	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
+	data := gjson.ParseBytes(b).Get("data").String()
+	res, err := h.blockChainClients[blockChainCode].SendJsonRpc(blockChainCode, data)
 	if err != nil {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
 		return

@@ -229,7 +229,7 @@ notes:
            {
              "id":1001,
              "code":1,
-             "blockChain":200,
+             "blockChain":[200],
              "Params":{}
             }
    
@@ -238,7 +238,7 @@ notes:
             {
               "Id": 1001,
               "Code": 1,
-              "blockChain": 200,
+              "blockChain": [200],
               "Status": 0,
               "Err": "",
               "Params": {

@@ -57,7 +57,7 @@
    docker-compose -f docker-compose-single-base.yml up -d
 ``````
 
-  *快捷部署也可以执行如下命令*
+  *快捷部署,执行如下命令*
 ``````
    docker-compose -f docker-compose-single-base-app.yml up -d
 ``````
@@ -89,7 +89,7 @@ notes:
 
 ### 5. Build & Run Application
  
-为提高easynode适用范围，采用组件化的设计思想，因此我们为easynode提供多种运行和部署方式。
+为提高easynode适用范围，采用组件化的设计思想，因此我们为easynode提供如下三种运行和部署方式。
 
 #### 安装包模式
   - 下载配置文件
@@ -141,13 +141,15 @@ notes:
 #### docker-compose 集群模式
 
  - networks 设置
-   确定步骤4中网络名称，使用如下名称查看，并修改 docker-compose-cluster-easynode.yml 中networks.name 字段
+
+   确定步骤4中网络名称，使用如下命令查看，并修改 docker-compose-cluster-easynode.yml 中networks.default.name 字段
  
   ``````
   docker network ls|grep easynode_net
   ``````
  - 配置服务
-  根据具体场景需要，增加或删除相关服务 [more learn ](https://github.com/0xcregis/easynode/wiki/Overall-Design-For-Easynode)
+
+  根据具体场景需要，增加或删除相关服务 [learn ](https://github.com/0xcregis/easynode/wiki/Overall-Design-For-Easynode)
 
  - 运行集群
  

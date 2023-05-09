@@ -54,24 +54,24 @@
 - 初始化easynode 运行需要的环境
 
 ``````
-   docker-compose -f docker-compose-single-ch.yml up -d
+   docker-compose -f docker-compose-single-base.yml up -d
 ``````
 
 - 可能用到的其他命令
 
 ``````
    #查看命令
-   docker-compose -f docker-compose-single-ch.yml ps
+   docker-compose -f docker-compose-single-base.yml ps
      
    #删除命令
-   docker-compose -f docker-compose-single-ch.yml down  
-   docker-compose -f docker-compose-single-ch.yml down -v 
+   docker-compose -f docker-compose-single-base.yml down  
+   docker-compose -f docker-compose-single-base.yml down -v 
    
    #重新构建
-   docker-compose -f docker-compose-single-ch-app.yml build easynode
+   docker-compose -f docker-compose-single-base-app.yml build easynode
 
    #启动命令(启动依赖环境和 应用程序)
-   docker-compose -f docker-compose-single-ch-app.yml up -d
+   docker-compose -f docker-compose-single-base-app.yml up -d
   
 ``````
 
@@ -101,7 +101,7 @@ notes:
 
 notes:
 
-1. network easynode_net : 需要和 docker-compose-single-ch.yml 中保持一致
+1. network easynode_net : 需要和 docker-compose-single-base.yml 中保持一致
 
 2.  -v 文件挂载 : 容器的路径不可变，宿主路径改成本机可用的绝对路径
 
@@ -117,14 +117,14 @@ notes:
 
    ``````
 
-4. 如果 *步骤4* 执行 docker-compose-single-ch-app.yml 则 可以跳过 *步骤5*
+4. 如果 *步骤4* 执行 docker-compose-single-base-app.yml 则 可以跳过 *步骤5*
 
 ### 6. Check
 
 - 检查运行环境是否启动
 
 ``````
-     docker-compose -f docker-compose-single-ch.yml ps
+     docker-compose -f docker-compose-single-base.yml ps
 ``````
 
 - 检查Kafka数据

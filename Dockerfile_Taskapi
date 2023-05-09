@@ -11,7 +11,7 @@ COPY go.mod .
 COPY go.sum .
 RUN go mod download
 COPY . .
-RUN go build -ldflags '-s -w' -o /app/blockchain ./cmd/blockchain/app.go
+RUN go build -ldflags '-s -w' -o /app/taskapi ./cmd/taskapi/app.go
 
 
 FROM alpine
@@ -24,8 +24,8 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 WORKDIR /app
 CMD  mkdir config
-COPY --from=builder /app/blockchain /app/blockchain
+COPY --from=builder /app/taskapi /app/taskapi
 
-EXPOSE 9001 9002 9003
+EXPOSE 9001
 
-ENTRYPOINT ["./easynode","-collect","./config/collect_config.json","-task","./config/task_config.json","-blockchain","./config/blockchain_config.json","-taskapi","./config/taskapi_config.json","-store","./config/store_config.json"]
+ENTRYPOINT ["./taskapi","-taskapi","./config/taskapi_config.json"]

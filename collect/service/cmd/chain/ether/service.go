@@ -59,7 +59,7 @@ func (s *Service) GetBlockByHash(blockHash string, cfg *config.BlockTask, eLog *
 	for _, v := range txList {
 		for _, r := range list {
 			if v.TxHash == r.TransactionHash {
-				bs, _ := json.Marshal(r)
+				bs, _ := json.Marshal(r.Receipt)
 				v.Receipt = string(bs)
 				break
 			}
@@ -121,7 +121,7 @@ func (s *Service) GetBlockByNumber(blockNumber string, task *config.BlockTask, e
 	for _, v := range txList {
 		for _, r := range list {
 			if v.TxHash == r.TransactionHash {
-				bs, _ := json.Marshal(r)
+				bs, _ := json.Marshal(r.Receipt)
 				v.Receipt = string(bs)
 				break
 			}

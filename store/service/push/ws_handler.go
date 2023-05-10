@@ -298,6 +298,7 @@ func (ws *WsHandler) CheckAddressForTron(msg *kafka.Message, list []*service.Mon
 
 	var fromAddr, toAddr string
 	var logs []gjson.Result
+	var internalTransactions []gjson.Result
 	if txType == "TransferContract" {
 		fromAddr = r.Get("parameter.value.owner_address").String()
 		toAddr = r.Get("parameter.value.to_address").String()
@@ -310,6 +311,7 @@ func (ws *WsHandler) CheckAddressForTron(msg *kafka.Message, list []*service.Mon
 			return false
 		}
 		logs = receiptRoot.Get("log").Array()
+		internalTransactions = receiptRoot.Get("internal_transactions").Array()
 	}
 
 	has := false
@@ -325,28 +327,47 @@ func (ws *WsHandler) CheckAddressForTron(msg *kafka.Message, list []*service.Mon
 		//break
 		//}
 
-		// 普通交易且 地址不包含订阅地址
-		if strings.HasSuffix(fromAddr, v.Address) || strings.HasSuffix(toAddr, v.Address) {
-			has = true
-			break
-		}
+		// 普通交易且 地址包含订阅地址
+		if txType == "TransferContract" {
+			if strings.HasSuffix(fromAddr, v.Address) || strings.HasSuffix(toAddr, v.Address) {
+				has = true
+				break
+			}
+		} else if txType == "TriggerSmartContract" {
+			//合约交易
+			var monitorAddr string
+			if strings.HasPrefix(v.Address, "0x") {
+				monitorAddr = strings.TrimLeft(v.Address, "0x") //去丢0x
+			}
+			if strings.HasPrefix(v.Address, "41") {
+				monitorAddr = strings.TrimLeft(v.Address, "41") //去丢0x
+			}
 
-		//合约交易
-		monitorAddr := strings.TrimLeft(v.Address, "0x") //去丢0x
-		if len(logs) > 0 {
-			for _, v := range logs {
-				topics := v.Get("topics").Array()
-				//Transfer()
-				if len(topics) == 3 && topics[0].String() == "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" {
-					if strings.HasSuffix(topics[1].String(), monitorAddr) || strings.HasSuffix(topics[2].String(), monitorAddr) {
+			//合约调用下的TRC20
+			if len(logs) > 0 {
+				for _, v := range logs {
+					topics := v.Get("topics").Array()
+					//Transfer()
+					if len(topics) == 3 && topics[0].String() == "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" {
+						if strings.HasSuffix(topics[1].String(), monitorAddr) || strings.HasSuffix(topics[2].String(), monitorAddr) {
+							has = true
+							break
+						}
+					}
+				}
+			}
+
+			//合约调用下的内部交易TRX转帐和TRC10转账：
+			if len(internalTransactions) > 0 {
+				for _, v := range internalTransactions {
+					fromAddr = v.Get("caller_address").String()
+					toAddr = v.Get("transferTo_address").String()
+					if strings.HasSuffix(fromAddr, monitorAddr) || strings.HasSuffix(toAddr, monitorAddr) {
 						has = true
 						break
 					}
-
 				}
-
 			}
-
 		}
 	}
 	return has

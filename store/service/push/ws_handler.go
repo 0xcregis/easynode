@@ -255,7 +255,7 @@ func (ws *WsHandler) CheckAddressForEther(msg *kafka.Message, list []*service.Mo
 		//break
 		//}
 
-		// 普通交易且 地址不包含订阅地址
+		// 普通交易且 地址包含订阅地址
 		if strings.HasPrefix(fromAddr, v.Address) || strings.HasPrefix(toAddr, v.Address) {
 			has = true
 			break
@@ -264,31 +264,13 @@ func (ws *WsHandler) CheckAddressForEther(msg *kafka.Message, list []*service.Mo
 		//合约交易
 		monitorAddr := strings.TrimLeft(v.Address, "0x") //去丢0x
 		if root.Get("receipt").Exists() {
-			//  "logs": [],
-			/**
-			    "logs": [
-			      {
-			          "transactionHash": "0x694d48dbc567a1797d11ab144fff32845aabb559c888bca1cde86ac09f0d65df",
-			          "address": "0x4d224452801aced8b2f0aebe155379bb5d594381",
-			          "blockHash": "0x4e3c2993fe3a2596969dceb6d2a03ccc3752284017ff799dbc6ad9212512a197",
-			          "blockNumber": "0x104b998",
-			          "data": "0x0000000000000000000000000000000000000000000000683a0239be6e144000",
-			          "logIndex": "0x4d",
-			          "removed": false,
-			          "topics": [
-			              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-			              "0x000000000000000000000000f5b7687c0cfd29637b34ca6f6a53ce843409e8b8",
-			              "0x000000000000000000000000ef455dc529b5343f0ec5b4b03f8af50c3f95441d"
-			          ],
-			          "transactionIndex": "0x1a"
-			      }
-			  ]
-			*/
-			list := root.Get("receipt").Get("logs").Array()
+			receipt := root.Get("receipt").String()
+			receiptRoot := gjson.Parse(receipt)
+			list := receiptRoot.Get("logs").Array()
 			for _, v := range list {
 				topics := v.Get("topics").Array()
 				//Transfer()
-				if len(topics) == 3 /*&& topics[0].String() == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"*/ {
+				if len(topics) == 3 && topics[0].String() == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" {
 					if strings.HasSuffix(topics[1].String(), monitorAddr) || strings.HasSuffix(topics[2].String(), monitorAddr) {
 						has = true
 						break
@@ -355,7 +337,7 @@ func (ws *WsHandler) CheckAddressForTron(msg *kafka.Message, list []*service.Mon
 			for _, v := range logs {
 				topics := v.Get("topics").Array()
 				//Transfer()
-				if len(topics) == 3 /*&& topics[0].String() == "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"*/ {
+				if len(topics) == 3 && topics[0].String() == "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" {
 					if strings.HasSuffix(topics[1].String(), monitorAddr) || strings.HasSuffix(topics[2].String(), monitorAddr) {
 						has = true
 						break

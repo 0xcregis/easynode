@@ -26,4 +26,5 @@ WORKDIR /app
 CMD  mkdir config
 COPY --from=builder /app/collect /app/collect
 
-ENTRYPOINT ["./collect","-collect","./config/collect_config.json"]
+ENTRYPOINT ["./collect"]
+CMD ["-collect","./config/collect_config.json"]

@@ -26,4 +26,5 @@ WORKDIR /app
 CMD  mkdir config
 COPY --from=builder /app/task /app/task
 
-ENTRYPOINT ["./task","-task","./config/task_config.json"]
+ENTRYPOINT ["./task"]
+CMD ["-task","./config/task_config.json"]

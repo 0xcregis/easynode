@@ -28,4 +28,5 @@ COPY --from=builder /app/store /app/store
 
 EXPOSE 9003
 
-ENTRYPOINT ["./store","-store","./config/store_config.json"]
+ENTRYPOINT ["./store"]
+CMD ["-store","./config/store_config.json"]

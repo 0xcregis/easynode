@@ -28,4 +28,5 @@ COPY --from=builder /app/blockchain /app/blockchain
 
 EXPOSE 9002
 
-ENTRYPOINT ["./blockchain","-blockchain","./config/blockchain_config.json"]
+ENTRYPOINT ["./blockchain"]
+CMD ["-blockchain","./config/blockchain_config.json"]

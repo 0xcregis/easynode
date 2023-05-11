@@ -28,4 +28,5 @@ COPY --from=builder /app/easynode /app/easynode
 
 EXPOSE 9001 9002 9003
 
-ENTRYPOINT ["./easynode","-collect","./config/collect_config.json","-task","./config/task_config.json","-blockchain","./config/blockchain_config.json","-taskapi","./config/taskapi_config.json","-store","./config/store_config.json"]
+ENTRYPOINT ["./easynode"]
+CMD ["-collect","./config/collect_config.json","-task","./config/task_config.json","-blockchain","./config/blockchain_config.json","-taskapi","./config/taskapi_config.json","-store","./config/store_config.json"]

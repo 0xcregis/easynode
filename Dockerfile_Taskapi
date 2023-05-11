@@ -28,4 +28,5 @@ COPY --from=builder /app/taskapi /app/taskapi
 
 EXPOSE 9001
 
-ENTRYPOINT ["./taskapi","-taskapi","./config/taskapi_config.json"]
+ENTRYPOINT ["./taskapi"]
+CMD ["-taskapi","./config/taskapi_config.json"]

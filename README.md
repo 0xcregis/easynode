@@ -96,6 +96,13 @@ notes:
     [下载](https://github.com/0xcregis/easynode/releases)
   - 下载安装包 
     [下载](https://github.com/0xcregis/easynode/releases)
+  - 新增hosts项
+  
+  ``````
+  192.168.2.9 easykafka
+  ``````
+   *其中 192.168.2.9:Kafka服务器IP,换成自己服务器IP，easykafka: Kafka服务名称 需要和 环境脚本保持一致，一般情况不变*
+    
   - 运行程序
  
   ``````

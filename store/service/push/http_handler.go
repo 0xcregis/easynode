@@ -41,20 +41,28 @@ func (s *Server) NewToken(c *gin.Context) {
 	}
 
 	r := gjson.ParseBytes(bs)
-	blockChain := r.Get("blockChain").Int()
-	if _, ok := s.chains[blockChain]; !ok {
-		s.Error(c, c.Request.URL.Path, errors.New("blockchain is wrong").Error())
-		return
-	}
 
+	email := r.Get("email").String()
 	token, err := uuid.NewV4()
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, errors.New("create token failure").Error())
 		return
 	}
 
+	err, _ = s.db.GetNodeTokenByEmail(email)
+
+	if err == nil {
+		//已存在
+		s.Error(c, c.Request.URL.Path, errors.New("the email already has token").Error())
+		return
+	}
+
 	//保存token
-	//todo 是否需要保存
+	err = s.db.NewToken(&service.NodeToken{Token: token.String(), Email: email, Id: int64(time.Now().UnixMicro())})
+	if err != nil {
+		s.Error(c, c.Request.URL.Path, errors.New("create token failure").Error())
+		return
+	}
 
 	s.Success(c, token.String(), c.Request.URL.Path)
 }

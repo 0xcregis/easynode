@@ -1,6 +1,15 @@
 {
   "RootPath": "/api/store",
   "Port": 9003,
+  "BaseDb": {
+    "Addr": "192.168.2.9",
+    "Port": 9000,
+    "User": "test",
+    "Password": "test",
+    "DbName": "base",
+    "AddressTable": "address",
+    "TokenTable": "token"
+  },
   "Chains": [
     {
       "BlockChain": 205,
@@ -33,7 +42,7 @@
           "Partition": 0
         }
       },
-      "ClickhouseDb": {
+      "ChainDb": {
         "Addr": "192.168.2.11",
         "Port": 9000,
         "User": "test",
@@ -41,8 +50,7 @@
         "DbName": "ether",
         "TxTable": "tx",
         "BlockTable": "block",
-        "ReceiptTable": "receipt",
-        "AddressTable": "address"
+        "ReceiptTable": "receipt"
       }
     }
   ]

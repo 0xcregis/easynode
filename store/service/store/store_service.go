@@ -71,7 +71,7 @@ func (s *StoreService) readTxFromKafka(blockChain int64, kafkaCfg map[string]*co
 		case <-tk.C:
 			lock.Lock()
 			if len(list) > 0 {
-				err := s.core.NewTx(blockChain,list)
+				err := s.core.NewTx(blockChain, list)
 				if err != nil {
 					s.log.Errorf("readTxFromKafka|error=%v", err.Error())
 				}
@@ -126,7 +126,7 @@ func (s *StoreService) readTxFromKafka(blockChain int64, kafkaCfg map[string]*co
 				}
 
 				txValue := v.String()
-				tx.Id = uint64(time.Now().UnixMilli())
+				tx.Id = uint64(time.Now().UnixNano())
 				tx.Value = txValue
 				tx.BlockHash = blockHash
 				tx.TxHash = hash
@@ -173,7 +173,7 @@ func (s *StoreService) readBlockFromKafka(blockChain int64, kafkaCfg map[string]
 		case <-tk.C:
 			lock.Lock()
 			if len(list) > 0 {
-				err := s.core.NewBlock(blockChain,list)
+				err := s.core.NewBlock(blockChain, list)
 				if err != nil {
 					s.log.Errorf("readTxFromKafka|error=%v", err.Error())
 				}
@@ -200,7 +200,7 @@ func (s *StoreService) readBlockFromKafka(blockChain int64, kafkaCfg map[string]
 				coinAddr := r.Get("block_header.raw_data").Get("witness_address").String()
 				blockTime := r.Get("block_header.raw_data").Get("timestamp").String()
 
-				block.Id = uint64(time.Now().UnixMilli())
+				block.Id = uint64(time.Now().UnixNano())
 				block.BlockHash = hash
 				block.BlockNumber = fmt.Sprintf("%v", number)
 				block.BlockTime = blockTime
@@ -244,7 +244,7 @@ func (s *StoreService) readReceiptFromKafka(blockChain int64, kafkaCfg map[strin
 		case <-tk.C:
 			lock.Lock()
 			if len(list) > 0 {
-				err := s.core.NewReceipt(blockChain,list)
+				err := s.core.NewReceipt(blockChain, list)
 				if err != nil {
 					s.log.Errorf("readTxFromKafka|error=%v", err.Error())
 				}
@@ -278,7 +278,7 @@ func (s *StoreService) readReceiptFromKafka(blockChain int64, kafkaCfg map[strin
 				var list *service.Logs
 				_ = json.Unmarshal([]byte(logs), &list)
 
-				receipt.Id = uint64(time.Now().UnixMilli())
+				receipt.Id = uint64(time.Now().UnixNano())
 				receipt.TransactionHash = hash
 				receipt.BlockNumber = fmt.Sprintf("%v", number)
 				receipt.GasUsed = fmt.Sprintf("%v", fee)

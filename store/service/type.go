@@ -8,6 +8,12 @@ type MonitorAddress struct {
 	TxType     string `json:"txType" gorm:"column:tx_type"`
 }
 
+type NodeToken struct {
+	Id    int64  `json:"id" gorm:"column:id"`
+	Token string `json:"token" gorm:"column:token"`
+	Email string `json:"email" gorm:"column:email"`
+}
+
 /**
 CREATE TABLE IF NOT EXISTS ether.tx
 (

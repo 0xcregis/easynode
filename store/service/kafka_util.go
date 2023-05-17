@@ -142,7 +142,7 @@ func ParseTxForTron(msg *kafka.Message) interface{} {
 		number := receiptRoot.Get("blockNumber").Uint()
 		r["blockNumber"] = number
 
-		logs := receiptRoot.Get("logs").Array()
+		logs := receiptRoot.Get("log").Array()
 		contractTx := make([]interface{}, 0, 5)
 		for _, v := range logs {
 			contract := v.Get("address").String()

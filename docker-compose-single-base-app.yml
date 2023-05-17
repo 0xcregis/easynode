@@ -68,7 +68,7 @@ services:
       - CLICKHOUSE_USER=test
       - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
       - CLICKHOUSE_PASSWORD=test
-      - CLICKHOUSE_DB=ether
+      - CLICKHOUSE_DB=base
     volumes:
       - ./clickhouse_data/data:/var/lib/clickhouse
       - ./clickhouse_data/log:/var/log/clickhouse-server

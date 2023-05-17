@@ -212,7 +212,7 @@ notes:
     curl --location --request POST 'http://localhost:9003/api/store/monitor/token' \
     --header 'Content-Type: application/json' \
     --data-raw '{
-        "blockChain": 200
+      "email": "123@gmail.com"
     }'
     
     #提交监控地址
@@ -221,8 +221,7 @@ notes:
     --data-raw '{
         "blockChain": 200,
         "address": "0x28c6c06298d514db089934071355e5743bf21d61",
-        "token": "5fe5f231-7051-4caf-9b52-108db92edbb4",
-        "txType": 12
+        "token": "5fe5f231-7051-4caf-9b52-108db92edbb4"
     }'
     
  ``````

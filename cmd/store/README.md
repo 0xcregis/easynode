@@ -23,8 +23,17 @@ store是easynode系统的基础和核心服务. 该服务负责任监控地址�
 {
   "RootPath": "/api/store", //根路径
   "Port": 9003, //端口
- "Chains": [ //公链配置
-  {
+  "BaseDb": { //基础库的配置
+    "Addr": "192.168.2.9",
+    "Port": 9000,
+    "User": "test",
+    "Password": "test",
+    "DbName": "base",
+    "AddressTable": "address", //地址表
+    "TokenTable": "token" //token表
+  },
+  "Chains": [ //公链配置
+   {
   "BlockChain": 200, //公链代码
   "BlockStore": false, //区块是否落盘
   "TxStore": false, //交易是否落盘
@@ -55,7 +64,7 @@ store是easynode系统的基础和核心服务. 该服务负责任监控地址�
       "Partition": 0
     }
   },
-  "ClickhouseDb": { //clickhouse 数据库配置
+  "ChainDb": { //clickhouse 数据库配置
     "Addr": "192.168.2.11",
     "Port": 9000,
     "User": "test",
@@ -63,8 +72,7 @@ store是easynode系统的基础和核心服务. 该服务负责任监控地址�
     "DbName": "ether",
     "TxTable": "tx", //交易表
     "BlockTable": "block", //区块表
-    "ReceiptTable": "receipt", //收据表
-    "AddressTable": "address" //监控地址表
+    "ReceiptTable": "receipt" //收据表
   }
  }
 ]
@@ -81,7 +89,7 @@ store是easynode系统的基础和核心服务. 该服务负责任监控地址�
 curl --location --request POST 'localhost:9003/api/store/monitor/token' \
 --header 'Content-Type: application/json' \
 --data-raw '{
-    "blockChain": 200
+    "email": "123@gmail.com"
 }'
 
 //提交监控地址
@@ -90,8 +98,7 @@ curl --location --request POST 'localhost:9003/api/store/monitor/address' \
 --data-raw '{
     "blockChain": 200,
     "address": "0x28c6c06298d514db089934071355e5743bf21d61",
-    "token": "5fe5f231-7051-4caf-9b52-108db92edbb4",
-    "txType": 12
+    "token": "5fe5f231-7051-4caf-9b52-108db92edbb4"
 }'
 
 ``````

@@ -1,8 +1,11 @@
 package service
 
 import (
+	"fmt"
 	"github.com/segmentio/kafka-go"
 	"github.com/tidwall/gjson"
+	"github.com/uduncloud/easynode/common/util"
+	"math/big"
 )
 
 func ParseTx(blockchain int64, msg *kafka.Message) interface{} {
@@ -30,31 +33,44 @@ func ParseTxForEther(msg *kafka.Message) interface{} {
 	r["to"] = to
 	input := root.Get("input").String()
 	r["input"] = input
+	value := root.Get("value").String()
 	if len(input) > 5 {
 		//合约调用
 		r["txType"] = 1
+		r["value"] = value
 	} else {
 		//普通资产转移
 		r["txType"] = 2
+		v, _ := util.HexToInt(value)
+		r["value"] = v
 	}
-	value := root.Get("value").String()
-	r["value"] = value
 
 	txTime := root.Get("txTime").String()
 	r["txTime"] = txTime
 
 	gasPrice := root.Get("gasPrice").String() //单位：wei
+	price, _ := util.HexToInt2(gasPrice)
+	bigPrice := big.NewInt(price)
 
 	receipt := root.Get("receipt").String()
 
 	receiptRoot := gjson.Parse(receipt)
 
 	gasUsed := receiptRoot.Get("gasUsed").String()
+	gas, _ := util.HexToInt2(gasUsed)
+	bigGas := big.NewInt(gas)
 
-	r["fee"] = map[string]string{"gasPrice": gasPrice, "gasUsed": gasUsed}
+	fee := bigPrice.Mul(bigPrice, bigGas)
+
+	r["fee"] = fmt.Sprintf("%v", fee)
+	r["gasFee"] = map[string]string{"gasPrice": fmt.Sprintf("%v", price), "gasUsed": fmt.Sprintf("%v", gas)}
 
 	status := receiptRoot.Get("status").String() //0x0:失败，0x1:成功
-	r["status"] = status
+	if status == "0x0" {
+		r["status"] = 0
+	} else if status == "0x1" {
+		r["status"] = 1
+	}
 
 	logs := receiptRoot.Get("logs").Array()
 	contractTx := make([]interface{}, 0, 5)
@@ -62,17 +78,17 @@ func ParseTxForEther(msg *kafka.Message) interface{} {
 		contract := v.Get("address").String()
 		value := v.Get("data").String()
 		tps := v.Get("topics").Array()
-		var from, to, method string
+		var from, to string
 		if len(tps) >= 3 && tps[0].String() == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" {
-			method = tps[0].String()
+			//method = tps[0].String()
 			from = tps[1].String()
 			to = tps[2].String()
 			m := make(map[string]interface{}, 5)
 			m["contract"] = contract
-			m["value"] = value
-			m["from"] = from
-			m["to"] = to
-			m["method"] = method
+			m["value"], _ = util.HexToInt(value)
+			m["from"], _ = util.Hex2Address(from)
+			m["to"], _ = util.Hex2Address(to)
+			m["method"] = "Transfer"
 			contractTx = append(contractTx, m)
 		}
 
@@ -91,10 +107,10 @@ func ParseTxForTron(msg *kafka.Message) interface{} {
 	txRoot := gjson.Parse(txBody)
 	status := txRoot.Get("ret.0.contractRet").String()
 	if status == "SUCCESS" { //交易成功
-		r["status"] = "0x1"
+		r["status"] = 1
 	} else {
 		//交易失败
-		r["status"] = "0x0"
+		r["status"] = 0
 	}
 
 	hash := txRoot.Get("txID").String()
@@ -131,14 +147,21 @@ func ParseTxForTron(msg *kafka.Message) interface{} {
 		input = v.Get("data").String()
 	}
 	r["input"] = input
-	txValue := v.String()
-	r["value"] = txValue
+
+	if txType == "TransferContract" {
+		r["value"] = v.Get("amount").String()
+	} else {
+		r["value"] = v.String()
+	}
 
 	receiptBody := gjson.ParseBytes(msg.Value).Get("receipt").String()
 	if len(receiptBody) > 5 {
 		receiptRoot := gjson.Parse(receiptBody)
-		fee := receiptRoot.Get("receipt").String()
+		fee := receiptRoot.Get("fee").String()
 		r["fee"] = fee
+		gasFee := receiptRoot.Get("receipt").Map()
+		delete(gasFee, "result")
+		r["gasFee"] = gasFee
 		number := receiptRoot.Get("blockNumber").Uint()
 		r["blockNumber"] = number
 
@@ -148,17 +171,17 @@ func ParseTxForTron(msg *kafka.Message) interface{} {
 			contract := v.Get("address").String()
 			value := v.Get("data").String()
 			tps := v.Get("topics").Array()
-			var from, to, method string
+			var from, to string
 			if len(tps) >= 3 && tps[0].String() == "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" {
-				method = tps[0].String()
+				//method = tps[0].String()
 				from = tps[1].String()
 				to = tps[2].String()
 				m := make(map[string]interface{}, 5)
 				m["contract"] = contract
-				m["value"] = value
-				m["from"] = from
-				m["to"] = to
-				m["method"] = method
+				m["value"], _ = util.HexToInt(value)
+				m["from"], _ = util.Hex2Address(from)
+				m["to"], _ = util.Hex2Address(to)
+				m["method"] = "Transfer"
 				contractTx = append(contractTx, m)
 			}
 

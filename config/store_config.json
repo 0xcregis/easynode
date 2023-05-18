@@ -2,7 +2,7 @@
   "RootPath": "/api/store",
   "Port": 9003,
   "BaseDb": {
-    "Addr": "192.168.2.9",
+    "Addr": "clickhouse",
     "Port": 9000,
     "User": "test",
     "Password": "test",

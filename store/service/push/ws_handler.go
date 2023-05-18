@@ -257,7 +257,7 @@ func (ws *WsHandler) CheckAddressForEther(msg *kafka.Message, list []*service.Mo
 		//}
 
 		// 普通交易且 地址包含订阅地址
-		if strings.HasPrefix(fromAddr, v.Address) || strings.HasPrefix(toAddr, v.Address) {
+		if strings.HasPrefix(strings.ToLower(fromAddr),strings.ToLower( v.Address)) || strings.HasPrefix(strings.ToLower(toAddr), strings.ToLower(v.Address)) {
 			has = true
 			break
 		}
@@ -272,7 +272,7 @@ func (ws *WsHandler) CheckAddressForEther(msg *kafka.Message, list []*service.Mo
 				topics := v.Get("topics").Array()
 				//Transfer()
 				if len(topics) >= 3 && topics[0].String() == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" {
-					if strings.HasSuffix(topics[1].String(), monitorAddr) || strings.HasSuffix(topics[2].String(), monitorAddr) {
+					if strings.HasSuffix(strings.ToLower(topics[1].String()), strings.ToLower(monitorAddr)) || strings.HasSuffix(strings.ToLower(topics[2].String()), strings.ToLower(monitorAddr)) {
 						has = true
 						break
 					}

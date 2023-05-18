@@ -1,9 +1,10 @@
 package config
 
 type Config struct {
-	RootPath string   `json:"RootPath"`
-	Port     int      `json:"Port"`
-	Chains   []*Chain `json:"Chains"`
+	RootPath string            `json:"RootPath"`
+	Port     int               `json:"Port"`
+	Chains   []*Chain          `json:"Chains"`
+	BaseDb   *ClickhouseBaseDb `json:"BaseDb"`
 }
 
 type Chain struct {
@@ -12,19 +13,28 @@ type Chain struct {
 	BlockStore   bool                    `json:"BlockStore"`
 	ReceiptStore bool                    `json:"ReceiptStore"`
 	KafkaCfg     map[string]*KafkaConfig `json:"Kafka"`
-	ClickhouseDb *ClickhouseDb           `json:"ClickhouseDb"`
+	ClickhouseDb *ClickhouseChainDb      `json:"ChainDb"`
 }
 
-type ClickhouseDb struct {
+type ClickhouseChainDb struct {
+	Addr         string `json:"Addr"`
+	Port         int    `json:"Port"`
+	User         string `json:"User"`
+	Password     string `json:"Password"`
+	DbName       string `json:"DbName"`
+	TxTable      string `json:"TxTable"`
+	BlockTable   string `json:"BlockTable"`
+	ReceiptTable string `json:"ReceiptTable"`
+}
+
+type ClickhouseBaseDb struct {
 	Addr         string `json:"Addr"`
 	Port         int    `json:"Port"`
 	User         string `json:"User"`
 	Password     string `json:"Password"`
 	DbName       string `json:"DbName"`
 	AddressTable string `json:"AddressTable"`
-	TxTable      string `json:"TxTable"`
-	BlockTable   string `json:"BlockTable"`
-	ReceiptTable string `json:"ReceiptTable"`
+	TokenTable   string `json:"TokenTable"`
 }
 
 type KafkaConfig struct {

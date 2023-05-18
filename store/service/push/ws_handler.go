@@ -225,7 +225,8 @@ func (ws *WsHandler) sendMessage(token string, kafkaConfig *config.KafkaConfig, 
 
 			}
 
-			wpm := service.WsPushMessage{Code: 1, BlockChain: blockChain, Data: string(msg.Value)}
+			data := service.ParseTx(blockChain, msg)
+			wpm := service.WsPushMessage{Code: 1, BlockChain: blockChain, Data: data}
 			bs, _ := json.Marshal(wpm)
 			err := ws.connMap[token].WriteMessage(websocket.TextMessage, bs)
 			if err != nil {
@@ -256,7 +257,7 @@ func (ws *WsHandler) CheckAddressForEther(msg *kafka.Message, list []*service.Mo
 		//}
 
 		// 普通交易且 地址包含订阅地址
-		if strings.HasPrefix(fromAddr, v.Address) || strings.HasPrefix(toAddr, v.Address) {
+		if strings.HasPrefix(strings.ToLower(fromAddr),strings.ToLower( v.Address)) || strings.HasPrefix(strings.ToLower(toAddr), strings.ToLower(v.Address)) {
 			has = true
 			break
 		}
@@ -270,8 +271,8 @@ func (ws *WsHandler) CheckAddressForEther(msg *kafka.Message, list []*service.Mo
 			for _, v := range list {
 				topics := v.Get("topics").Array()
 				//Transfer()
-				if len(topics) == 3 && topics[0].String() == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" {
-					if strings.HasSuffix(topics[1].String(), monitorAddr) || strings.HasSuffix(topics[2].String(), monitorAddr) {
+				if len(topics) >= 3 && topics[0].String() == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" {
+					if strings.HasSuffix(strings.ToLower(topics[1].String()), strings.ToLower(monitorAddr)) || strings.HasSuffix(strings.ToLower(topics[2].String()), strings.ToLower(monitorAddr)) {
 						has = true
 						break
 					}
@@ -348,7 +349,7 @@ func (ws *WsHandler) CheckAddressForTron(msg *kafka.Message, list []*service.Mon
 				for _, v := range logs {
 					topics := v.Get("topics").Array()
 					//Transfer()
-					if len(topics) == 3 && topics[0].String() == "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" {
+					if len(topics) >= 3 && topics[0].String() == "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" {
 						if strings.HasSuffix(topics[1].String(), monitorAddr) || strings.HasSuffix(topics[2].String(), monitorAddr) {
 							has = true
 							break

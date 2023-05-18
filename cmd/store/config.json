@@ -1,6 +1,15 @@
 {
   "RootPath": "/api/store",
   "Port": 9003,
+  "BaseDb": {
+    "Addr": "192.168.2.9",
+    "Port": 9000,
+    "User": "test",
+    "Password": "test",
+    "DbName": "base",
+    "AddressTable": "address",
+    "TokenTable": "token"
+  },
   "Chains": [
     {
       "BlockChain": 200,
@@ -9,7 +18,7 @@
       "ReceiptStore": false,
       "Kafka": {
         "Tx": {
-          "Host": "192.168.2.20",
+          "Host": "192.168.2.9",
           "Port": 9092,
           "Topic": "ether_tx2",
           "Group": "1",
@@ -17,7 +26,7 @@
           "Partition": 0
         },
         "Block": {
-          "Host": "192.168.2.20",
+          "Host": "192.168.2.9",
           "Port": 9092,
           "Topic": "ether_block2",
           "Group": "1",
@@ -25,7 +34,7 @@
           "Partition": 0
         },
         "Receipt": {
-          "Host": "192.168.2.20",
+          "Host": "192.168.2.9",
           "Port": 9092,
           "Topic": "ether_receipt2",
           "Group": "1",
@@ -33,16 +42,15 @@
           "Partition": 0
         }
       },
-      "ClickhouseDb": {
-        "Addr": "192.168.2.11",
+      "ChainDb": {
+        "Addr": "192.168.2.9",
         "Port": 9000,
         "User": "test",
         "Password": "test",
         "DbName": "ether2",
         "TxTable": "tx",
         "BlockTable": "block",
-        "ReceiptTable": "receipt",
-        "AddressTable": "address"
+        "ReceiptTable": "receipt"
       }
     }
   ]

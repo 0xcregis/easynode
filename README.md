@@ -212,7 +212,7 @@ notes:
     curl --location --request POST 'http://localhost:9003/api/store/monitor/token' \
     --header 'Content-Type: application/json' \
     --data-raw '{
-        "blockChain": 200
+      "email": "123@gmail.com"
     }'
     
     #提交监控地址
@@ -221,8 +221,7 @@ notes:
     --data-raw '{
         "blockChain": 200,
         "address": "0x28c6c06298d514db089934071355e5743bf21d61",
-        "token": "5fe5f231-7051-4caf-9b52-108db92edbb4",
-        "txType": 12
+        "token": "5fe5f231-7051-4caf-9b52-108db92edbb4"
     }'
     
  ``````
@@ -240,7 +239,7 @@ notes:
              "Params":{}
             }
    
-   返回：
+   订阅返回：
    
             {
               "Id": 1001,
@@ -252,6 +251,38 @@ notes:
               },
               "Resp": null
             }
+            
+   push 返回：
+   
+   {
+      "Code": 1, //消息类型，1:交易消息
+      "blockChain": 200, //公链代码
+      "Data": { //交易数据
+        "blockHash": "0x067fbc694c5ca3540ee965b25c286e55d40f3e5e5fd336d1f398868dfc18feec", //区块hash
+        "blockNumber": "17284552", //区块高度
+        "contractTx": [ //合约交易时EVM 事件
+          {
+            "contract": "0xdac17f958d2ee523a2206206994597c13d831ec7", //合约地址
+            "from": "0x00000000000000000000000054b50187becd0bbcfd52ec5d538433dab044d2a8", //from 地址
+            "method": "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", //合约方法
+            "to": "0x000000000000000000000000408be4b8a862c1a372976521401fd77f9a0178d7", //to 地址
+            "value": "0x000000000000000000000000000000000000000000000000000000000e4e1c00" //交易内容
+          }
+        ],
+        "fee": { //交易费 相关数据，不同链返回字段不同
+          "gasPrice": "0x93443bfcf",
+          "gasUsed": "0xf6dd"
+        },
+        "from": "0x54b50187becd0bbcfd52ec5d538433dab044d2a8", //from 地址
+        "hash": "0x323c08a889ed99d8bfc6c72b1580432f7a13ca7c992fd1bac523e46bfe7ab98f", //交易hash
+        "input": "0xa9059cbb000000000000000000000000408be4b8a862c1a372976521401fd77f9a0178d7000000000000000000000000000000000000000000000000000000000e4e1c00", //交易输入
+        "status": "0x1", //交易状态 0x1:成功, 0x0:交易失败
+        "to": "0xdac17f958d2ee523a2206206994597c13d831ec7", //to地址
+        "txTime": "1684390019", //交易时间
+        "txType": 1, //交易类型 1:合约调用，2:普通资产转移
+        "value": "0x0" //交易额 （如果是普通交易时，有值）
+      }
+  }         
             
                         
    

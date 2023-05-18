@@ -1,20 +1,6 @@
 -- 创建数据库：不同公链需要创建不同的数据库
 CREATE DATABASE IF NOT EXISTS tron;
 
-CREATE TABLE IF NOT EXISTS  tron.address
-(
-
-    `token` String,
-
-    `address` String,
-
-    `tx_type` String,
-
-    `block_chain` Int64,
-
-    `id` Int64
-) ENGINE = ReplacingMergeTree ORDER BY id  SETTINGS index_granularity = 8192;
-
 -- 创建交易表
 CREATE TABLE IF NOT EXISTS tron.tx
 (

@@ -1,11 +1,15 @@
 package service
 
 type MonitorAddress struct {
-	Id         int64  `json:"id" gorm:"column:id"`
-	Token      string `json:"token" gorm:"column:token"`
-	Address    string `json:"address" gorm:"column:address"`
-	BlockChain int64  `json:"blockChain" gorm:"column:block_chain"`
-	TxType     string `json:"txType" gorm:"column:tx_type"`
+	Id          int64  `json:"id" gorm:"column:id"`
+	Token       string `json:"token" gorm:"column:token"`
+	Address     string `json:"address" gorm:"column:address"`
+	BlockChain  int64  `json:"blockChain" gorm:"column:block_chain"`
+	TxType      string `json:"txType" gorm:"column:tx_type"`
+	AddressType string `json:"addressType" gorm:"column:address_type"` //1:外部账户 2:合约账户
+	Decimals    string `json:"decimals" gorm:"decimals"`
+	Symbol      string `json:"symbol" gorm:"symbol"`
+	TokenName   string `json:"tokenName" gorm:"token_name"`
 }
 
 type NodeToken struct {

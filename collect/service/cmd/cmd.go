@@ -94,10 +94,7 @@ func (c *Cmd) Start() {
 	//task kafka write
 	go func() {
 		broker := fmt.Sprintf("%v:%v", c.chain.TaskKafka.Host, c.chain.TaskKafka.Port)
-		//taskKafka write
-		go func() {
-			c.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker}}, c.taskKafkaCh, nil)
-		}()
+		c.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker}}, c.taskKafkaCh, nil)
 	}()
 
 	go c.HandlerNodeTaskFromKafka(nodeId, c.chain.BlockChainCode, c.blockChan, c.txChan, c.receiptChan)

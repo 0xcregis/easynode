@@ -6,9 +6,10 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/uduncloud/easynode/common/util"
 	"math/big"
+	"time"
 )
 
-func ParseTx(blockchain int64, msg *kafka.Message) interface{} {
+func ParseTx(blockchain int64, msg *kafka.Message) *SubTx {
 	if blockchain == 200 {
 		return ParseTxForEther(msg)
 	}
@@ -18,35 +19,37 @@ func ParseTx(blockchain int64, msg *kafka.Message) interface{} {
 	return nil
 }
 
-func ParseTxForEther(msg *kafka.Message) interface{} {
-	r := make(map[string]interface{}, 10)
+func ParseTxForEther(msg *kafka.Message) *SubTx {
+	var r SubTx
 	root := gjson.ParseBytes(msg.Value)
+	r.BlockChain = 200
+	r.Id = uint64(time.Now().UnixNano())
 	blockHash := root.Get("blockHash").String()
-	r["blockHash"] = blockHash
+	r.BlockHash = blockHash
 	blockNumber := root.Get("blockNumber").String()
-	r["blockNumber"] = blockNumber
+	r.BlockNumber = blockNumber
 	hash := root.Get("hash").String()
-	r["hash"] = hash
+	r.Hash = hash
 	from := root.Get("from").String()
-	r["from"] = from
+	r.From = from
 	to := root.Get("to").String()
-	r["to"] = to
+	r.To = to
 	input := root.Get("input").String()
-	r["input"] = input
+	r.Input = input
 	value := root.Get("value").String()
 	if len(input) > 5 {
 		//合约调用
-		r["txType"] = 1
-		r["value"] = value
+		r.TxType = 1
+		r.Value = value
 	} else {
 		//普通资产转移
-		r["txType"] = 2
+		r.TxType = 2
 		v, _ := util.HexToInt(value)
-		r["value"] = v
+		r.Value = v
 	}
 
 	txTime := root.Get("txTime").String()
-	r["txTime"] = txTime
+	r.TxTime = txTime
 
 	gasPrice := root.Get("gasPrice").String() //单位：wei
 	price, _ := util.HexToInt2(gasPrice)
@@ -62,18 +65,18 @@ func ParseTxForEther(msg *kafka.Message) interface{} {
 
 	fee := bigPrice.Mul(bigPrice, bigGas)
 
-	r["fee"] = fmt.Sprintf("%v", fee)
-	r["gasFee"] = map[string]string{"gasPrice": fmt.Sprintf("%v", price), "gasUsed": fmt.Sprintf("%v", gas)}
+	r.Fee = fmt.Sprintf("%v", fee)
+	r.FeeDetail = map[string]string{"gasPrice": fmt.Sprintf("%v", price), "gasUsed": fmt.Sprintf("%v", gas)}
 
 	status := receiptRoot.Get("status").String() //0x0:失败，0x1:成功
 	if status == "0x0" {
-		r["status"] = 0
+		r.Status = 0
 	} else if status == "0x1" {
-		r["status"] = 1
+		r.Status = 1
 	}
 
 	logs := receiptRoot.Get("logs").Array()
-	contractTx := make([]interface{}, 0, 5)
+	contractTx := make([]*ContractTx, 0, 5)
 	for _, v := range logs {
 		contract := v.Get("address").String()
 		value := v.Get("data").String()
@@ -83,51 +86,54 @@ func ParseTxForEther(msg *kafka.Message) interface{} {
 			//method = tps[0].String()
 			from = tps[1].String()
 			to = tps[2].String()
-			m := make(map[string]interface{}, 5)
-			m["contract"] = contract
-			m["value"], _ = util.HexToInt(value)
-			m["from"], _ = util.Hex2Address(from)
-			m["to"], _ = util.Hex2Address(to)
-			m["method"] = "Transfer"
-			contractTx = append(contractTx, m)
+			var m ContractTx
+			m.Contract = contract
+			m.Value, _ = util.HexToInt(value)
+			m.From, _ = util.Hex2Address(from)
+			m.To, _ = util.Hex2Address(to)
+			m.Method = "Transfer"
+			contractTx = append(contractTx, &m)
 		}
 
 	}
-	r["contractTx"] = contractTx
-	return r
+	r.ContractTx = contractTx
+	return &r
 }
 
-func ParseTxForTron(msg *kafka.Message) interface{} {
+func ParseTxForTron(msg *kafka.Message) *SubTx {
 
 	txBody := gjson.ParseBytes(msg.Value).Get("tx").String()
 	if len(txBody) < 5 {
 		return nil
 	}
-	r := make(map[string]interface{}, 10)
+	//r := make(map[string]interface{}, 10)
+	var r SubTx
+	r.BlockChain = 205
+	r.Id = uint64(time.Now().UnixNano())
 	txRoot := gjson.Parse(txBody)
 	status := txRoot.Get("ret.0.contractRet").String()
 	if status == "SUCCESS" { //交易成功
-		r["status"] = 1
+		r.Status = 1
 	} else {
 		//交易失败
-		r["status"] = 0
+		r.Status = 0
 	}
 
 	hash := txRoot.Get("txID").String()
-	r["hash"] = hash
+	r.Hash = hash
 	blockHash := txRoot.Get("raw_data.ref_block_hash").String()
-	r["blockHash"] = blockHash
-	txTime := txRoot.Get("raw_data.timestamp").Uint()
-	r["txTime"] = txTime
+	r.BlockHash = blockHash
+	txTime := txRoot.Get("raw_data.timestamp").String()
+	r.TxTime = txTime
 	txType := txRoot.Get("raw_data.contract.0.type").String()
 	if txType == "TransferContract" {
-		r["txType"] = 2
+		r.TxType = 2
 	} else if txType == "TriggerSmartContract" {
-		r["txType"] = 1
+		r.TxType = 1
 	}
 	v := txRoot.Get("raw_data.contract.0.parameter.value")
 	from := v.Get("owner_address").String()
-	r["from"] = from
+	r.From = from
 	var to string
 	if v.Get("receiver_address").Exists() {
 		to = v.Get("receiver_address").String()
@@ -140,33 +146,33 @@ func ParseTxForTron(msg *kafka.Message) interface{} {
 	if v.Get("contract_address").Exists() {
 		to = v.Get("contract_address").String()
 	}
-	r["to"] = to
+	r.To = to
 
 	var input string
 	if v.Get("data").Exists() {
 		input = v.Get("data").String()
 	}
-	r["input"] = input
+	r.Input = input
 
 	if txType == "TransferContract" {
-		r["value"] = v.Get("amount").String()
+		r.Value = v.Get("amount").String()
 	} else {
-		r["value"] = v.String()
+		r.Value = v.String()
 	}
 
 	receiptBody := gjson.ParseBytes(msg.Value).Get("receipt").String()
 	if len(receiptBody) > 5 {
 		receiptRoot := gjson.Parse(receiptBody)
 		fee := receiptRoot.Get("fee").String()
-		r["fee"] = fee
+		r.Fee = fee
 		gasFee := receiptRoot.Get("receipt").Map()
 		delete(gasFee, "result")
-		r["gasFee"] = gasFee
-		number := receiptRoot.Get("blockNumber").Uint()
-		r["blockNumber"] = number
+		r.FeeDetail = gasFee
+		number := receiptRoot.Get("blockNumber").String()
+		r.BlockNumber = number
 
 		logs := receiptRoot.Get("log").Array()
-		contractTx := make([]interface{}, 0, 5)
+		contractTx := make([]*ContractTx, 0, 5)
 		for _, v := range logs {
 			contract := v.Get("address").String()
 			value := v.Get("data").String()
@@ -176,18 +182,18 @@ func ParseTxForTron(msg *kafka.Message) interface{} {
 				//method = tps[0].String()
 				from = tps[1].String()
 				to = tps[2].String()
-				m := make(map[string]interface{}, 5)
-				m["contract"] = contract
-				m["value"], _ = util.HexToInt(value)
-				m["from"], _ = util.Hex2Address(from)
-				m["to"], _ = util.Hex2Address(to)
-				m["method"] = "Transfer"
-				contractTx = append(contractTx, m)
+				var m ContractTx
+				m.Contract = contract
+				m.Value, _ = util.HexToInt(value)
+				m.From, _ = util.Hex2Address(from)
+				m.To, _ = util.Hex2Address(to)
+				m.Method = "Transfer"
+				contractTx = append(contractTx, &m)
 			}
 
 		}
-		r["contractTx"] = contractTx
+		r.ContractTx = contractTx
 	}
 
-	return r
+	return &r
 }

@@ -16,7 +16,16 @@
       "BlockStore": false,
       "TxStore": false,
       "ReceiptStore": false,
+      "SubStore": false,
       "Kafka": {
+        "SubTx": {
+          "Host": "easykafka",
+          "Port": 9092,
+          "Topic": "ether_sub_tx",
+          "Group": "1",
+          "StartOffset": 0,
+          "Partition": 0
+        },
         "Tx": {
           "Host": "easykafka",
           "Port": 9092,
@@ -50,7 +59,8 @@
         "DbName": "ether2",
         "TxTable": "tx",
         "BlockTable": "block",
-        "ReceiptTable": "receipt"
+        "ReceiptTable": "receipt",
+        "SubTxTable": "sub_tx"
       }
     }
   ]

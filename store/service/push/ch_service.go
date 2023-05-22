@@ -37,6 +37,28 @@ func (m *ClickhouseDb) GetNodeTokenByEmail(email string) (error, *service.NodeTo
 	}
 	return nil, &r
 }
+func (m *ClickhouseDb) NewSubTx(blockchain int64, txs []*service.SubTx) error {
+	if _, ok := m.chDb[blockchain]; !ok {
+		return errors.New("the server has not support this blockchain")
+	}
+	if _, ok := m.cfg[blockchain]; !ok {
+		return errors.New("the server has not support this blockchain")
+	}
+
+	for _, v := range txs {
+		bs, err := json.Marshal(v.ContractTx)
+		if err == nil {
+			v.ContractTxs = string(bs)
+		}
+
+		bs, err = json.Marshal(v.FeeDetail)
+		if err == nil {
+			v.FeeDetails = string(bs)
+		}
+	}
+
+	return m.chDb[blockchain].Table(m.cfg[blockchain].ClickhouseDb.SubTxTable).Create(txs).Error
+}
 
 func (m *ClickhouseDb) NewTx(blockchain int64, txs []*service.Tx) error {
 	if _, ok := m.chDb[blockchain]; !ok {

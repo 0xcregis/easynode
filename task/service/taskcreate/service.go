@@ -1,6 +1,7 @@
 package taskcreate
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/segmentio/kafka-go"
@@ -43,7 +44,9 @@ func (s *Service) Start() {
 
 func (s *Service) startKafka() {
 	broker := fmt.Sprintf("%v:%v", s.config.TaskKafka.Host, s.config.TaskKafka.Port)
-	s.kafkaClient.Write(kafkaClient.Config{Brokers: []string{broker}}, s.sendCh, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	s.kafkaClient.Write(kafkaClient.Config{Brokers: []string{broker}}, s.sendCh, nil, ctx)
 }
 
 func (s *Service) updateLatestBlock() {

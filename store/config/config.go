@@ -12,6 +12,7 @@ type Chain struct {
 	TxStore      bool                    `json:"TxStore"`
 	BlockStore   bool                    `json:"BlockStore"`
 	ReceiptStore bool                    `json:"ReceiptStore"`
+	SubStore     bool                    `json:"SubStore"`
 	KafkaCfg     map[string]*KafkaConfig `json:"Kafka"`
 	ClickhouseDb *ClickhouseChainDb      `json:"ChainDb"`
 }
@@ -25,6 +26,7 @@ type ClickhouseChainDb struct {
 	TxTable      string `json:"TxTable"`
 	BlockTable   string `json:"BlockTable"`
 	ReceiptTable string `json:"ReceiptTable"`
+	SubTxTable   string `json:"SubTxTable"`
 }
 
 type ClickhouseBaseDb struct {

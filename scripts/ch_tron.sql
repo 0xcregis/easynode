@@ -70,3 +70,22 @@ CREATE TABLE IF NOT EXISTS tron.receipt
  create_time String,
  status String
 ) ENGINE = ReplacingMergeTree(id) ORDER BY transaction_hash;
+
+CREATE TABLE IF NOT EXISTS tron.sub_tx
+(
+    id UInt64,--时间戳
+    block_chain UInt64,
+    hash String,
+    tx_time String,
+    tx_status UInt64,
+    block_number String,
+    block_hash String,
+    from_addr String,
+    to_addr String,
+    value String,
+    fee String,
+    fee_detail String,
+    input_data String,
+    tx_type UInt64,
+    contract_tx String
+) ENGINE = ReplacingMergeTree(id) ORDER BY hash;

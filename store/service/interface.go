@@ -9,4 +9,5 @@ type DbMonitorAddressInterface interface {
 	NewTx(blockchain int64, tx []*Tx) error
 	NewBlock(blockchain int64, block []*Block) error
 	NewReceipt(blockchain int64, receipt []*Receipt) error
+	NewSubTx(blockchain int64, tx []*SubTx) error
 }

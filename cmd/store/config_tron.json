@@ -13,10 +13,19 @@
   "Chains": [
     {
       "BlockChain": 205,
-      "BlockStore": true,
+      "BlockStore": false,
       "TxStore": true,
       "ReceiptStore": false,
+      "SubStore": false,
       "Kafka": {
+        "SubTx": {
+          "Host": "192.168.2.9",
+          "Port": 9092,
+          "Topic": "tron_sub_tx",
+          "Group": "1",
+          "StartOffset": 0,
+          "Partition": 0
+        },
         "Tx": {
           "Host": "192.168.2.20",
           "Port": 9092,
@@ -50,7 +59,8 @@
         "DbName": "ether",
         "TxTable": "tx",
         "BlockTable": "block",
-        "ReceiptTable": "receipt"
+        "ReceiptTable": "receipt",
+        "SubTxTable": "sub_tx"
       }
     }
   ]

@@ -38,7 +38,16 @@ store是easynode系统的基础和核心服务. 该服务负责任监控地址�
   "BlockStore": false, //区块是否落盘
   "TxStore": false, //交易是否落盘
   "ReceiptStore": false, //收据是否落盘
+  "SubStore": true,//订阅数据持久化
   "Kafka": { //公链数据所在的Kafka配置
+    "SubTx": { //订阅
+          "Host": "192.168.2.9",
+          "Port": 9092,
+          "Topic": "ether_sub_tx",
+          "Group": "1",
+          "StartOffset": 0,
+          "Partition": 0
+        },
     "Tx": { //交易配置
       "Host": "192.168.2.20",
       "Port": 9092,
@@ -72,7 +81,8 @@ store是easynode系统的基础和核心服务. 该服务负责任监控地址�
     "DbName": "ether",
     "TxTable": "tx", //交易表
     "BlockTable": "block", //区块表
-    "ReceiptTable": "receipt" //收据表
+    "ReceiptTable": "receipt", //收据表
+    "SubTxTable": "sub_tx" //订阅数据交易表
   }
  }
 ]

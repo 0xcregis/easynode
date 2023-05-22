@@ -89,13 +89,15 @@ func (easy *EasyKafka) WriteBatch(c *Config, ch chan []*kafka.Message, resp chan
 	for true {
 		query <- 1
 		go func(c *Config, ch chan []*kafka.Message, resp chan []*kafka.Message) {
-			easy.Write(*c, ch, resp)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			easy.Write(*c, ch, resp, ctx)
 			<-query
 		}(c, ch, resp)
 	}
 }
 
-func (easy *EasyKafka) Write(c Config, ch chan []*kafka.Message, resp chan []*kafka.Message) {
+func (easy *EasyKafka) Write(c Config, ch chan []*kafka.Message, resp chan []*kafka.Message, ctx context.Context) {
 	// make a writer that produces to topic-A, using the least-bytes distribution
 	w := &kafka.Writer{
 		Addr: kafka.TCP(c.Brokers...),
@@ -115,6 +117,15 @@ func (easy *EasyKafka) Write(c Config, ch chan []*kafka.Message, resp chan []*ka
 	}()
 
 	running := true
+
+	go func(ctx context.Context) {
+		for true {
+			select {
+			case <-ctx.Done():
+				running = false
+			}
+		}
+	}(ctx)
 
 	for running {
 		//easy.log.Printf("kafka|Write|length=%v", len(ch))
@@ -143,7 +154,7 @@ func (easy *EasyKafka) sendToKafka(w *kafka.Writer, ms []*kafka.Message, resp ch
 		temp = append(temp, *v)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	const retries = 5
 	for i := 0; i < retries; i++ {

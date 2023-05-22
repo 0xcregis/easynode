@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -161,20 +162,33 @@ func (ws *WsHandler) Start(ctx *gin.Context, w http.ResponseWriter, r *http.Requ
 
 }
 
-func (ws *WsHandler) sendMessageEx(token string, kafkaConfig map[int64]*config.KafkaConfig, ctx context.Context) {
+func (ws *WsHandler) sendMessageEx(token string, kafkaConfig map[int64]*config.KafkaConfig, subKafkaConfig map[int64]*config.KafkaConfig, ctx context.Context) {
 	for b, k := range kafkaConfig {
-		go ws.sendMessage(token, k, b, ctx)
+		s := subKafkaConfig[b]
+		go ws.sendMessage(token, s, k, b, ctx)
 	}
 }
 
 // kafka->ws.push
-func (ws *WsHandler) sendMessage(token string, kafkaConfig *config.KafkaConfig, blockChain int64, ctx context.Context) {
+func (ws *WsHandler) sendMessage(token string, SubKafkaConfig *config.KafkaConfig, kafkaConfig *config.KafkaConfig, blockChain int64, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
+	sender := make(chan []*kafka.Message, 10)
 	go func(ctx context.Context) {
 		broker := fmt.Sprintf("%v:%v", kafkaConfig.Host, kafkaConfig.Port)
 		group := fmt.Sprintf("group_push_%v", kafkaConfig.Group)
-		ws.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: kafkaConfig.Topic, Group: group, Partition: kafkaConfig.Partition, StartOffset: kafkaConfig.StartOffset}, receiver, ctx)
+		c, cancel := context.WithCancel(ctx)
+		defer cancel()
+		ws.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: kafkaConfig.Topic, Group: group, Partition: kafkaConfig.Partition, StartOffset: kafkaConfig.StartOffset}, receiver, c)
 	}(ctx)
+
+	if SubKafkaConfig != nil {
+		go func(ctx context.Context) {
+			broker := fmt.Sprintf("%v:%v", SubKafkaConfig.Host, SubKafkaConfig.Port)
+			c, cancel := context.WithCancel(ctx)
+			defer cancel()
+			ws.kafka.Write(kafkaClient.Config{Brokers: []string{broker}}, sender, nil, c)
+		}(ctx)
+	}
 
 	for {
 		select {
@@ -233,6 +247,12 @@ func (ws *WsHandler) sendMessage(token string, kafkaConfig *config.KafkaConfig, 
 				ws.log.Errorf("sendMessage|error=%v", err.Error())
 			}
 
+			if SubKafkaConfig != nil {
+				r, _ := json.Marshal(data)
+				m := &kafka.Message{Topic: SubKafkaConfig.Topic, Key: []byte(uuid.New().String()), Value: r}
+				sender <- []*kafka.Message{m}
+			}
+
 		}
 
 		time.Sleep(1 * time.Second)
@@ -257,7 +277,7 @@ func (ws *WsHandler) CheckAddressForEther(msg *kafka.Message, list []*service.Mo
 		//}
 
 		// 普通交易且 地址包含订阅地址
-		if strings.HasPrefix(strings.ToLower(fromAddr),strings.ToLower( v.Address)) || strings.HasPrefix(strings.ToLower(toAddr), strings.ToLower(v.Address)) {
+		if strings.HasPrefix(strings.ToLower(fromAddr), strings.ToLower(v.Address)) || strings.HasPrefix(strings.ToLower(toAddr), strings.ToLower(v.Address)) {
 			has = true
 			break
 		}
@@ -409,10 +429,14 @@ func (ws *WsHandler) handlerMessage(ctx context.Context, token string, c *websoc
 
 	// 订阅链的配置
 	txKafkaParams := make(map[int64]*config.KafkaConfig, 2)
+	subKafkaParams := make(map[int64]*config.KafkaConfig, 2)
 	for _, b := range msg.BlockChain {
 		if c, ok := ws.cfg[b]; ok {
 			f := c.KafkaCfg["Tx"]
 			txKafkaParams[b] = f
+
+			s := c.KafkaCfg["SubTx"]
+			subKafkaParams[b] = s
 		}
 	}
 
@@ -428,7 +452,7 @@ func (ws *WsHandler) handlerMessage(ctx context.Context, token string, c *websoc
 			ws.cmdMap[token] = msg
 			kafkaCtx, cancel := context.WithCancel(ctx)
 			ws.ctxMap[token] = cancel
-			ws.sendMessageEx(token, txKafkaParams, kafkaCtx)
+			ws.sendMessageEx(token, txKafkaParams, subKafkaParams, kafkaCtx)
 		}
 	} else if msg.Code == 2 {
 		if f, ok := ws.ctxMap[token]; ok {

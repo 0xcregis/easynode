@@ -16,11 +16,20 @@
       "BlockStore": false,
       "TxStore": false,
       "ReceiptStore": false,
+      "SubStore": true,
       "Kafka": {
+        "SubTx": {
+          "Host": "192.168.2.9",
+          "Port": 9092,
+          "Topic": "ether_sub_tx",
+          "Group": "1",
+          "StartOffset": 0,
+          "Partition": 0
+        },
         "Tx": {
           "Host": "192.168.2.9",
           "Port": 9092,
-          "Topic": "ether_tx2",
+          "Topic": "ether_tx",
           "Group": "1",
           "StartOffset": 0,
           "Partition": 0
@@ -28,7 +37,7 @@
         "Block": {
           "Host": "192.168.2.9",
           "Port": 9092,
-          "Topic": "ether_block2",
+          "Topic": "ether_block",
           "Group": "1",
           "StartOffset": 0,
           "Partition": 0
@@ -36,7 +45,7 @@
         "Receipt": {
           "Host": "192.168.2.9",
           "Port": 9092,
-          "Topic": "ether_receipt2",
+          "Topic": "ether_receipt",
           "Group": "1",
           "StartOffset": 0,
           "Partition": 0
@@ -50,7 +59,8 @@
         "DbName": "ether2",
         "TxTable": "tx",
         "BlockTable": "block",
-        "ReceiptTable": "receipt"
+        "ReceiptTable": "receipt",
+        "SubTxTable": "sub_tx"
       }
     }
   ]

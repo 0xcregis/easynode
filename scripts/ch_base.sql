@@ -9,6 +9,14 @@ CREATE TABLE IF NOT EXISTS  base.address
 
     `tx_type` String,
 
+    `address_type` String,
+
+    `decimals` String,
+
+    `symbol` String,
+
+    `token_name` String,
+
     `block_chain` Int64,
 
     `id` Int64

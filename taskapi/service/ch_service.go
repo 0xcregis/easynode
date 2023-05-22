@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -56,7 +57,9 @@ func NewChService(cfg *config.Config, log *xlog.XLog) DbApiInterface {
 
 func (m *ClickhouseDb) startKafka() {
 	broker := fmt.Sprintf("%v:%v", m.cfg.TaskKafka.Host, m.cfg.TaskKafka.Port)
-	m.kafkaClient.Write(kafkaClient.Config{Brokers: []string{broker}}, m.sendCh, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	m.kafkaClient.Write(kafkaClient.Config{Brokers: []string{broker}}, m.sendCh, nil, ctx)
 }
 
 func (m *ClickhouseDb) AddNodeTask(task *NodeTask) error {

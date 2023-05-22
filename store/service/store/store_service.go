@@ -47,8 +47,59 @@ func (s *StoreService) Start() {
 		if v.ReceiptStore {
 			go s.readReceiptFromKafka(v.BlockChain, v.KafkaCfg)
 		}
+
+		if v.SubStore {
+			go s.readSubTxFromKafka(v.BlockChain, v.KafkaCfg)
+		}
 	}
 
+}
+
+func (s *StoreService) readSubTxFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig) {
+	receiver := make(chan *kafka.Message)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		Kafka := kafkaCfg["SubTx"]
+		broker := fmt.Sprintf("%v:%v", Kafka.Host, Kafka.Port)
+		group := fmt.Sprintf("group_store_subtx_%v", Kafka.Group)
+		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: Kafka.Topic, Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx)
+	}()
+
+	list := make([]*service.SubTx, 0, 20)
+	tk := time.NewTicker(5 * time.Second)
+	lock := sync.RWMutex{}
+
+	for true {
+		select {
+		case <-tk.C:
+			lock.Lock()
+			if len(list) > 0 {
+				err := s.core.NewSubTx(blockChain, list)
+				if err != nil {
+					s.log.Errorf("readTxFromKafka|error=%v", err.Error())
+				}
+				list = list[:0]
+			}
+			lock.Unlock()
+
+		case msg := <-receiver:
+
+			if msg.Value == nil || len(msg.Value) < 5 {
+				continue
+			}
+			var tx service.SubTx
+			err := json.Unmarshal(msg.Value, &tx)
+			if err != nil {
+				s.log.Errorf("readTxFromKafka|error=%v", err.Error())
+				continue
+			}
+
+			lock.Lock()
+			list = append(list, &tx)
+			lock.Unlock()
+		}
+	}
 }
 
 func (s *StoreService) readTxFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig) {
@@ -63,7 +114,7 @@ func (s *StoreService) readTxFromKafka(blockChain int64, kafkaCfg map[string]*co
 	}()
 
 	list := make([]*service.Tx, 0, 20)
-	tk := time.NewTicker(10 * time.Second)
+	tk := time.NewTicker(5 * time.Second)
 	lock := sync.RWMutex{}
 
 	for true {
@@ -166,7 +217,7 @@ func (s *StoreService) readBlockFromKafka(blockChain int64, kafkaCfg map[string]
 	}()
 
 	list := make([]*service.Block, 0, 20)
-	tk := time.NewTicker(10 * time.Second)
+	tk := time.NewTicker(5 * time.Second)
 	lock := sync.RWMutex{}
 	for true {
 		select {
@@ -236,7 +287,7 @@ func (s *StoreService) readReceiptFromKafka(blockChain int64, kafkaCfg map[strin
 	}()
 
 	list := make([]*service.Receipt, 0, 20)
-	tk := time.NewTicker(10 * time.Second)
+	tk := time.NewTicker(5 * time.Second)
 	lock := sync.RWMutex{}
 
 	for true {

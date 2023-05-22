@@ -1,11 +1,15 @@
 package service
 
 type MonitorAddress struct {
-	Id         int64  `json:"id" gorm:"column:id"`
-	Token      string `json:"token" gorm:"column:token"`
-	Address    string `json:"address" gorm:"column:address"`
-	BlockChain int64  `json:"blockChain" gorm:"column:block_chain"`
-	TxType     string `json:"txType" gorm:"column:tx_type"`
+	Id          int64  `json:"id" gorm:"column:id"`
+	Token       string `json:"token" gorm:"column:token"`
+	Address     string `json:"address" gorm:"column:address"`
+	BlockChain  int64  `json:"blockChain" gorm:"column:block_chain"`
+	TxType      string `json:"txType" gorm:"column:tx_type"`
+	AddressType string `json:"addressType" gorm:"column:address_type"` //1:外部账户 2:合约账户
+	Decimals    string `json:"decimals" gorm:"decimals"`
+	Symbol      string `json:"symbol" gorm:"symbol"`
+	TokenName   string `json:"tokenName" gorm:"token_name"`
 }
 
 type NodeToken struct {
@@ -247,5 +251,33 @@ type WsRespMessage struct {
 type WsPushMessage struct {
 	Code       int64 //1:tx,2:block,3:receipt
 	BlockChain int64 `json:"blockChain"`
-	Data       interface{}
+	Data       any
+}
+
+type ContractTx struct {
+	Contract string `json:"contract"`
+	From     string `json:"from"`
+	Method   string `json:"method"`
+	To       string `json:"to"`
+	Value    string `json:"value"`
+}
+
+type SubTx struct {
+	Id          uint64        `json:"id" gorm:"column:id"`
+	BlockChain  uint64        `json:"blockChain" gorm:"column:block_chain"`
+	BlockHash   string        `json:"blockHash" gorm:"column:block_hash"`
+	BlockNumber string        `json:"blockNumber" gorm:"column:block_number"`
+	ContractTx  []*ContractTx `json:"contractTx" gorm:"-"`
+	ContractTxs string        `json:"-" gorm:"column:contract_tx"`
+	Fee         string        `json:"fee" gorm:"column:fee"`
+	FeeDetail   interface{}   `json:"feeDetail" gorm:"-"`
+	FeeDetails  string        `json:"-" gorm:"column:fee_detail"`
+	From        string        `json:"from" gorm:"column:from_addr"`
+	Hash        string        `json:"hash" gorm:"column:hash"`
+	Input       string        `json:"input" gorm:"column:input_data"`
+	Status      uint64        `json:"status" gorm:"column:tx_status"` //0x0:失败，0x1:成功
+	To          string        `json:"to" gorm:"column:to_addr"`
+	TxTime      string        `json:"txTime" gorm:"column:tx_time"`
+	TxType      uint64        `json:"txType" gorm:"column:tx_type"` //交易类型 1:合约调用，2:普通资产转移
+	Value       string        `json:"value" gorm:"column:value"`
 }

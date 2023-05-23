@@ -104,8 +104,60 @@ func (t *Tron) SendRequestToChainByHttp(host string, token string, query string)
 
 func (t *Tron) GetTokenBalanceByHttp(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
 
-	var query string
 	mp := make(map[string]interface{}, 2)
+
+	balance, err := t.GetTokenBalanceByHttp2(host, token, contractAddress, userAddress)
+	if err == nil {
+		mp["balance"] = balance
+	}
+
+	decimal, err := t.GetTokenDecimalsByHttp(host, token, contractAddress, userAddress)
+	if err == nil {
+		mp["decimals"] = decimal
+	}
+	return mp, nil
+}
+
+func (t *Tron) GetTokenDecimalsByHttp(host string, token string, contractAddress string, userAddress string) (string, error) {
+
+	var query string
+
+	query = `
+			{
+			  "owner_address": "%v",
+			  "contract_address": "%v",
+			  "function_selector": "decimals()"
+			}
+			`
+
+	userAddr, err := util.Base58ToAddress(userAddress)
+	if err != nil {
+		return "", err
+	}
+
+	contractAddr, err := util.Base58ToAddress(contractAddress)
+	if err != nil {
+		return "", err
+	}
+
+	query = fmt.Sprintf(query, userAddr.Hex(), contractAddr.Hex())
+	resp, err := t.SendRequestToChainByHttp(host, token, query)
+	if err != nil {
+		return "", err
+	}
+	log.Println(resp)
+	r := gjson.Parse(resp).Get("constant_result")
+	if r.Exists() {
+		decimals, _ := strconv.ParseInt(r.Array()[0].String(), 16, 64)
+		return fmt.Sprintf("%v", decimals), nil
+	}
+
+	return "", errors.New("no data")
+}
+
+func (t *Tron) GetTokenBalanceByHttp2(host string, token string, contractAddress string, userAddress string) (string, error) {
+
+	var query string
 
 	query = `
 			{
@@ -118,12 +170,12 @@ func (t *Tron) GetTokenBalanceByHttp(host string, token string, contractAddress 
 
 	userAddr, err := util.Base58ToAddress(userAddress)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	contractAddr, err := util.Base58ToAddress(contractAddress)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	c2 := userAddr.Hex()[4:]
@@ -132,18 +184,16 @@ func (t *Tron) GetTokenBalanceByHttp(host string, token string, contractAddress 
 	query = fmt.Sprintf(query, userAddr.Hex(), contractAddr.Hex(), params)
 	resp, err := t.SendRequestToChainByHttp(host, token, query)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	log.Println(resp)
 	r := gjson.Parse(resp).Get("constant_result")
 	if r.Exists() {
 		balance, _ := strconv.ParseInt(r.Array()[0].String(), 16, 64)
-		mp["balance"] = balance
-	} else {
-		return nil, errors.New(resp)
+		return fmt.Sprintf("%v", balance), nil
 	}
 
-	return mp, nil
+	return "", errors.New("no data")
 }
 
 func (t *Tron) GetTokenBalance(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {

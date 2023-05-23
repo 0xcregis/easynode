@@ -175,11 +175,11 @@ func (s *Service) GetTx(txHash string, task *config.TxTask, eLog *logrus.Entry) 
 		tx.Type = tp
 	}
 
-	rp, err := s.receiptChainClient.GetTransactionReceiptByHash(int64(s.chain.BlockChainCode), tx.TxHash)
+	rp := s.GetReceipt(tx.TxHash, nil, eLog)
 
-	if err == nil {
-		tx.Receipt = rp
-	}
+	bs, _ := json.Marshal(rp.Receipt)
+	tx.Receipt = string(bs)
+
 	r := &service.TxInterface{TxHash: tx.TxHash, Tx: tx}
 	return r
 }

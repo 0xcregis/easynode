@@ -40,15 +40,13 @@ func ParseTxForEther(msg *kafka.Message) *SubTx {
 	input := root.Get("input").String()
 	r.Input = input
 	value := root.Get("value").String()
+	r.Value, _ = util.HexToInt(value)
 	if len(input) > 5 {
 		//合约调用
 		r.TxType = 1
-		r.Value = value
 	} else {
 		//普通资产转移
 		r.TxType = 2
-		v, _ := util.HexToInt(value)
-		r.Value = v
 	}
 
 	txTime := root.Get("txTime").String()
@@ -68,7 +66,7 @@ func ParseTxForEther(msg *kafka.Message) *SubTx {
 
 	fee := bigPrice.Mul(bigPrice, bigGas)
 
-	r.Fee = fmt.Sprintf("%v", fee)
+	r.Fee = div(fmt.Sprintf("%v", fee), 18)
 	r.FeeDetail = map[string]string{"gasPrice": fmt.Sprintf("%v", price), "gasUsed": fmt.Sprintf("%v", gas)}
 
 	status := receiptRoot.Get("status").String() //0x0:失败，0x1:成功
@@ -180,7 +178,7 @@ func ParseTxForTron(msg *kafka.Message) *SubTx {
 	r.Input = input
 
 	if txType == "TransferContract" {
-		r.Value = v.Get("amount").String()
+		r.Value = div(v.Get("amount").String(), 6)
 	} else {
 		r.Value = v.String()
 	}
@@ -189,7 +187,7 @@ func ParseTxForTron(msg *kafka.Message) *SubTx {
 	if len(receiptBody) > 5 {
 		receiptRoot := gjson.Parse(receiptBody)
 		fee := receiptRoot.Get("fee").String()
-		r.Fee = fee
+		r.Fee = div(fee, 6)
 		gasFee := receiptRoot.Get("receipt").Map()
 		delete(gasFee, "result")
 		r.FeeDetail = gasFee

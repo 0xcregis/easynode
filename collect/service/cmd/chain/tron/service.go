@@ -21,6 +21,7 @@ import (
 type Service struct {
 	log                *xlog.XLog
 	chain              *config.Chain
+	store              service.StoreTaskInterface
 	txChainClient      chainService.API
 	blockChainClient   chainService.API
 	receiptChainClient chainService.API
@@ -213,7 +214,7 @@ func (s *Service) BalanceCluster(key string, clusterList []*config.FromCluster) 
 	return nil, nil
 }
 
-func NewService(c *config.Chain, x *xlog.XLog) service.BlockChainInterface {
+func NewService(c *config.Chain, x *xlog.XLog, store service.StoreTaskInterface) service.BlockChainInterface {
 
 	blockNodeCluster := map[int64][]*chainConfig.NodeCluster{}
 	if c.BlockTask != nil {
@@ -263,6 +264,7 @@ func NewService(c *config.Chain, x *xlog.XLog) service.BlockChainInterface {
 	return &Service{
 		log:                x,
 		chain:              c,
+		store:              store,
 		txChainClient:      txClient,
 		blockChainClient:   blockClient,
 		receiptChainClient: receiptClient,

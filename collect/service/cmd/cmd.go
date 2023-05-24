@@ -53,7 +53,7 @@ func NewService(cfg *config.Chain, logConfig *config.LogConfig) *Cmd {
 	taskKafkaCh := make(chan []*kafka.Message, 10)
 	store := db.NewTaskCacheService(cfg, taskKafkaCh, log)
 	kf := kafkaClient.NewEasyKafka(log)
-	chain := getBlockChainService(cfg, logConfig)
+	chain := getBlockChainService(cfg, logConfig, store)
 
 	return &Cmd{
 		log:         log,
@@ -70,13 +70,13 @@ func NewService(cfg *config.Chain, logConfig *config.LogConfig) *Cmd {
 	}
 }
 
-func getBlockChainService(c *config.Chain, logConfig *config.LogConfig) service.BlockChainInterface {
+func getBlockChainService(c *config.Chain, logConfig *config.LogConfig, store service.StoreTaskInterface) service.BlockChainInterface {
 	x := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/chain_info", logConfig.Path), 24*time.Hour)
 	var srv service.BlockChainInterface
 	if c.BlockChainCode == 200 {
-		srv = ether.NewService(c, x)
+		srv = ether.NewService(c, x, store)
 	} else if c.BlockChainCode == 205 {
-		srv = tron2.NewService(c, x)
+		srv = tron2.NewService(c, x, store)
 	}
 	//第三方节点监控
 	srv.Monitor()
@@ -154,9 +154,9 @@ func (c *Cmd) HandlerNodeTaskFromKafka(nodeId string, blockChain int, blockCh ch
 			if task.Id > 0 && task.NodeId == nodeId && task.TaskType == 1 && task.TaskStatus == 0 {
 				//交易任务
 				if len(task.TxHash) > 0 {
-					c.taskStore.StoreExecTask(fmt.Sprintf(KeyTx, task.BlockChain, task.TxHash), &task)
+					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyTx, task.BlockChain, task.TxHash), &task)
 				} else {
-					c.taskStore.StoreExecTask(fmt.Sprintf(KeyTx, task.BlockChain, task.BlockHash+task.BlockNumber), &task)
+					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyTx, task.BlockChain, task.BlockHash+task.BlockNumber), &task)
 				}
 				txCh <- &task
 			}
@@ -164,9 +164,9 @@ func (c *Cmd) HandlerNodeTaskFromKafka(nodeId string, blockChain int, blockCh ch
 			if task.Id > 0 && task.NodeId == nodeId && task.TaskType == 2 && task.TaskStatus == 0 {
 				//区块任务
 				if len(task.BlockNumber) > 0 {
-					c.taskStore.StoreExecTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockNumber), &task)
+					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockNumber), &task)
 				} else if len(task.BlockHash) > 0 {
-					c.taskStore.StoreExecTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockHash), &task)
+					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockHash), &task)
 				}
 				blockCh <- &task
 			}
@@ -174,9 +174,9 @@ func (c *Cmd) HandlerNodeTaskFromKafka(nodeId string, blockChain int, blockCh ch
 			if task.Id > 0 && task.NodeId == nodeId && task.TaskType == 3 && task.TaskStatus == 0 {
 				//收据任务
 				if len(task.TxHash) > 0 {
-					c.taskStore.StoreExecTask(fmt.Sprintf(KeyReceipt, task.BlockChain, task.TxHash), &task)
+					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyReceipt, task.BlockChain, task.TxHash), &task)
 				} else {
-					c.taskStore.StoreExecTask(fmt.Sprintf(KeyReceipt, task.BlockChain, task.BlockHash+task.BlockNumber), &task)
+					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyReceipt, task.BlockChain, task.BlockHash+task.BlockNumber), &task)
 				}
 				receiptChan <- &task
 			}
@@ -326,7 +326,7 @@ func (c *Cmd) ExecReceiptTask(receiptChan chan *service.NodeTask, kf chan []*kaf
 						t.TaskStatus = 4
 					}
 					kafkaMsgList = append(kafkaMsgList, m)
-					c.taskStore.StoreExecTask(fmt.Sprintf(KeyReceiptById, c.chain.BlockChainCode, receipt.TransactionHash), t)
+					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyReceiptById, c.chain.BlockChainCode, receipt.TransactionHash), t)
 				}
 
 				if len(kafkaMsgList) > 0 {
@@ -460,7 +460,7 @@ func (c *Cmd) ExecTxTask(nodeId string, txCh chan *service.NodeTask, kf chan []*
 							txMessageList = append(txMessageList, m)
 						}
 
-						c.taskStore.StoreExecTask(fmt.Sprintf(KeyTxById, c.chain.BlockChainCode, t.TxHash), t)
+						c.taskStore.StoreNodeTask(fmt.Sprintf(KeyTxById, c.chain.BlockChainCode, t.TxHash), t)
 					}
 
 					//未分配的收据任务
@@ -625,6 +625,12 @@ func (c *Cmd) HandlerReceipt(receipt *service.ReceiptInterface) (*kafka.Message,
 	if v, ok := receipt.Receipt.(string); ok {
 		r = []byte(v)
 	} else if v, ok := receipt.Receipt.(*service.Receipt); ok {
+		b, err := json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		r = b
+	} else if v, ok := receipt.Receipt.(*service.TronReceipt); ok {
 		b, err := json.Marshal(v)
 		if err != nil {
 			return nil, err

@@ -4,6 +4,8 @@ import "time"
 
 const (
 	DateFormat = "20060102"
+	TronTopic  = "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+	EthTopic   = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
 )
 
 /**
@@ -147,22 +149,22 @@ type TxInterface struct {
 */
 
 type Receipt struct {
-	Id                int64  `json:"id"`
-	BlockHash         string `json:"blockHash" gorm:"column:block_hash"`
-	LogsBloom         string `json:"logsBloom" gorm:"column:logs_bloom"`
-	ContractAddress   string `json:"contractAddress" gorm:"column:contract_address"`
-	TransactionIndex  string `json:"transactionIndex" gorm:"column:transaction_index"`
-	Type              string `json:"type" gorm:"column:tx_type"`
-	TransactionHash   string `json:"transactionHash" gorm:"column:transaction_hash"`
-	GasUsed           string `json:"gasUsed" gorm:"column:gas_used"`
-	BlockNumber       string `json:"blockNumber" gorm:"column:block_number"`
-	CumulativeGasUsed string `json:"cumulativeGasUsed" gorm:"column:cumulative_gas_used"`
-	From              string `json:"from" gorm:"column:from_addr"`
-	To                string `json:"to" gorm:"column:to_addr"`
-	EffectiveGasPrice string `json:"effectiveGasPrice" gorm:"column:effective_gas_price"`
-	Logs              *Logs  `json:"logs" gorm:"column:logs"`
-	CreateTime        string `json:"createTime" gorm:"column:create_time"` // 2006-01-02
-	Status            string `json:"status" gorm:"column:status"`
+	Id                int64   `json:"id"`
+	BlockHash         string  `json:"blockHash" gorm:"column:block_hash"`
+	LogsBloom         string  `json:"logsBloom" gorm:"column:logs_bloom"`
+	ContractAddress   string  `json:"contractAddress" gorm:"column:contract_address"`
+	TransactionIndex  string  `json:"transactionIndex" gorm:"column:transaction_index"`
+	Type              string  `json:"type" gorm:"column:tx_type"`
+	TransactionHash   string  `json:"transactionHash" gorm:"column:transaction_hash"`
+	GasUsed           string  `json:"gasUsed" gorm:"column:gas_used"`
+	BlockNumber       string  `json:"blockNumber" gorm:"column:block_number"`
+	CumulativeGasUsed string  `json:"cumulativeGasUsed" gorm:"column:cumulative_gas_used"`
+	From              string  `json:"from" gorm:"column:from_addr"`
+	To                string  `json:"to" gorm:"column:to_addr"`
+	EffectiveGasPrice string  `json:"effectiveGasPrice" gorm:"column:effective_gas_price"`
+	Logs              []*Logs `json:"logs" gorm:"column:logs"`
+	CreateTime        string  `json:"createTime" gorm:"column:create_time"` // 2006-01-02
+	Status            string  `json:"status" gorm:"column:status"`
 }
 
 type ReceiptInterface struct {
@@ -170,7 +172,7 @@ type ReceiptInterface struct {
 	Receipt         interface{} `json:"receipt"`
 }
 
-type Logs []struct {
+type Logs struct {
 	BlockHash        string   `json:"blockHash" gorm:"column:block_hash"`
 	Address          string   `json:"address" gorm:"column:address"`
 	LogIndex         string   `json:"logIndex" gorm:"column:log_index"`
@@ -180,6 +182,25 @@ type Logs []struct {
 	BlockNumber      string   `json:"blockNumber" gorm:"column:block_number"`
 	TransactionIndex string   `json:"transactionIndex" gorm:"column:transaction_index"`
 	TransactionHash  string   `json:"transactionHash" gorm:"column:transaction_hash"`
+}
+
+type TronReceipt struct {
+	Id              string   `json:"id"`
+	Fee             int64    `json:"fee"`
+	BlockNumber     int64    `json:"blockNumber"`
+	BlockTimeStamp  int64    `json:"blockTimeStamp"`
+	From            string   `json:"from" gorm:"column:from_addr"`
+	To              string   `json:"to" gorm:"column:to_addr"`
+	ContractResult  []string `json:"contractResult"`
+	ContractAddress string   `json:"contract_address"`
+	Receipt         struct {
+		EnergyFee          int64  `json:"energy_fee"`
+		EnergyUsageTotal   int64  `json:"energy_usage_total"`
+		NetUsage           int64  `json:"net_usage"`
+		Result             string `json:"result"`
+		EnergyPenaltyTotal int64  `json:"energy_penalty_total"`
+	} `json:"receipt"`
+	Log []*Logs `json:"log"`
 }
 
 /**

@@ -291,7 +291,7 @@ func (ws *WsHandler) CheckAddressForEther(msg *kafka.Message, list []*service.Mo
 			for _, v := range list {
 				topics := v.Get("topics").Array()
 				//Transfer()
-				if len(topics) >= 3 && topics[0].String() == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" {
+				if len(topics) >= 3 && topics[0].String() == service.EthTopic {
 					if strings.HasSuffix(strings.ToLower(topics[1].String()), strings.ToLower(monitorAddr)) || strings.HasSuffix(strings.ToLower(topics[2].String()), strings.ToLower(monitorAddr)) {
 						has = true
 						break
@@ -360,8 +360,13 @@ func (ws *WsHandler) CheckAddressForTron(msg *kafka.Message, list []*service.Mon
 			if strings.HasPrefix(v.Address, "0x") {
 				monitorAddr = strings.TrimLeft(v.Address, "0x") //去丢0x
 			}
+
 			if strings.HasPrefix(v.Address, "41") {
-				monitorAddr = strings.TrimLeft(v.Address, "41") //去丢0x
+				monitorAddr = strings.TrimLeft(v.Address, "41") //去丢41
+			}
+
+			if strings.HasPrefix(v.Address, "0x41") {
+				monitorAddr = strings.TrimLeft(v.Address, "0x41") //去丢41
 			}
 
 			//合约调用下的TRC20
@@ -369,7 +374,7 @@ func (ws *WsHandler) CheckAddressForTron(msg *kafka.Message, list []*service.Mon
 				for _, v := range logs {
 					topics := v.Get("topics").Array()
 					//Transfer()
-					if len(topics) >= 3 && topics[0].String() == "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" {
+					if len(topics) >= 3 && topics[0].String() == service.TronTopic {
 						if strings.HasSuffix(topics[1].String(), monitorAddr) || strings.HasSuffix(topics[2].String(), monitorAddr) {
 							has = true
 							break

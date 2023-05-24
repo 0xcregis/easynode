@@ -1,6 +1,8 @@
 package tron2
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
@@ -18,6 +20,7 @@ import (
 type Service struct {
 	log                *xlog.XLog
 	chain              *config.Chain
+	store              service.StoreTaskInterface
 	txChainClient      chainService.API
 	blockChainClient   chainService.API
 	receiptChainClient chainService.API
@@ -31,13 +34,13 @@ func (s *Service) GetTx(txHash string, task *config.TxTask, eLog *logrus.Entry) 
 	//调用接口
 	resp, err := s.txChainClient.GetTxByHash(int64(s.chain.BlockChainCode), txHash)
 	if err != nil {
-		eLog.Errorf("GetTxByHash|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, err.Error(), txHash)
+		eLog.Errorf("GetTx|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, err.Error(), txHash)
 		return nil
 	}
 
 	//处理数据
 	if resp == "" {
-		eLog.Errorf("GetTxByHash|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, "tx is empty", txHash)
+		eLog.Errorf("GetTx|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, "tx is empty", txHash)
 		return nil
 	}
 
@@ -57,19 +60,25 @@ func (s *Service) GetReceipt(txHash string, task *config.ReceiptTask, eLog *logr
 	//调用接口
 	resp, err := s.receiptChainClient.GetTransactionReceiptByHash(int64(s.chain.BlockChainCode), txHash)
 	if err != nil {
-		eLog.Errorf("GetTransactionReceiptByHash|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, err.Error(), txHash)
+		eLog.Errorf("GetReceipt|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, err.Error(), txHash)
 		return nil
 	}
 
 	//处理数据
 	if resp == "" {
-		eLog.Errorf("GetTransactionReceiptByHash|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, "receipt is empty", txHash)
+		eLog.Errorf("GetReceipt|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, "receipt is empty", txHash)
 		return nil
 	}
 
 	hash := gjson.Parse(resp).Get("id").String()
 
-	r := &service.ReceiptInterface{TransactionHash: hash, Receipt: resp}
+	var receipt service.TronReceipt
+	_ = json.Unmarshal([]byte(resp), &receipt)
+
+	s.buildContract(&receipt)
+
+	bs, _ := json.Marshal(receipt)
+	r := &service.ReceiptInterface{TransactionHash: hash, Receipt: string(bs)}
 	return r
 }
 
@@ -103,7 +112,14 @@ func (s *Service) GetReceiptByBlock(blockHash, number string, task *config.Recei
 	receiptList := make([]*service.ReceiptInterface, 0, len(txs))
 	for _, v := range txs {
 		hash := v.Get("id").String()
-		r := &service.ReceiptInterface{TransactionHash: hash, Receipt: v.String()}
+
+		var receipt service.TronReceipt
+		_ = json.Unmarshal([]byte(v.String()), &receipt)
+
+		s.buildContract(&receipt)
+
+		bs, _ := json.Marshal(receipt)
+		r := &service.ReceiptInterface{TransactionHash: hash, Receipt: string(bs)}
 		receiptList = append(receiptList, r)
 	}
 
@@ -197,11 +213,59 @@ func (s *Service) GetBlockByHash(blockHash string, cfg *config.BlockTask, eLog *
 	return r, txs
 }
 
+func (s *Service) buildContract(receipt *service.TronReceipt) {
+	for _, g := range receipt.Log {
+
+		if len(g.Topics) < 3 || g.Topics[0] != service.TronTopic {
+			continue
+		}
+
+		mp := make(map[string]interface{}, 2)
+		contractAddr := fmt.Sprintf("41%v", g.Address)
+		token, err := s.getToken(int64(s.chain.BlockChainCode), contractAddr, contractAddr)
+		if err != nil {
+			continue
+		}
+		m := gjson.Parse(token).Map()
+		if v, ok := m["decimals"]; ok {
+			mp["contractDecimals"] = v.String()
+		} else {
+			continue
+		}
+
+		mp["data"] = g.Data
+		bs, _ := json.Marshal(mp)
+		g.Data = string(bs)
+	}
+}
+
+func (s *Service) getToken(blockChain int64, from string, contract string) (string, error) {
+
+	token, err := s.store.GetContract(blockChain, contract)
+	if err == nil {
+		return token, nil
+	}
+
+	go func() {
+		token, err = s.txChainClient.TokenBalance(blockChain, from, contract, "")
+		if err != nil {
+			s.log.Warnf("TokenBalance fail: blockchain:%v,contract:%v,err:%v", blockChain, contract, err.Error())
+			return
+		}
+		err = s.store.StoreContract(blockChain, contract, token)
+		if err != nil {
+			s.log.Warnf("StoreContract fail: blockchain:%v,contract:%v,err:%v", blockChain, contract, err.Error())
+		}
+	}()
+
+	return token, errors.New("waiting from network")
+}
+
 func (s *Service) BalanceCluster(key string, clusterList []*config.FromCluster) (*config.FromCluster, error) {
 	return nil, nil
 }
 
-func NewService(c *config.Chain, x *xlog.XLog) service.BlockChainInterface {
+func NewService(c *config.Chain, x *xlog.XLog, store service.StoreTaskInterface) service.BlockChainInterface {
 
 	blockNodeCluster := map[int64][]*chainConfig.NodeCluster{}
 	if c.BlockTask != nil {
@@ -251,6 +315,7 @@ func NewService(c *config.Chain, x *xlog.XLog) service.BlockChainInterface {
 	return &Service{
 		log:                x,
 		chain:              c,
+		store:              store,
 		txChainClient:      txClient,
 		blockChainClient:   blockClient,
 		receiptChainClient: receiptClient,

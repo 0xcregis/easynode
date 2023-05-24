@@ -1,5 +1,10 @@
 package service
 
+const (
+	TronTopic = "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+	EthTopic  = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+)
+
 type MonitorAddress struct {
 	Id          int64  `json:"id" gorm:"column:id"`
 	Token       string `json:"token" gorm:"column:token"`

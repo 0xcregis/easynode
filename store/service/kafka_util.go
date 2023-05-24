@@ -1,11 +1,14 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/segmentio/kafka-go"
 	"github.com/tidwall/gjson"
 	"github.com/uduncloud/easynode/common/util"
 	"math/big"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -79,16 +82,38 @@ func ParseTxForEther(msg *kafka.Message) *SubTx {
 	contractTx := make([]*ContractTx, 0, 5)
 	for _, v := range logs {
 		contract := v.Get("address").String()
-		value := v.Get("data").String()
+		data := v.Get("data").String()
+		r := gjson.Parse(data)
+		if r.IsObject() {
+
+			mp := make(map[string]string, 2)
+			contractDecimals := r.Get("contractDecimals").String()
+			decimals, _ := strconv.Atoi(contractDecimals)
+			//bigDecimals := math.Pow10(decimals)
+
+			mp["contractDecimals"] = contractDecimals
+
+			fee := r.Get("data").String()
+			bigFee, err := util.HexToInt(fee)
+			if err == nil {
+				//fmt.Sprintf("%.5f", new(big.Float).Quo(new(big.Float).SetFloat64(float64(bigFee)), new(big.Float).SetFloat64(bigDecimals)))
+				mp["data"] = div(bigFee, decimals)
+			}
+			bs, _ := json.Marshal(mp)
+			data = string(bs)
+		} else {
+			data, _ = util.HexToInt(data)
+		}
+
 		tps := v.Get("topics").Array()
 		var from, to string
-		if len(tps) >= 3 && tps[0].String() == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" {
+		if len(tps) >= 3 && tps[0].String() == EthTopic {
 			//method = tps[0].String()
 			from = tps[1].String()
 			to = tps[2].String()
 			var m ContractTx
 			m.Contract = contract
-			m.Value, _ = util.HexToInt(value)
+			m.Value = data
 			m.From, _ = util.Hex2Address(from)
 			m.To, _ = util.Hex2Address(to)
 			m.Method = "Transfer"
@@ -175,16 +200,39 @@ func ParseTxForTron(msg *kafka.Message) *SubTx {
 		contractTx := make([]*ContractTx, 0, 5)
 		for _, v := range logs {
 			contract := v.Get("address").String()
-			value := v.Get("data").String()
+			//value := v.Get("data").String()
 			tps := v.Get("topics").Array()
+			data := v.Get("data").String()
+			r := gjson.Parse(data)
+			if r.IsObject() {
+
+				mp := make(map[string]string, 2)
+				contractDecimals := r.Get("contractDecimals").String()
+				decimals, _ := strconv.Atoi(contractDecimals)
+				//bigDecimals := math.Pow10(decimals)
+
+				mp["contractDecimals"] = contractDecimals
+
+				fee := r.Get("data").String()
+				bigFee, err := util.HexToInt(fee)
+				if err == nil {
+					//fmt.Sprintf("%.5f", new(big.Float).Quo(new(big.Float).SetFloat64(float64(bigFee)), new(big.Float).SetFloat64(bigDecimals)))
+					mp["data"] = div(bigFee, decimals)
+				}
+				bs, _ := json.Marshal(mp)
+				data = string(bs)
+			} else {
+				data, _ = util.HexToInt(data)
+			}
+
 			var from, to string
-			if len(tps) >= 3 && tps[0].String() == "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" {
+			if len(tps) >= 3 && tps[0].String() == TronTopic {
 				//method = tps[0].String()
 				from = tps[1].String()
 				to = tps[2].String()
 				var m ContractTx
 				m.Contract = contract
-				m.Value, _ = util.HexToInt(value)
+				m.Value = data
 				m.From, _ = util.Hex2Address(from)
 				m.To, _ = util.Hex2Address(to)
 				m.Method = "Transfer"
@@ -196,4 +244,40 @@ func ParseTxForTron(msg *kafka.Message) *SubTx {
 	}
 
 	return &r
+}
+
+func div(str string, pos int) string {
+
+	if str == "" || str == "0" {
+		return "0"
+	}
+
+	if pos == 0 {
+		return str
+	}
+
+	r := make([]string, 0, 10)
+	for true {
+		if len(str) <= pos {
+			str = "0" + str
+		} else {
+			break
+		}
+	}
+
+	list := []byte(str)
+	l := len(list)
+	p := 0
+	for i := l - 1; i >= 0; i-- {
+		s := fmt.Sprintf("%c", list[l-1-i])
+		r = append(r, s)
+
+		if l-1 > 0 && (l-1-p == pos) {
+			r = append(r, ".")
+		}
+
+		p++
+	}
+
+	return fmt.Sprintf("%s", strings.Join(r, ""))
 }

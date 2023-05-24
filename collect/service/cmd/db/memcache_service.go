@@ -26,6 +26,23 @@ type Service struct {
 	kafkaCh     chan []*kafka.Message
 }
 
+func (s *Service) StoreContract(blockchain int64, contract string, data string) error {
+	err := s.cacheClient.Set(context.Background(), fmt.Sprintf("%v_%v", blockchain, contract), data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Service) GetContract(blockchain int64, contract string) (string, error) {
+	task, err := s.cacheClient.Get(context.Background(), fmt.Sprintf("%v_%v", blockchain, contract))
+	if err != nil || task == "" {
+		return "", errors.New("no record")
+	}
+
+	return task, nil
+}
+
 func (s *Service) GetNodeTask(key string) (*service.NodeTask, error) {
 	task, err := s.cacheClient.Get(context.Background(), key)
 	if err == nil && task != "" {
@@ -43,16 +60,16 @@ func (s *Service) ResetNodeTask(oldKey, key string) error {
 		return err
 	}
 	_ = s.cacheClient.Delete(context.Background(), oldKey)
-	s.StoreExecTask(key, task)
+	s.StoreNodeTask(key, task)
 	return nil
 }
 
 // StoreExecTask key which tx:tx_txHash,receipt:receipt_txHash, block: block_number_blockHash
-func (s *Service) StoreExecTask(key string, task *service.NodeTask) {
+func (s *Service) StoreNodeTask(key string, task *service.NodeTask) {
 	bs, _ := json.Marshal(task)
 	err := s.cacheClient.Set(context.Background(), key, string(bs))
 	if err != nil {
-		s.log.Errorf("StoreExecTask|err=%v", err.Error())
+		s.log.Errorf("StoreNodeTask|err=%v", err.Error())
 	}
 }
 
@@ -99,18 +116,6 @@ func (s *Service) UpdateNodeTaskStatusWithBatch(keys []string, status int) error
 		_ = s.UpdateNodeTaskStatus(v, status)
 	}
 	return nil
-}
-
-func (s *Service) GetTaskWithReceipt(blockChain int, nodeId string) ([]*service.NodeTask, error) {
-	return nil, nil
-}
-
-func (s *Service) GetTaskWithTx(blockChain int, nodeId string) ([]*service.NodeTask, error) {
-	return nil, nil
-}
-
-func (s *Service) GetTaskWithBlock(blockChain int, nodeId string) ([]*service.NodeTask, error) {
-	return nil, nil
 }
 
 func NewTaskCacheService(cfg *config.Chain, kafkaCh chan []*kafka.Message, x *xlog.XLog) service.StoreTaskInterface {

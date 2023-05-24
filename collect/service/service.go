@@ -11,15 +11,15 @@ type Common interface {
 }
 
 type StoreTaskInterface interface {
-	GetTaskWithTx(blockChain int, nodeId string) ([]*NodeTask, error)
-	GetTaskWithReceipt(blockChain int, nodeId string) ([]*NodeTask, error)
-	GetTaskWithBlock(blockChain int, nodeId string) ([]*NodeTask, error)
 	SendNodeTask(list []*NodeTask) error
 	UpdateNodeTaskStatus(key string, status int) error
 	UpdateNodeTaskStatusWithBatch(keys []string, status int) error
 	GetNodeTask(key string) (*NodeTask, error)
 	ResetNodeTask(oldKey, key string) error
-	StoreExecTask(key string, task *NodeTask)
+	StoreNodeTask(key string, task *NodeTask)
+
+	StoreContract(blockchain int64, contract string, data string) error
+	GetContract(blockchain int64, contract string) (string, error)
 }
 
 // BlockChainInterface 公链接口

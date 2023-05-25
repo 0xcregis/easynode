@@ -55,7 +55,7 @@ curl --location --request POST 'http://127.0.0.1:9001/api/task/tx' \
     "txHash": "0xc0e81699d2728694cc275521daa9b89414a9e4749f7418c8c69f26b090c99f44"
 }'
 
-//提交耽搁收据任务
+//提交单个收据任务
 curl --location --request POST 'http://127.0.0.1:9001/api/task/receipt' \
 --header 'Content-Type: application/json' \
 --data-raw '{

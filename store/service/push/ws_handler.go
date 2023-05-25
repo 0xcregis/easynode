@@ -22,7 +22,7 @@ import (
 )
 
 type WsHandler struct {
-	log     *xlog.XLog
+	log     *logrus.Entry
 	cfg     map[int64]*config.Chain
 	kafka   *kafkaClient.EasyKafka
 	db      service.DbMonitorAddressInterface
@@ -39,7 +39,7 @@ func NewWsHandler(cfg *config.Config, xlog *xlog.XLog) *WsHandler {
 		mp[v.BlockChain] = v
 	}
 	return &WsHandler{
-		log:     xlog,
+		log:     xlog.WithField("model", "wsSrv"),
 		db:      db,
 		cfg:     mp,
 		kafka:   kfk,
@@ -239,10 +239,14 @@ func (ws *WsHandler) sendMessage(token string, SubKafkaConfig *config.KafkaConfi
 
 			}
 
-			data := service.ParseTx(blockChain, msg)
+			data, err := service.ParseTx(blockChain, msg)
+			if err != nil {
+				ws.log.Warnf("ParseTx|blockchain:%v,kafka.msg:%v,err:%v", blockChain, string(msg.Value), err)
+				continue
+			}
 			wpm := service.WsPushMessage{Code: 1, BlockChain: blockChain, Data: data}
 			bs, _ := json.Marshal(wpm)
-			err := ws.connMap[token].WriteMessage(websocket.TextMessage, bs)
+			err = ws.connMap[token].WriteMessage(websocket.TextMessage, bs)
 			if err != nil {
 				ws.log.Errorf("sendMessage|error=%v", err.Error())
 			}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
 	kafkaClient "github.com/uduncloud/easynode/common/kafka"
@@ -17,7 +18,7 @@ import (
 
 type StoreService struct {
 	core   service.DbMonitorAddressInterface
-	log    *xlog.XLog
+	log    *logrus.Entry
 	config *config.Config
 	kafka  *kafkaClient.EasyKafka
 }
@@ -29,7 +30,7 @@ func NewStoreService(config *config.Config, log *xlog.XLog) *StoreService {
 	return &StoreService{
 		config: config,
 		core:   ch,
-		log:    log,
+		log:    log.WithField("model", "store"),
 		kafka:  kfk,
 	}
 }

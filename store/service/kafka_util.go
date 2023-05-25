@@ -1,7 +1,7 @@
 package service
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/segmentio/kafka-go"
 	"github.com/tidwall/gjson"
@@ -12,17 +12,17 @@ import (
 	"time"
 )
 
-func ParseTx(blockchain int64, msg *kafka.Message) *SubTx {
+func ParseTx(blockchain int64, msg *kafka.Message) (*SubTx, error) {
 	if blockchain == 200 {
 		return ParseTxForEther(msg)
 	}
 	if blockchain == 205 {
 		return ParseTxForTron(msg)
 	}
-	return nil
+	return nil, nil
 }
 
-func ParseTxForEther(msg *kafka.Message) *SubTx {
+func ParseTxForEther(msg *kafka.Message) (*SubTx, error) {
 	var r SubTx
 	root := gjson.ParseBytes(msg.Value)
 	r.BlockChain = 200
@@ -83,24 +83,32 @@ func ParseTxForEther(msg *kafka.Message) *SubTx {
 		data := v.Get("data").String()
 		r := gjson.Parse(data)
 		if r.IsObject() {
-
-			mp := make(map[string]string, 2)
+			//mp := make(map[string]string, 2)
 			contractDecimals := r.Get("contractDecimals").String()
-			decimals, _ := strconv.Atoi(contractDecimals)
+			if len(contractDecimals) < 1 {
+				return nil, errors.New("tx.log.contract is error")
+			}
+			decimals, err := strconv.Atoi(contractDecimals)
+			if err != nil {
+				return nil, errors.New("tx.log.contract is error")
+			}
 			//bigDecimals := math.Pow10(decimals)
 
-			mp["contractDecimals"] = contractDecimals
+			//mp["contractDecimals"] = contractDecimals
 
 			fee := r.Get("data").String()
 			bigFee, err := util.HexToInt(fee)
 			if err == nil {
 				//fmt.Sprintf("%.5f", new(big.Float).Quo(new(big.Float).SetFloat64(float64(bigFee)), new(big.Float).SetFloat64(bigDecimals)))
-				mp["data"] = div(bigFee, decimals)
+				data = div(bigFee, decimals)
+			} else {
+				return nil, errors.New("tx.log.contract is error")
 			}
-			bs, _ := json.Marshal(mp)
-			data = string(bs)
+			//bs, _ := json.Marshal(mp)
+			//data = string(bs)
 		} else {
-			data, _ = util.HexToInt(data)
+			//data, _ = util.HexToInt(data)
+			return nil, errors.New("tx.log.contract is error")
 		}
 
 		tps := v.Get("topics").Array()
@@ -120,14 +128,14 @@ func ParseTxForEther(msg *kafka.Message) *SubTx {
 
 	}
 	r.ContractTx = contractTx
-	return &r
+	return &r, nil
 }
 
-func ParseTxForTron(msg *kafka.Message) *SubTx {
+func ParseTxForTron(msg *kafka.Message) (*SubTx, error) {
 
 	txBody := gjson.ParseBytes(msg.Value).Get("tx").String()
 	if len(txBody) < 5 {
-		return nil
+		return nil, errors.New("tx is error")
 	}
 	//r := make(map[string]interface{}, 10)
 	var r SubTx
@@ -204,23 +212,32 @@ func ParseTxForTron(msg *kafka.Message) *SubTx {
 			r := gjson.Parse(data)
 			if r.IsObject() {
 
-				mp := make(map[string]string, 2)
+				//mp := make(map[string]string, 2)
 				contractDecimals := r.Get("contractDecimals").String()
-				decimals, _ := strconv.Atoi(contractDecimals)
+				if len(contractDecimals) < 1 {
+					return nil, errors.New("tx.log.contract is error")
+				}
+				decimals, err := strconv.Atoi(contractDecimals)
+				if err != nil {
+					return nil, errors.New("tx.log.contract is error")
+				}
 				//bigDecimals := math.Pow10(decimals)
 
-				mp["contractDecimals"] = contractDecimals
+				//mp["contractDecimals"] = contractDecimals
 
 				fee := r.Get("data").String()
 				bigFee, err := util.HexToInt(fee)
 				if err == nil {
 					//fmt.Sprintf("%.5f", new(big.Float).Quo(new(big.Float).SetFloat64(float64(bigFee)), new(big.Float).SetFloat64(bigDecimals)))
-					mp["data"] = div(bigFee, decimals)
+					data = div(bigFee, decimals)
+				} else {
+					return nil, errors.New("tx.log.contract is error")
 				}
-				bs, _ := json.Marshal(mp)
-				data = string(bs)
+				//bs, _ := json.Marshal(mp)
+				//data = string(bs)
 			} else {
-				data, _ = util.HexToInt(data)
+				//data, _ = util.HexToInt(data)
+				return nil, errors.New("tx.log.contract is error")
 			}
 
 			var from, to string
@@ -241,7 +258,7 @@ func ParseTxForTron(msg *kafka.Message) *SubTx {
 		r.ContractTx = contractTx
 	}
 
-	return &r
+	return &r, nil
 }
 
 func div(str string, pos int) string {

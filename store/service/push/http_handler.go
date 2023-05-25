@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gofrs/uuid"
+	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
 	"github.com/uduncloud/easynode/store/config"
@@ -14,7 +15,7 @@ import (
 )
 
 type Server struct {
-	log    *xlog.XLog
+	log    *logrus.Entry
 	chains map[int64]*config.Chain
 	db     service.DbMonitorAddressInterface
 }
@@ -27,7 +28,7 @@ func NewServer(cfg *config.Config, log *xlog.XLog) *Server {
 	}
 	return &Server{
 		db:     db,
-		log:    log,
+		log:    log.WithField("model", "httpSrv"),
 		chains: mp,
 	}
 }

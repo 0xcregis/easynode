@@ -122,14 +122,16 @@ func (t *Tron) GetTokenBalanceByHttp(host string, token string, contractAddress 
 	}
 
 	balance, err := t.GetTokenBalanceByHttp2(host, token, contractAddress, userAddress)
-	if err == nil {
-		mp["balance"] = balance
+	if err != nil {
+		return nil, err
 	}
+	mp["balance"] = balance
 
 	decimal, err := t.GetTokenDecimalsByHttp(host, token, contractAddress, userAddress)
-	if err == nil {
-		mp["decimals"] = decimal
+	if err != nil {
+		return nil, err
 	}
+	mp["decimals"] = decimal
 	return mp, nil
 }
 

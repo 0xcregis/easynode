@@ -11,6 +11,7 @@ import (
 	chainService "github.com/uduncloud/easynode/blockchain/service"
 	"github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service"
+	"github.com/uduncloud/easynode/common/util"
 	"strconv"
 	"strings"
 	"time"
@@ -237,12 +238,18 @@ func (s *Service) buildContract(receipt *service.Receipt) {
 		mp := make(map[string]interface{}, 2)
 		token, err := s.getToken(int64(s.chain.BlockChainCode), receipt.From, g.Address)
 		if err != nil {
+			nodeId, _ := util.GetLocalNodeId()
+			task := service.NodeTask{Id: time.Now().UnixNano(), NodeId: nodeId, TxHash: receipt.TransactionHash, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
+			_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), receipt.TransactionHash, task)
 			continue
 		}
 		m := gjson.Parse(token).Map()
 		if v, ok := m["decimals"]; ok {
 			mp["contractDecimals"] = v.String()
 		} else {
+			nodeId, _ := util.GetLocalNodeId()
+			task := service.NodeTask{Id: time.Now().UnixNano(), NodeId: nodeId, TxHash: receipt.TransactionHash, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
+			_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), receipt.TransactionHash, task)
 			continue
 		}
 
@@ -253,26 +260,27 @@ func (s *Service) buildContract(receipt *service.Receipt) {
 }
 
 func (s *Service) getToken(blockChain int64, from string, contract string) (string, error) {
-
 	token, err := s.store.GetContract(blockChain, contract)
-	if err == nil {
+	if err == nil && len(token) > 5 {
 		return token, nil
 	}
 
-	go func() {
-		token, err = s.txChainClient.TokenBalance(blockChain, from, contract, "")
-		if err != nil {
-			s.log.Warnf("TokenBalance fail: blockchain:%v,contract:%v,err:%v", blockChain, contract, err.Error())
-			return
-		}
+	token, err = s.txChainClient.TokenBalance(blockChain, from, contract, "")
+	if err != nil {
+		s.log.Errorf("TokenBalance fail: blockchain:%v,contract:%v,err:%v", blockChain, contract, err.Error())
+		//请求失败的合约记录，监控服务重试
+		_ = s.store.StoreContract(blockChain, contract, "")
+		return "", err
+	}
+
+	if len(token) > 0 {
 		err = s.store.StoreContract(blockChain, contract, token)
 		if err != nil {
 			s.log.Warnf("StoreContract fail: blockchain:%v,contract:%v,err:%v", blockChain, contract, err.Error())
 		}
-
-	}()
-
-	return token, errors.New("waiting from network")
+		return token, nil
+	}
+	return "", errors.New("wait for response")
 }
 
 func NewService(c *config.Chain, x *xlog.XLog, store service.StoreTaskInterface) service.BlockChainInterface {

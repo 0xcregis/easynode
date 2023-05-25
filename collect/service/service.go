@@ -20,6 +20,9 @@ type StoreTaskInterface interface {
 
 	StoreContract(blockchain int64, contract string, data string) error
 	GetContract(blockchain int64, contract string) (string, error)
+
+	StoreErrTxNodeTask(blockchain int64, key string, data any) error
+	GetErrTxNodeTask(blockchain int64, key string) (string, error)
 }
 
 // BlockChainInterface 公链接口

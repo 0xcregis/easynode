@@ -26,8 +26,30 @@ type Service struct {
 	kafkaCh     chan []*kafka.Message
 }
 
+func (s *Service) StoreErrTxNodeTask(blockchain int64, key string, data any) error {
+	bs, _ := json.Marshal(data)
+	err := s.cacheClient.Set(context.Background(), fmt.Sprintf("errTx_%v_%v", blockchain, key), string(bs), func(o *store.Options) {
+		o.Expiration = 0
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Service) GetErrTxNodeTask(blockchain int64, key string) (string, error) {
+	task, err := s.cacheClient.Get(context.Background(), fmt.Sprintf("errTx_%v_%v", blockchain, key))
+	if err != nil || task == "" {
+		return "", errors.New("no record")
+	}
+
+	return task, nil
+}
+
 func (s *Service) StoreContract(blockchain int64, contract string, data string) error {
-	err := s.cacheClient.Set(context.Background(), fmt.Sprintf("%v_%v", blockchain, contract), data)
+	err := s.cacheClient.Set(context.Background(), fmt.Sprintf("contract_%v_%v", blockchain, contract), data, func(o *store.Options) {
+		o.Expiration = 0
+	})
 	if err != nil {
 		return err
 	}
@@ -35,7 +57,7 @@ func (s *Service) StoreContract(blockchain int64, contract string, data string) 
 }
 
 func (s *Service) GetContract(blockchain int64, contract string) (string, error) {
-	task, err := s.cacheClient.Get(context.Background(), fmt.Sprintf("%v_%v", blockchain, contract))
+	task, err := s.cacheClient.Get(context.Background(), fmt.Sprintf("contract_%v_%v", blockchain, contract))
 	if err != nil || task == "" {
 		return "", errors.New("no record")
 	}
@@ -102,7 +124,7 @@ func (s *Service) UpdateNodeTaskStatus(key string, status int) error {
 			t := service.NodeTask{}
 			json.Unmarshal([]byte(task), &t)
 			t.TaskStatus = status
-
+			t.LogTime = time.Now()
 			bs, _ := json.Marshal(t)
 			s.cacheClient.Set(context.Background(), key, string(bs))
 		}

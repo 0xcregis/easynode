@@ -294,5 +294,16 @@ func div(str string, pos int) string {
 		p++
 	}
 
-	return fmt.Sprintf("%s", strings.Join(r, ""))
+	result := fmt.Sprintf("%s", strings.Join(r, ""))
+
+	for strings.HasSuffix(result, "0") || strings.HasSuffix(result, ".") {
+		if strings.HasSuffix(result, "0") {
+			result = strings.TrimSuffix(result, "0")
+		}
+
+		if strings.HasSuffix(result, ".") {
+			result = strings.TrimSuffix(result, ".")
+		}
+	}
+	return result
 }

@@ -269,17 +269,17 @@ type ContractTx struct {
 
 type SubTx struct {
 	Id          uint64        `json:"id" gorm:"column:id"`
-	BlockChain  uint64        `json:"blockChain" gorm:"column:block_chain"`
+	BlockChain  uint64        `json:"chainCode" gorm:"column:block_chain"`
 	BlockHash   string        `json:"blockHash" gorm:"column:block_hash"`
 	BlockNumber string        `json:"blockNumber" gorm:"column:block_number"`
 	ContractTx  []*ContractTx `json:"contractTx" gorm:"-"`
 	ContractTxs string        `json:"-" gorm:"column:contract_tx"`
 	Fee         string        `json:"fee" gorm:"column:fee"`
-	FeeDetail   interface{}   `json:"feeDetail" gorm:"-"`
+	FeeDetail   interface{}   `json:"-" gorm:"-"`
 	FeeDetails  string        `json:"-" gorm:"column:fee_detail"`
 	From        string        `json:"from" gorm:"column:from_addr"`
 	Hash        string        `json:"hash" gorm:"column:hash"`
-	Input       string        `json:"input" gorm:"column:input_data"`
+	Input       string        `json:"-" gorm:"column:input_data"`
 	Status      uint64        `json:"status" gorm:"column:tx_status"` //0x0:失败，0x1:成功
 	To          string        `json:"to" gorm:"column:to_addr"`
 	TxTime      string        `json:"txTime" gorm:"column:tx_time"`

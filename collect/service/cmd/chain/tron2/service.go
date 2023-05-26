@@ -222,6 +222,13 @@ func (s *Service) buildContract(receipt *service.TronReceipt) {
 			continue
 		}
 
+		//过滤721协议
+		if len(g.Topics) == 4 && g.Topics[0] == service.TronTopic {
+			if len(g.Data) == 0 {
+				continue
+			}
+		}
+
 		mp := make(map[string]interface{}, 2)
 		contractAddr := fmt.Sprintf("41%v", g.Address)
 		token, err := s.getToken(int64(s.chain.BlockChainCode), contractAddr, contractAddr)

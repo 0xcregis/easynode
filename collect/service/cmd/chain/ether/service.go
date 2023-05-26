@@ -235,6 +235,13 @@ func (s *Service) buildContract(receipt *service.Receipt) {
 			continue
 		}
 
+		//过滤721协议
+		if len(g.Topics) == 4 && g.Topics[0] == service.EthTopic {
+			if len(g.Data) == 2 {
+				continue
+			}
+		}
+
 		mp := make(map[string]interface{}, 2)
 		token, err := s.getToken(int64(s.chain.BlockChainCode), receipt.From, g.Address)
 		if err != nil {

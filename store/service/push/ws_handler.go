@@ -293,6 +293,13 @@ func (ws *WsHandler) CheckAddressForEther(msg *kafka.Message, list []*service.Mo
 			receiptRoot := gjson.Parse(receipt)
 			list := receiptRoot.Get("logs").Array()
 			for _, v := range list {
+
+				//过滤没有合约信息的交易，出现这种情况原因：1. 合约获取失败会重试 2:非20合约
+				data := v.Get("data").String()
+				if !gjson.Parse(data).IsObject() {
+					continue
+				}
+
 				topics := v.Get("topics").Array()
 				//Transfer()
 				if len(topics) >= 3 && topics[0].String() == service.EthTopic {
@@ -376,6 +383,13 @@ func (ws *WsHandler) CheckAddressForTron(msg *kafka.Message, list []*service.Mon
 			//合约调用下的TRC20
 			if len(logs) > 0 {
 				for _, v := range logs {
+
+					//过滤没有合约信息的交易，出现这种情况原因：1. 合约获取失败会重试 2:非20合约
+					data := v.Get("data").String()
+					if !gjson.Parse(data).IsObject() {
+						continue
+					}
+
 					topics := v.Get("topics").Array()
 					//Transfer()
 					if len(topics) >= 3 && topics[0].String() == service.TronTopic {

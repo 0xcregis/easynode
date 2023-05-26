@@ -20,6 +20,20 @@ type Service struct {
 	cacheClient *redis.Client
 }
 
+func (s *Service) DelErrTxNodeTask(blockchain int64, key string) (string, error) {
+	task, err := s.cacheClient.HGet(context.Background(), fmt.Sprintf("errTx_%v", blockchain), key).Result()
+	if err != nil || task == "" {
+		return "", errors.New("no record")
+	}
+
+	err = s.cacheClient.HDel(context.Background(), fmt.Sprintf("errTx_%v", blockchain), key).Err()
+	if err != nil {
+		return "", errors.New("no record")
+	}
+
+	return task, nil
+}
+
 func (s *Service) GetAllKeyForContract(blockchain int64, key string) ([]string, error) {
 	list, err := s.cacheClient.HKeys(context.Background(), fmt.Sprintf("contract_%v", blockchain)).Result()
 	if err != nil {

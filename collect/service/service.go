@@ -25,6 +25,7 @@ type StoreTaskInterface interface {
 
 	StoreErrTxNodeTask(blockchain int64, key string, data any) error
 	GetErrTxNodeTask(blockchain int64, key string) (string, error)
+	DelErrTxNodeTask(blockchain int64, key string) (string, error)
 	GetAllKeyForErrTx(blockchain int64, key string) ([]string, error)
 }
 

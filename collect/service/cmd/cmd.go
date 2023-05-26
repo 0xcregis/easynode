@@ -51,7 +51,7 @@ func NewService(cfg *config.Chain, logConfig *config.LogConfig) *Cmd {
 	kafkaCh := make(chan []*kafka.Message, 100)
 	kafkaRespCh := make(chan []*kafka.Message, 30)
 	taskKafkaCh := make(chan []*kafka.Message, 10)
-	store := db.NewTaskCacheService(cfg, taskKafkaCh, log)
+	store := db.NewTaskCacheService(cfg, log)
 	kf := kafkaClient.NewEasyKafka(log)
 	chain := getBlockChainService(cfg, logConfig, store)
 
@@ -391,7 +391,7 @@ func (c *Cmd) ExecTxTask(nodeId string, txCh chan *service.NodeTask, kf chan []*
 
 				//写入receipt task
 				if c.chain.PullReceipt {
-					_ = c.taskStore.SendNodeTask([]*service.NodeTask{{BlockChain: c.chain.BlockChainCode, TxHash: tx.TxHash, BlockHash: "", BlockNumber: "", TaskType: 3, TaskStatus: 0, NodeId: taskTx.NodeId}})
+					c.taskKafkaCh <- c.taskStore.SendNodeTask([]*service.NodeTask{{BlockChain: c.chain.BlockChainCode, TxHash: tx.TxHash, BlockHash: "", BlockNumber: "", TaskType: 3, TaskStatus: 0, NodeId: taskTx.NodeId}})
 				}
 
 				//update status
@@ -469,15 +469,12 @@ func (c *Cmd) ExecTxTask(nodeId string, txCh chan *service.NodeTask, kf chan []*
 
 						//tron 不支持 批量获取收据
 						if c.chain.BlockChainCode == 205 {
-							_ = c.taskStore.SendNodeTask(receiptsTaskList)
+							c.taskKafkaCh <- c.taskStore.SendNodeTask(receiptsTaskList)
 						} else {
 							//其他公链，则 批量获取收据
 							//根据区块获取收据，则 tx_hash 必需未空
 							task := &service.NodeTask{BlockChain: c.chain.BlockChainCode, TxHash: "", BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, TaskType: 3, TaskStatus: 0, NodeId: taskTx.NodeId}
-							err := c.taskStore.SendNodeTask([]*service.NodeTask{task})
-							if err != nil {
-								log.Errorf("AddNodeSource|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err.Error(), taskTx.Id)
-							}
+							c.taskKafkaCh <- c.taskStore.SendNodeTask([]*service.NodeTask{task})
 						}
 
 					}
@@ -548,12 +545,7 @@ func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Mes
 			//发出批量交易任务
 			if c.chain.PullTx {
 				s := &service.NodeTask{NodeId: taskBlock.NodeId, BlockChain: taskBlock.BlockChain, BlockNumber: taskBlock.BlockNumber, BlockHash: taskBlock.BlockHash, TaskType: 1, TaskStatus: 0}
-				err = c.taskStore.SendNodeTask([]*service.NodeTask{s})
-				if err != nil {
-					_ = c.taskStore.UpdateNodeTaskStatus(key, 2) //失败
-					log.Errorf("AddNodeSource|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, "push task is error with batch tx by block", taskBlock.Id)
-					return
-				}
+				c.taskKafkaCh <- c.taskStore.SendNodeTask([]*service.NodeTask{s})
 			}
 
 			//发出block

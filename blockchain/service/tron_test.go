@@ -9,7 +9,7 @@ import (
 
 func Init2() API {
 	cfg := config.LoadConfig("./../../cmd/blockchain/config_tron.json")
-	return NewTron(cfg.Cluster, xlog.NewXLogger())
+	return NewTron(cfg.Cluster[0], xlog.NewXLogger())
 }
 
 func TestTron_GetBlockByNumber(t *testing.T) {

@@ -284,7 +284,8 @@ func (s *Service) getToken(blockChain int64, from string, contract string) (stri
 }
 
 func NewService(c *config.Chain, x *xlog.XLog, store service.StoreTaskInterface) service.BlockChainInterface {
-	blockNodeCluster := map[int64][]*chainConfig.NodeCluster{}
+
+	var blockClient chainService.API
 	if c.BlockTask != nil {
 		list := make([]*chainConfig.NodeCluster, 0, 4)
 		for _, v := range c.BlockTask.FromCluster {
@@ -295,10 +296,10 @@ func NewService(c *config.Chain, x *xlog.XLog, store service.StoreTaskInterface)
 			}
 			list = append(list, temp)
 		}
-		blockNodeCluster[200] = list
+		blockClient = chainService.NewEth(list, x)
 	}
 
-	txNodeCluster := map[int64][]*chainConfig.NodeCluster{}
+	var txClient chainService.API
 	if c.TxTask != nil {
 		list := make([]*chainConfig.NodeCluster, 0, 4)
 		for _, v := range c.TxTask.FromCluster {
@@ -309,10 +310,11 @@ func NewService(c *config.Chain, x *xlog.XLog, store service.StoreTaskInterface)
 			}
 			list = append(list, temp)
 		}
-		txNodeCluster[200] = list
+
+		txClient = chainService.NewEth(list, x)
 	}
 
-	receiptNodeCluster := map[int64][]*chainConfig.NodeCluster{}
+	var receiptClient chainService.API
 	if c.ReceiptTask != nil {
 		list := make([]*chainConfig.NodeCluster, 0, 4)
 		for _, v := range c.ReceiptTask.FromCluster {
@@ -323,12 +325,8 @@ func NewService(c *config.Chain, x *xlog.XLog, store service.StoreTaskInterface)
 			}
 			list = append(list, temp)
 		}
-		receiptNodeCluster[200] = list
+		receiptClient = chainService.NewEth(list, x)
 	}
-
-	txClient := chainService.NewEth(txNodeCluster, x)
-	blockClient := chainService.NewEth(blockNodeCluster, x)
-	receiptClient := chainService.NewEth(receiptNodeCluster, x)
 
 	return &Service{
 		log:                x,

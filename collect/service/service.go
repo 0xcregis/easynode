@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/uduncloud/easynode/collect/config"
 )
@@ -11,7 +12,7 @@ type Common interface {
 }
 
 type StoreTaskInterface interface {
-	SendNodeTask(list []*NodeTask) error
+	SendNodeTask(list []*NodeTask) []*kafka.Message
 	UpdateNodeTaskStatus(key string, status int) error
 	UpdateNodeTaskStatusWithBatch(keys []string, status int) error
 	GetNodeTask(key string) (*NodeTask, error)
@@ -20,9 +21,11 @@ type StoreTaskInterface interface {
 
 	StoreContract(blockchain int64, contract string, data string) error
 	GetContract(blockchain int64, contract string) (string, error)
+	GetAllKeyForContract(blockchain int64, key string) ([]string, error)
 
 	StoreErrTxNodeTask(blockchain int64, key string, data any) error
 	GetErrTxNodeTask(blockchain int64, key string) (string, error)
+	GetAllKeyForErrTx(blockchain int64, key string) ([]string, error)
 }
 
 // BlockChainInterface 公链接口

@@ -5,7 +5,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
-	blockChainConfig "github.com/uduncloud/easynode/blockchain/config"
+	chainConfig "github.com/uduncloud/easynode/blockchain/config"
 	"github.com/uduncloud/easynode/blockchain/service"
 	"github.com/uduncloud/easynode/task/config"
 	"strconv"
@@ -28,7 +28,7 @@ func (e *Tron) GetLatestBlockNumber(v *config.BlockConfig) (int64, error) {
 		"model": "GetLastBlockNumber",
 	})
 	var lastNumber int64
-	clusters := map[int64][]*blockChainConfig.NodeCluster{205: {{NodeUrl: v.NodeHost, NodeToken: v.NodeKey}}}
+	clusters := []*chainConfig.NodeCluster{{NodeUrl: v.NodeHost, NodeToken: v.NodeKey}}
 	/**
 	  {\"blockId\":\"0000000002f52f21275a4e244b191f29dc289bfc66bce08a18c3d5051fcf7203\",\"number\":49622817}
 	*/

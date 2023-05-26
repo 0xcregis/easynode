@@ -212,8 +212,8 @@ func startCollect(configPath string) {
 
 	log.Printf("%+v\n", cfg)
 
-	//启动处理日志服务
-	collectMonitor.NewService(cfg.LogConfig).Start()
+	//启动监控服务
+	collectMonitor.NewService(&cfg).Start()
 
 	//启动公链服务
 	for _, v := range cfg.Chains {

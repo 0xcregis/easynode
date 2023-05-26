@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
 	"github.com/uduncloud/easynode/blockchain/config"
@@ -10,30 +11,16 @@ import (
 )
 
 type HttpHandler struct {
-	log               *xlog.XLog
+	log               *logrus.Entry
 	nodeCluster       map[int64][]*config.NodeCluster
 	blockChainClients map[int64]API
 }
 
 func NewHttpHandler(cluster map[int64][]*config.NodeCluster, xlog *xlog.XLog) *HttpHandler {
-
-	blockChainClients := make(map[int64]API, 0)
-
-	for k, _ := range cluster {
-		if k == 200 {
-			bc := NewEth(cluster, xlog)
-			blockChainClients[k] = bc
-		}
-		if k == 205 {
-			bc := NewTron(cluster, xlog)
-			blockChainClients[k] = bc
-		}
-	}
-
 	return &HttpHandler{
-		log:               xlog,
+		log:               xlog.WithField("model", "httpSrv"),
 		nodeCluster:       cluster,
-		blockChainClients: blockChainClients,
+		blockChainClients: NewApis(cluster, xlog),
 	}
 }
 

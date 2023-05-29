@@ -16,30 +16,16 @@ import (
 )
 
 type WsHandler struct {
-	log               *xlog.XLog
+	log               *logrus.Entry
 	nodeCluster       map[int64][]*config.NodeCluster
 	blockChainClients map[int64]API
 }
 
 func NewWsHandler(cluster map[int64][]*config.NodeCluster, xlog *xlog.XLog) *WsHandler {
-
-	blockChainClients := make(map[int64]API, 0)
-
-	for k, _ := range cluster {
-		if k == 200 {
-			bc := NewEth(cluster, xlog)
-			blockChainClients[k] = bc
-		}
-		if k == 205 {
-			bc := NewTron(cluster, xlog)
-			blockChainClients[k] = bc
-		}
-	}
-
 	return &WsHandler{
-		log:               xlog,
+		log:               xlog.WithField("model", "wsSrv"),
 		nodeCluster:       cluster,
-		blockChainClients: blockChainClients,
+		blockChainClients: NewApis(cluster, xlog),
 	}
 }
 

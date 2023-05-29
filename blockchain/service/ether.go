@@ -19,7 +19,7 @@ import (
 
 type Ether struct {
 	log              *xlog.XLog
-	nodeCluster      map[int64][]*config.NodeCluster
+	nodeCluster      []*config.NodeCluster
 	blockChainClient chain.BlockChain
 }
 
@@ -217,15 +217,8 @@ func (e *Ether) SendJsonRpc(chainCode int64, req string) (string, error) {
 	return e.SendEthReq(chainCode, req)
 }
 
-func NewEth(cluster map[int64][]*config.NodeCluster, xlog *xlog.XLog) API {
-
-	var blockChainClient chain.BlockChain
-	for k, _ := range cluster {
-		if k == 200 {
-			blockChainClient = ether.NewChainClient()
-			break
-		}
-	}
+func NewEth(cluster []*config.NodeCluster, xlog *xlog.XLog) API {
+	blockChainClient := ether.NewChainClient()
 	return &Ether{
 		log:              xlog,
 		nodeCluster:      cluster,
@@ -439,14 +432,8 @@ func (e *Ether) SendEthReq(blockChain int64, reqBody string) (string, error) {
 }
 
 func (e *Ether) BalanceCluster(blockChain int64) *config.NodeCluster {
-	cluster, ok := e.nodeCluster[blockChain]
-	if !ok {
-		//不存在节点
-		return nil
-	}
-
 	var resultCluster *config.NodeCluster
-	l := len(cluster)
+	l := len(e.nodeCluster)
 
 	if l > 1 {
 		//如果有多个节点，则根据权重计算
@@ -454,7 +441,7 @@ func (e *Ether) BalanceCluster(blockChain int64) *config.NodeCluster {
 		originCluster := make(map[string]*config.NodeCluster, 0)
 
 		var sum int64
-		for _, v := range cluster {
+		for _, v := range e.nodeCluster {
 			if v.Weight == 0 {
 				//如果没有设置weight,则默认设定5
 				v.Weight = 5
@@ -477,7 +464,7 @@ func (e *Ether) BalanceCluster(blockChain int64) *config.NodeCluster {
 		resultCluster = originCluster[nodeId]
 	} else if l == 1 {
 		//如果 仅有一个节点，则只能使用该节点
-		resultCluster = cluster[0]
+		resultCluster = e.nodeCluster[0]
 	} else {
 		return nil
 	}

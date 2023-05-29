@@ -1,15 +1,16 @@
 package service
 
+const (
+	TronTopic = "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+	EthTopic  = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+)
+
 type MonitorAddress struct {
-	Id          int64  `json:"id" gorm:"column:id"`
-	Token       string `json:"token" gorm:"column:token"`
-	Address     string `json:"address" gorm:"column:address"`
-	BlockChain  int64  `json:"blockChain" gorm:"column:block_chain"`
-	TxType      string `json:"txType" gorm:"column:tx_type"`
-	AddressType string `json:"addressType" gorm:"column:address_type"` //1:外部账户 2:合约账户
-	Decimals    string `json:"decimals" gorm:"decimals"`
-	Symbol      string `json:"symbol" gorm:"symbol"`
-	TokenName   string `json:"tokenName" gorm:"token_name"`
+	Id         int64  `json:"id" gorm:"column:id"`
+	Token      string `json:"token" gorm:"column:token"`
+	Address    string `json:"address" gorm:"column:address"`
+	BlockChain int64  `json:"blockChain" gorm:"column:block_chain"`
+	TxType     string `json:"txType" gorm:"column:tx_type"`
 }
 
 type NodeToken struct {
@@ -264,17 +265,17 @@ type ContractTx struct {
 
 type SubTx struct {
 	Id          uint64        `json:"id" gorm:"column:id"`
-	BlockChain  uint64        `json:"blockChain" gorm:"column:block_chain"`
+	BlockChain  uint64        `json:"chainCode" gorm:"column:block_chain"`
 	BlockHash   string        `json:"blockHash" gorm:"column:block_hash"`
 	BlockNumber string        `json:"blockNumber" gorm:"column:block_number"`
 	ContractTx  []*ContractTx `json:"contractTx" gorm:"-"`
 	ContractTxs string        `json:"-" gorm:"column:contract_tx"`
 	Fee         string        `json:"fee" gorm:"column:fee"`
-	FeeDetail   interface{}   `json:"feeDetail" gorm:"-"`
+	FeeDetail   interface{}   `json:"-" gorm:"-"`
 	FeeDetails  string        `json:"-" gorm:"column:fee_detail"`
 	From        string        `json:"from" gorm:"column:from_addr"`
 	Hash        string        `json:"hash" gorm:"column:hash"`
-	Input       string        `json:"input" gorm:"column:input_data"`
+	Input       string        `json:"-" gorm:"column:input_data"`
 	Status      uint64        `json:"status" gorm:"column:tx_status"` //0x0:失败，0x1:成功
 	To          string        `json:"to" gorm:"column:to_addr"`
 	TxTime      string        `json:"txTime" gorm:"column:tx_time"`

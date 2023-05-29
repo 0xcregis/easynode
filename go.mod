@@ -11,7 +11,7 @@ require (
 	github.com/gin-gonic/gin v1.9.0
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/gorilla/websocket v1.5.0
-	github.com/redis/go-redis/v9 v9.0.2
+	github.com/redis/go-redis/v9 v9.0.4
 	github.com/segmentio/kafka-go v0.4.39
 	github.com/shengdoushi/base58 v1.0.0
 	github.com/sirupsen/logrus v1.9.0

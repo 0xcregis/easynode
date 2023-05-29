@@ -6,25 +6,7 @@
     205
   ],
   "TaskKafka": {
-    "Host": "192.168.2.20",
+    "Host": "192.168.2.9",
     "Port": 9092
-  },
-  "ClickhouseDb": {
-    "200": {
-      "Addr": "192.168.2.11",
-      "Port": 9000,
-      "User": "test",
-      "Password": "test",
-      "DbName": "ether",
-      "TxTable": "ether.tx"
-    },
-    "205": {
-      "Addr": "192.168.2.11",
-      "Port": 9000,
-      "User": "test",
-      "Password": "test",
-      "DbName": "tron",
-      "TxTable": "tron.tx"
-    }
   }
 }

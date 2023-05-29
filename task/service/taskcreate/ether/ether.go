@@ -5,7 +5,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
-	blockChainConfig "github.com/uduncloud/easynode/blockchain/config"
+	chainConfig "github.com/uduncloud/easynode/blockchain/config"
 	"github.com/uduncloud/easynode/blockchain/service"
 	"github.com/uduncloud/easynode/task/config"
 	"github.com/uduncloud/easynode/task/util"
@@ -28,7 +28,7 @@ func (e *Ether) GetLatestBlockNumber(v *config.BlockConfig) (int64, error) {
 		"model": "GetLatestBlockNumber",
 	})
 
-	clusters := map[int64][]*blockChainConfig.NodeCluster{200: {{NodeUrl: v.NodeHost, NodeToken: v.NodeKey}}}
+	clusters := []*chainConfig.NodeCluster{{NodeUrl: v.NodeHost, NodeToken: v.NodeKey}}
 	/**
 	  {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0x1019b4c\"}
 	*/

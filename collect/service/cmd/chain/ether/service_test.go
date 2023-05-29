@@ -12,7 +12,7 @@ import (
 func Init() (service.BlockChainInterface, config.Config, *xlog.XLog) {
 	cfg := config.LoadConfig("./../../../../../cmd/collect/config.json")
 	x := xlog.NewXLogger()
-	return NewService(cfg.Chains[0], x), cfg, x
+	return NewService(cfg.Chains[0], x, nil), cfg, x
 }
 
 func TestService_GetBlockByNumber(t *testing.T) {

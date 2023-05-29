@@ -1,4 +1,4 @@
-package push
+package network
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 	kafkaClient "github.com/uduncloud/easynode/common/kafka"
 	"github.com/uduncloud/easynode/store/config"
 	"github.com/uduncloud/easynode/store/service"
+	db2 "github.com/uduncloud/easynode/store/service/db"
 	"log"
 	"net"
 	"net/http"
@@ -22,7 +23,7 @@ import (
 )
 
 type WsHandler struct {
-	log     *xlog.XLog
+	log     *logrus.Entry
 	cfg     map[int64]*config.Chain
 	kafka   *kafkaClient.EasyKafka
 	db      service.DbMonitorAddressInterface
@@ -33,13 +34,13 @@ type WsHandler struct {
 
 func NewWsHandler(cfg *config.Config, xlog *xlog.XLog) *WsHandler {
 	kfk := kafkaClient.NewEasyKafka(xlog)
-	db := NewChService(cfg, xlog)
+	db := db2.NewChService(cfg, xlog)
 	mp := make(map[int64]*config.Chain, 2)
 	for _, v := range cfg.Chains {
 		mp[v.BlockChain] = v
 	}
 	return &WsHandler{
-		log:     xlog,
+		log:     xlog.WithField("model", "wsSrv"),
 		db:      db,
 		cfg:     mp,
 		kafka:   kfk,
@@ -239,10 +240,14 @@ func (ws *WsHandler) sendMessage(token string, SubKafkaConfig *config.KafkaConfi
 
 			}
 
-			data := service.ParseTx(blockChain, msg)
+			data, err := service.ParseTx(blockChain, msg)
+			if err != nil {
+				ws.log.Warnf("ParseTx|blockchain:%v,kafka.msg:%v,err:%v", blockChain, string(msg.Value), err)
+				continue
+			}
 			wpm := service.WsPushMessage{Code: 1, BlockChain: blockChain, Data: data}
 			bs, _ := json.Marshal(wpm)
-			err := ws.connMap[token].WriteMessage(websocket.TextMessage, bs)
+			err = ws.connMap[token].WriteMessage(websocket.TextMessage, bs)
 			if err != nil {
 				ws.log.Errorf("sendMessage|error=%v", err.Error())
 			}
@@ -289,9 +294,16 @@ func (ws *WsHandler) CheckAddressForEther(msg *kafka.Message, list []*service.Mo
 			receiptRoot := gjson.Parse(receipt)
 			list := receiptRoot.Get("logs").Array()
 			for _, v := range list {
+
+				//过滤没有合约信息的交易，出现这种情况原因：1. 合约获取失败会重试 2:非20合约
+				data := v.Get("data").String()
+				if !gjson.Parse(data).IsObject() {
+					continue
+				}
+
 				topics := v.Get("topics").Array()
 				//Transfer()
-				if len(topics) >= 3 && topics[0].String() == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" {
+				if len(topics) >= 3 && topics[0].String() == service.EthTopic {
 					if strings.HasSuffix(strings.ToLower(topics[1].String()), strings.ToLower(monitorAddr)) || strings.HasSuffix(strings.ToLower(topics[2].String()), strings.ToLower(monitorAddr)) {
 						has = true
 						break
@@ -360,16 +372,28 @@ func (ws *WsHandler) CheckAddressForTron(msg *kafka.Message, list []*service.Mon
 			if strings.HasPrefix(v.Address, "0x") {
 				monitorAddr = strings.TrimLeft(v.Address, "0x") //去丢0x
 			}
+
 			if strings.HasPrefix(v.Address, "41") {
-				monitorAddr = strings.TrimLeft(v.Address, "41") //去丢0x
+				monitorAddr = strings.TrimLeft(v.Address, "41") //去丢41
+			}
+
+			if strings.HasPrefix(v.Address, "0x41") {
+				monitorAddr = strings.TrimLeft(v.Address, "0x41") //去丢41
 			}
 
 			//合约调用下的TRC20
 			if len(logs) > 0 {
 				for _, v := range logs {
+
+					//过滤没有合约信息的交易，出现这种情况原因：1. 合约获取失败会重试 2:非20合约
+					data := v.Get("data").String()
+					if !gjson.Parse(data).IsObject() {
+						continue
+					}
+
 					topics := v.Get("topics").Array()
 					//Transfer()
-					if len(topics) >= 3 && topics[0].String() == "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" {
+					if len(topics) >= 3 && topics[0].String() == service.TronTopic {
 						if strings.HasSuffix(topics[1].String(), monitorAddr) || strings.HasSuffix(topics[2].String(), monitorAddr) {
 							has = true
 							break

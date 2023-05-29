@@ -12,7 +12,7 @@ import (
 	"github.com/uduncloud/easynode/collect/service/cmd"
 	collectMonitor "github.com/uduncloud/easynode/collect/service/monitor"
 	storeConfig "github.com/uduncloud/easynode/store/config"
-	"github.com/uduncloud/easynode/store/service/push"
+	"github.com/uduncloud/easynode/store/service/network"
 	"github.com/uduncloud/easynode/store/service/store"
 	taskConfig "github.com/uduncloud/easynode/task/config"
 	"github.com/uduncloud/easynode/task/service/taskcreate"
@@ -87,13 +87,13 @@ func startStore(configPath string) {
 	//http 协议
 	e := gin.Default()
 	root := e.Group(cfg.RootPath)
-	srv := push.NewServer(&cfg, xLog)
+	srv := network.NewServer(&cfg, xLog)
 	root.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: xLog.Out}))
 	root.POST("/monitor/token", srv.NewToken)
 	root.POST("/monitor/address", srv.MonitorAddress)
 
 	//ws 协议
-	wsServer := push.NewWsHandler(&cfg, xLog)
+	wsServer := network.NewWsHandler(&cfg, xLog)
 	root.Handle("GET", "/ws/:token", func(ctx *gin.Context) {
 		wsServer.Start(ctx, ctx.Writer, ctx.Request)
 	})
@@ -127,7 +127,7 @@ func startTaskApi(configPath string) {
 	root.POST("/block", srv.PushBlockTask)
 
 	root.POST("/tx", srv.PushTxTask)
-	root.POST("/syncTx", srv.PushSyncTxTask)
+	//root.POST("/syncTx", srv.PushSyncTxTask)
 	root.POST("/txs", srv.PushTxsTask)
 
 	root.POST("/receipt", srv.PushReceiptTask)
@@ -212,8 +212,8 @@ func startCollect(configPath string) {
 
 	log.Printf("%+v\n", cfg)
 
-	//启动处理日志服务
-	collectMonitor.NewService(cfg.LogConfig).Start()
+	//启动监控服务
+	collectMonitor.NewService(&cfg).Start()
 
 	//启动公链服务
 	for _, v := range cfg.Chains {

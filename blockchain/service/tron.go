@@ -16,7 +16,7 @@ import (
 
 type Tron struct {
 	log              *xlog.XLog
-	nodeCluster      map[int64][]*config.NodeCluster
+	nodeCluster      []*config.NodeCluster
 	blockChainClient chain.BlockChain
 }
 
@@ -91,15 +91,8 @@ func (t *Tron) GetTransactionReceiptByHash(chainCode int64, hash string) (string
 	return t.SendReq(chainCode, req, "wallet/gettransactioninfobyid")
 }
 
-func NewTron(cluster map[int64][]*config.NodeCluster, xlog *xlog.XLog) API {
-	var blockChainClient chain.BlockChain
-	for k, _ := range cluster {
-		if k == 205 {
-			blockChainClient = tron.NewChainClient()
-			break
-		}
-	}
-
+func NewTron(cluster []*config.NodeCluster, xlog *xlog.XLog) API {
+	blockChainClient := tron.NewChainClient()
 	return &Tron{
 		log:              xlog,
 		nodeCluster:      cluster,
@@ -255,14 +248,9 @@ func (t *Tron) SendReq(blockChain int64, reqBody string, url string) (string, er
 }
 
 func (t *Tron) BalanceCluster(blockChain int64) *config.NodeCluster {
-	cluster, ok := t.nodeCluster[blockChain]
-	if !ok {
-		//不存在节点
-		return nil
-	}
 
 	var resultCluster *config.NodeCluster
-	l := len(cluster)
+	l := len(t.nodeCluster)
 
 	if l > 1 {
 		//如果有多个节点，则根据权重计算
@@ -270,7 +258,7 @@ func (t *Tron) BalanceCluster(blockChain int64) *config.NodeCluster {
 		originCluster := make(map[string]*config.NodeCluster, 0)
 
 		var sum int64
-		for _, v := range cluster {
+		for _, v := range t.nodeCluster {
 			if v.Weight == 0 {
 				//如果没有设置weight,则默认设定5
 				v.Weight = 5
@@ -293,7 +281,7 @@ func (t *Tron) BalanceCluster(blockChain int64) *config.NodeCluster {
 		resultCluster = originCluster[nodeId]
 	} else if l == 1 {
 		//如果 仅有一个节点，则只能使用该节点
-		resultCluster = cluster[0]
+		resultCluster = t.nodeCluster[0]
 	} else {
 		return nil
 	}

@@ -1,4 +1,4 @@
-package push
+package db
 
 import (
 	"encoding/json"
@@ -132,7 +132,7 @@ func (m *ClickhouseDb) AddMonitorAddress(blockchain int64, address *service.Moni
 
 func (m *ClickhouseDb) GetAddressByToken(blockchain int64, token string) ([]*service.MonitorAddress, error) {
 	var list []*service.MonitorAddress
-	err := m.baseDb.Table(m.baseConfig.BaseDb.AddressTable).Where("token=? and block_chain=?", token, blockchain).Scan(&list).Error
+	err := m.baseDb.Table(m.baseConfig.BaseDb.AddressTable).Select("address").Where("token=? and block_chain in (?)", token, []int64{blockchain, 0}).Group("address").Scan(&list).Error
 	if err != nil || len(list) < 1 {
 		return nil, errors.New("no record")
 	}

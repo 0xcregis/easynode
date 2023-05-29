@@ -11,7 +11,7 @@ import (
 	kafkaClient "github.com/uduncloud/easynode/common/kafka"
 	"github.com/uduncloud/easynode/store/config"
 	"github.com/uduncloud/easynode/store/service"
-	"github.com/uduncloud/easynode/store/service/push"
+	"github.com/uduncloud/easynode/store/service/db"
 	"sync"
 	"time"
 )
@@ -24,7 +24,7 @@ type StoreService struct {
 }
 
 func NewStoreService(config *config.Config, log *xlog.XLog) *StoreService {
-	ch := push.NewChService(config, log)
+	ch := db.NewChService(config, log)
 	kfk := kafkaClient.NewEasyKafka(log)
 
 	return &StoreService{

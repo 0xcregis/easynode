@@ -1,4 +1,4 @@
-package push
+package network
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 	kafkaClient "github.com/uduncloud/easynode/common/kafka"
 	"github.com/uduncloud/easynode/store/config"
 	"github.com/uduncloud/easynode/store/service"
+	db2 "github.com/uduncloud/easynode/store/service/db"
 	"log"
 	"net"
 	"net/http"
@@ -33,7 +34,7 @@ type WsHandler struct {
 
 func NewWsHandler(cfg *config.Config, xlog *xlog.XLog) *WsHandler {
 	kfk := kafkaClient.NewEasyKafka(xlog)
-	db := NewChService(cfg, xlog)
+	db := db2.NewChService(cfg, xlog)
 	mp := make(map[int64]*config.Chain, 2)
 	for _, v := range cfg.Chains {
 		mp[v.BlockChain] = v

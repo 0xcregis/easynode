@@ -1,4 +1,4 @@
-package push
+package db
 
 import (
 	"github.com/sunjiangjun/xlog"
@@ -16,7 +16,7 @@ func Init() service.DbMonitorAddressInterface {
 
 func TestClickhouseDb_AddMonitorAddress(t *testing.T) {
 	s := Init()
-	log.Println(s.AddMonitorAddress(200, &service.MonitorAddress{Address: "0xe5cB067E90D5Cd1F8052B83562Ae670bA4A211a8", Token: "5fe5f231-7051-4caf-9b52-108db92edbb4", BlockChain: 200, TxType: "0x2", Id: time.Now().UnixMilli()}))
+	log.Println(s.AddMonitorAddress(0, &service.MonitorAddress{Address: "0xe5cB067E90D5Cd1F8052B83562Ae670bA4A211a8", Token: "5fe5f231-7051-4caf-9b52-108db92edbb4", BlockChain: 0, TxType: "0x2", Id: time.Now().UnixMilli()}))
 }
 
 func TestClickhouseDb_GetAddressByToken(t *testing.T) {

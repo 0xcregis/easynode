@@ -1,4 +1,4 @@
-package push
+package network
 
 import (
 	"errors"
@@ -10,6 +10,7 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/uduncloud/easynode/store/config"
 	"github.com/uduncloud/easynode/store/service"
+	db2 "github.com/uduncloud/easynode/store/service/db"
 	"io/ioutil"
 	"time"
 )
@@ -21,7 +22,7 @@ type Server struct {
 }
 
 func NewServer(cfg *config.Config, log *xlog.XLog) *Server {
-	db := NewChService(cfg, log)
+	db := db2.NewChService(cfg, log)
 	mp := make(map[int64]*config.Chain, 2)
 	for _, v := range cfg.Chains {
 		mp[v.BlockChain] = v
@@ -77,17 +78,21 @@ func (s *Server) MonitorAddress(c *gin.Context) {
 	}
 
 	r := gjson.ParseBytes(bs)
-	blockChain := r.Get("blockChain").Int()
-	if _, ok := s.chains[blockChain]; !ok {
-		s.Error(c, c.Request.URL.Path, errors.New("blockchain is wrong").Error())
-		return
+
+	var blockChain int64
+	if r.Get("blockChain").Exists() {
+		blockChain = r.Get("blockChain").Int()
+		if _, ok := s.chains[blockChain]; !ok {
+			s.Error(c, c.Request.URL.Path, errors.New("blockchain is wrong").Error())
+			return
+		}
 	}
 
 	addr := r.Get("address").String()
 	token := r.Get("token").String()
 	txType := r.Get("txType").Int()
 
-	addressTask := &service.MonitorAddress{BlockChain: blockChain, Address: addr, Token: token, TxType: fmt.Sprintf("%v", txType), Id: time.Now().UnixMilli()}
+	addressTask := &service.MonitorAddress{BlockChain: blockChain, Address: addr, Token: token, TxType: fmt.Sprintf("%v", txType), Id: time.Now().UnixNano()}
 	err = s.db.AddMonitorAddress(blockChain, addressTask)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())

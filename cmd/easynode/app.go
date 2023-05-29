@@ -12,7 +12,7 @@ import (
 	"github.com/uduncloud/easynode/collect/service/cmd"
 	collectMonitor "github.com/uduncloud/easynode/collect/service/monitor"
 	storeConfig "github.com/uduncloud/easynode/store/config"
-	"github.com/uduncloud/easynode/store/service/push"
+	"github.com/uduncloud/easynode/store/service/network"
 	"github.com/uduncloud/easynode/store/service/store"
 	taskConfig "github.com/uduncloud/easynode/task/config"
 	"github.com/uduncloud/easynode/task/service/taskcreate"
@@ -87,13 +87,13 @@ func startStore(configPath string) {
 	//http 协议
 	e := gin.Default()
 	root := e.Group(cfg.RootPath)
-	srv := push.NewServer(&cfg, xLog)
+	srv := network.NewServer(&cfg, xLog)
 	root.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: xLog.Out}))
 	root.POST("/monitor/token", srv.NewToken)
 	root.POST("/monitor/address", srv.MonitorAddress)
 
 	//ws 协议
-	wsServer := push.NewWsHandler(&cfg, xLog)
+	wsServer := network.NewWsHandler(&cfg, xLog)
 	root.Handle("GET", "/ws/:token", func(ctx *gin.Context) {
 		wsServer.Start(ctx, ctx.Writer, ctx.Request)
 	})

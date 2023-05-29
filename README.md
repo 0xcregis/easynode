@@ -258,26 +258,27 @@ notes:
       "Code": 1, //消息类型，1:交易消息
       "blockChain": 200, //公链代码
       "Data": { //交易数据
+        "id": 1685094437357929000,
         "blockHash": "0x067fbc694c5ca3540ee965b25c286e55d40f3e5e5fd336d1f398868dfc18feec", //区块hash
         "blockNumber": "17284552", //区块高度
+        "chainCode": 200,
         "contractTx": [ //合约交易时EVM 事件
           {
             "contract": "0xdac17f958d2ee523a2206206994597c13d831ec7", //合约地址
             "from": "0x54b50187becd0bbcfd52ec5d538433dab044d2a8", //from 地址
             "method": "Transfer", //合约方法
             "to": "0x408be4b8a862c1a372976521401fd77f9a0178d7", //to 地址
-            "value": "240000000" //交易内容
+            "value": "59.327379" //交易内容
           }
         ],
-        "fee": "21000",//交易费
+        "fee": "0.002053016771146819",//交易费
         "from": "0x54b50187becd0bbcfd52ec5d538433dab044d2a8", //from 地址
         "hash": "0x323c08a889ed99d8bfc6c72b1580432f7a13ca7c992fd1bac523e46bfe7ab98f", //交易hash
-        "input": "0xa9059cbb000000000000000000000000408be4b8a862c1a372976521401fd77f9a0178d7000000000000000000000000000000000000000000000000000000000e4e1c00", //交易输入
         "status": "1", //交易状态 1:成功, 0:交易失败
         "to": "0xdac17f958d2ee523a2206206994597c13d831ec7", //to地址
         "txTime": "1684390019", //交易时间
         "txType": 1, //交易类型 1:合约调用，2:普通资产转移
-        "value": "1000000" //交易额 
+        "value": "0" //交易额 
       }
   }         
             

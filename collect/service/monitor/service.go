@@ -10,7 +10,7 @@ import (
 	chainService "github.com/uduncloud/easynode/blockchain/service"
 	"github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service"
-	"github.com/uduncloud/easynode/collect/service/cmd/db"
+	"github.com/uduncloud/easynode/collect/service/db"
 	kafkaClient "github.com/uduncloud/easynode/common/kafka"
 	"github.com/uduncloud/easynode/common/util"
 	"path"
@@ -93,8 +93,8 @@ func (s *Service) CheckErrTx() {
 				tempList := make([]*kafka.Message, 0, 10)
 
 				for _, hash := range list {
-					data, err := store.DelErrTxNodeTask(blockchain, hash)
-					if err != nil {
+					count, data, err := store.GetErrTxNodeTask(blockchain, hash)
+					if err != nil || count >= 5 {
 						continue
 					}
 

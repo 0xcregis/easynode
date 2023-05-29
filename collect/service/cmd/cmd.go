@@ -12,7 +12,7 @@ import (
 	"github.com/uduncloud/easynode/collect/service"
 	"github.com/uduncloud/easynode/collect/service/cmd/chain/ether"
 	"github.com/uduncloud/easynode/collect/service/cmd/chain/tron2"
-	"github.com/uduncloud/easynode/collect/service/cmd/db"
+	"github.com/uduncloud/easynode/collect/service/db"
 	kafkaClient "github.com/uduncloud/easynode/common/kafka"
 	"github.com/uduncloud/easynode/common/util"
 	"strings"

@@ -8,6 +8,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/segmentio/kafka-go"
 	"github.com/sunjiangjun/xlog"
+	"github.com/tidwall/gjson"
 	"github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service"
 	"sync"
@@ -21,7 +22,7 @@ type Service struct {
 }
 
 func (s *Service) DelErrTxNodeTask(blockchain int64, key string) (string, error) {
-	task, err := s.cacheClient.HGet(context.Background(), fmt.Sprintf("errTx_%v", blockchain), key).Result()
+	_, task, err := s.GetErrTxNodeTask(blockchain, key)
 	if err != nil || task == "" {
 		return "", errors.New("no record")
 	}
@@ -65,7 +66,17 @@ func (s *Service) GetAllKeyForErrTx(blockchain int64, key string) ([]string, err
 }
 
 func (s *Service) StoreErrTxNodeTask(blockchain int64, key string, data any) error {
-	bs, _ := json.Marshal(data)
+	c, _, _ := s.GetErrTxNodeTask(blockchain, key)
+	//已存在且错误超过5次 忽略
+	if c > 5 {
+		return nil
+	}
+
+	mp := make(map[string]any, 2)
+	mp["count"] = c + 1
+	mp["data"] = data
+
+	bs, _ := json.Marshal(mp)
 	err := s.cacheClient.HSet(context.Background(), fmt.Sprintf("errTx_%v", blockchain), key, string(bs)).Err()
 	if err != nil {
 		s.log.Warnf("StoreErrTxNodeTask|err=%v", err.Error())
@@ -74,13 +85,27 @@ func (s *Service) StoreErrTxNodeTask(blockchain int64, key string, data any) err
 	return nil
 }
 
-func (s *Service) GetErrTxNodeTask(blockchain int64, key string) (string, error) {
-	task, err := s.cacheClient.HGet(context.Background(), fmt.Sprintf("errTx_%v", blockchain), key).Result()
-	if err != nil || task == "" {
-		return "", errors.New("no record")
+func (s *Service) GetErrTxNodeTask(blockchain int64, key string) (int64, string, error) {
+
+	has, err := s.cacheClient.HExists(context.Background(), fmt.Sprintf("errTx_%v", blockchain), key).Result()
+	if err != nil {
+		return 0, "", err
 	}
 
-	return task, nil
+	if !has {
+		return 0, "", errors.New("no record")
+	}
+
+	task, err := s.cacheClient.HGet(context.Background(), fmt.Sprintf("errTx_%v", blockchain), key).Result()
+	if err != nil || task == "" {
+		return 0, "", errors.New("no record")
+	}
+	r := gjson.Parse(task)
+
+	count := r.Get("count").Int()
+	data := r.Get("data").String()
+
+	return count, data, nil
 }
 
 func (s *Service) StoreContract(blockchain int64, contract string, data string) error {

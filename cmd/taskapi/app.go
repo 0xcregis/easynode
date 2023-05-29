@@ -36,7 +36,7 @@ func main() {
 	root.POST("/block", srv.PushBlockTask)
 
 	root.POST("/tx", srv.PushTxTask)
-	root.POST("/syncTx", srv.PushSyncTxTask)
+	//root.POST("/syncTx", srv.PushSyncTxTask)
 	root.POST("/txs", srv.PushTxsTask)
 
 	root.POST("/receipt", srv.PushReceiptTask)

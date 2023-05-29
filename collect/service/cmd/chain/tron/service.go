@@ -21,6 +21,7 @@ import (
 type Service struct {
 	log                *xlog.XLog
 	chain              *config.Chain
+	store              service.StoreTaskInterface
 	txChainClient      chainService.API
 	blockChainClient   chainService.API
 	receiptChainClient chainService.API
@@ -213,9 +214,9 @@ func (s *Service) BalanceCluster(key string, clusterList []*config.FromCluster) 
 	return nil, nil
 }
 
-func NewService(c *config.Chain, x *xlog.XLog) service.BlockChainInterface {
+func NewService(c *config.Chain, x *xlog.XLog, store service.StoreTaskInterface) service.BlockChainInterface {
 
-	blockNodeCluster := map[int64][]*chainConfig.NodeCluster{}
+	var blockClient chainService.API
 	if c.BlockTask != nil {
 		list := make([]*chainConfig.NodeCluster, 0, 4)
 		for _, v := range c.BlockTask.FromCluster {
@@ -226,10 +227,10 @@ func NewService(c *config.Chain, x *xlog.XLog) service.BlockChainInterface {
 			}
 			list = append(list, temp)
 		}
-		blockNodeCluster[205] = list
+		blockClient = chainService.NewTron(list, x)
 	}
 
-	txNodeCluster := map[int64][]*chainConfig.NodeCluster{}
+	var txClient chainService.API
 	if c.TxTask != nil {
 		list := make([]*chainConfig.NodeCluster, 0, 4)
 		for _, v := range c.TxTask.FromCluster {
@@ -240,10 +241,10 @@ func NewService(c *config.Chain, x *xlog.XLog) service.BlockChainInterface {
 			}
 			list = append(list, temp)
 		}
-		txNodeCluster[205] = list
+		txClient = chainService.NewTron(list, x)
 	}
 
-	receiptNodeCluster := map[int64][]*chainConfig.NodeCluster{}
+	var receiptClient chainService.API
 	if c.ReceiptTask != nil {
 		list := make([]*chainConfig.NodeCluster, 0, 4)
 		for _, v := range c.ReceiptTask.FromCluster {
@@ -254,15 +255,13 @@ func NewService(c *config.Chain, x *xlog.XLog) service.BlockChainInterface {
 			}
 			list = append(list, temp)
 		}
-		receiptNodeCluster[205] = list
+		receiptClient = chainService.NewTron(list, x)
 	}
 
-	txClient := chainService.NewTron(txNodeCluster, x)
-	blockClient := chainService.NewTron(blockNodeCluster, x)
-	receiptClient := chainService.NewTron(receiptNodeCluster, x)
 	return &Service{
 		log:                x,
 		chain:              c,
+		store:              store,
 		txChainClient:      txClient,
 		blockChainClient:   blockClient,
 		receiptChainClient: receiptClient,

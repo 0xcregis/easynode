@@ -7,7 +7,6 @@ import (
 	"github.com/uduncloud/easynode/blockchain/chain"
 	"github.com/uduncloud/easynode/common/util"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -104,9 +103,72 @@ func (t *Tron) SendRequestToChainByHttp(host string, token string, query string)
 
 func (t *Tron) GetTokenBalanceByHttp(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
 
-	var query string
 	mp := make(map[string]interface{}, 2)
 
+	if !strings.HasPrefix(userAddress, "0x41") && !strings.HasPrefix(userAddress, "41") {
+		userAddr, err := util.Base58ToAddress(userAddress)
+		if err != nil {
+			return nil, err
+		}
+		userAddress = userAddr.Hex()
+	}
+
+	if !strings.HasPrefix(contractAddress, "0x41") && !strings.HasPrefix(contractAddress, "41") {
+		contractAddr, err := util.Base58ToAddress(contractAddress)
+		if err != nil {
+			return nil, err
+		}
+		contractAddress = contractAddr.Hex()
+	}
+
+	balance, err := t.GetTokenBalanceByHttp2(host, token, contractAddress, userAddress)
+	if err != nil {
+		return nil, err
+	}
+	mp["balance"] = balance
+
+	decimal, err := t.GetTokenDecimalsByHttp(host, token, contractAddress, userAddress)
+	if err != nil {
+		return nil, err
+	}
+	mp["decimals"] = decimal
+
+	if (len(balance) == 0 || balance == "0") && (len(decimal) == 0 || decimal == "0") {
+		return nil, errors.New("contract is error")
+	}
+
+	return mp, nil
+}
+
+func (t *Tron) GetTokenDecimalsByHttp(host string, token string, contractAddress string, userAddress string) (string, error) {
+
+	var query string
+
+	query = `
+			{
+			  "owner_address": "%v",
+			  "contract_address": "%v",
+			  "function_selector": "decimals()"
+			}
+			`
+	query = fmt.Sprintf(query, userAddress, contractAddress)
+	resp, err := t.SendRequestToChainByHttp(host, token, query)
+	if err != nil {
+		return "", err
+	}
+	//log.Println(resp)
+	r := gjson.Parse(resp).Get("constant_result")
+	if r.Exists() {
+		decimals, _ := strconv.ParseInt(r.Array()[0].String(), 16, 64)
+		return fmt.Sprintf("%v", decimals), nil
+	}
+
+	return "", errors.New("no data")
+}
+
+func (t *Tron) GetTokenBalanceByHttp2(host string, token string, contractAddress string, userAddress string) (string, error) {
+
+	var query string
 	query = `
 			{
 			  "owner_address": "%v",
@@ -115,35 +177,28 @@ func (t *Tron) GetTokenBalanceByHttp(host string, token string, contractAddress 
 			  "parameter": "%v"
 			}
 			`
-
-	userAddr, err := util.Base58ToAddress(userAddress)
-	if err != nil {
-		return nil, err
+	var c2 string
+	if strings.HasPrefix(userAddress, "41") {
+		c2 = userAddress[2:]
+	} else if strings.HasPrefix(userAddress, "0x41") {
+		c2 = userAddress[4:]
 	}
 
-	contractAddr, err := util.Base58ToAddress(contractAddress)
-	if err != nil {
-		return nil, err
-	}
-
-	c2 := userAddr.Hex()[4:]
 	m := "0000000000000000000000000000000000000000000000000000000000000000"
 	params := m[:len(m)-len(c2)] + c2
-	query = fmt.Sprintf(query, userAddr.Hex(), contractAddr.Hex(), params)
+	query = fmt.Sprintf(query, userAddress, contractAddress, params)
 	resp, err := t.SendRequestToChainByHttp(host, token, query)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	log.Println(resp)
+	//log.Println(resp)
 	r := gjson.Parse(resp).Get("constant_result")
 	if r.Exists() {
 		balance, _ := strconv.ParseInt(r.Array()[0].String(), 16, 64)
-		mp["balance"] = balance
-	} else {
-		return nil, errors.New(resp)
+		return fmt.Sprintf("%v", balance), nil
 	}
 
-	return mp, nil
+	return "", errors.New("no data")
 }
 
 func (t *Tron) GetTokenBalance(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {

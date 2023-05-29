@@ -3,19 +3,16 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/segmentio/kafka-go"
 	"github.com/sunjiangjun/xlog"
 	kafkaClient "github.com/uduncloud/easynode/common/kafka"
-	"github.com/uduncloud/easynode/taskapi/common"
 	"github.com/uduncloud/easynode/taskapi/config"
-	"gorm.io/gorm"
 	"time"
 )
 
 type ClickhouseDb struct {
-	chDb        map[int64]*gorm.DB
+	//chDb        map[int64]*gorm.DB
 	cfg         *config.Config
 	kafkaClient *kafkaClient.EasyKafka
 	sendCh      chan []*kafka.Message
@@ -28,21 +25,20 @@ func NewChService(cfg *config.Config, log *xlog.XLog) DbApiInterface {
 	receiverCh := make(chan []*kafka.Message, 5)
 
 	//clickhouse 配置非必须
-	mp := make(map[int64]*gorm.DB, 2)
-	if len(cfg.ClickhouseDb) > 0 {
-		for k, v := range cfg.ClickhouseDb {
-			c, err := common.OpenCK(v.User, v.Password, v.Addr, v.DbName, v.Port, log)
-			if err != nil {
-				panic(err)
-			}
-			mp[k] = c
-		}
-	} else {
-		log.Warnf("some function does not work for clickhouse`s config is null")
-	}
+	//mp := make(map[int64]*gorm.DB, 2)
+	//if len(cfg.ClickhouseDb) > 0 {
+	//	for k, v := range cfg.ClickhouseDb {
+	//		c, err := common.OpenCK(v.User, v.Password, v.Addr, v.DbName, v.Port, log)
+	//		if err != nil {
+	//			panic(err)
+	//		}
+	//		mp[k] = c
+	//	}
+	//} else {
+	//	log.Warnf("some function does not work for clickhouse`s config is null")
+	//}
 
 	m := &ClickhouseDb{
-		chDb:        mp,
 		cfg:         cfg,
 		kafkaClient: kf,
 		sendCh:      sendCh,
@@ -77,14 +73,16 @@ func (m *ClickhouseDb) AddNodeTask(task *NodeTask) error {
 
 func (m *ClickhouseDb) QueryTxFromCh(blockChain int64, txHash string) (*Tx, error) {
 	//clickhouse 非必须配置项，因此 可能不存此次连接
-	if _, ok := m.chDb[blockChain]; !ok {
-		return nil, errors.New("not found db source ,please check config file")
-	}
+	//if _, ok := m.chDb[blockChain]; !ok {
+	//	return nil, errors.New("not found db source ,please check config file")
+	//}
+	//
+	//var tx Tx
+	//err := m.chDb[blockChain].Table(m.cfg.ClickhouseDb[blockChain].TxTable).Where("hash=?", txHash).Scan(&tx).Error
+	//if err != nil || tx.Id < 1 {
+	//	return nil, errors.New("no record")
+	//}
+	//return &tx, nil
 
-	var tx Tx
-	err := m.chDb[blockChain].Table(m.cfg.ClickhouseDb[blockChain].TxTable).Where("hash=?", txHash).Scan(&tx).Error
-	if err != nil || tx.Id < 1 {
-		return nil, errors.New("no record")
-	}
-	return &tx, nil
+	return nil, nil
 }

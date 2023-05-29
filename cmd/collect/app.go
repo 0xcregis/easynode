@@ -15,7 +15,7 @@ import (
 
 func main() {
 	var configPath string
-	flag.StringVar(&configPath, "collect", "./cmd/collect/config_tron.json", "The system file of config")
+	flag.StringVar(&configPath, "collect", "./cmd/collect/config.json", "The system file of config")
 	flag.Parse()
 	if len(configPath) < 1 {
 		panic("can not find config file")
@@ -30,7 +30,7 @@ func main() {
 	log.Printf("%+v\n", cfg)
 
 	//启动处理日志服务
-	monitor.NewService(cfg.LogConfig).Start()
+	monitor.NewService(&cfg).Start()
 
 	//启动公链服务
 	for _, v := range cfg.Chains {

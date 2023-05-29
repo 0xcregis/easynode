@@ -107,32 +107,35 @@ func (e *Ether) GetTokenBalance(host string, key string, contractAddress string,
 	}
 
 	address := common.HexToAddress(userAddress)
-	bal, err := instance.BalanceOf(&bind.CallOpts{}, address)
+	bal, err := instance.BalanceOf(&bind.CallOpts{Pending: false}, address)
 	if err != nil {
+		log.Printf("contract:%v,from:%v,err=%v", contractAddress, userAddress, err.Error())
 		return nil, err
 	}
 	mp := make(map[string]interface{}, 2)
 	mp["balance"] = bal.String()
 
-	name, err := instance.Name(&bind.CallOpts{})
+	decimals, err := instance.Decimals(&bind.CallOpts{Pending: false, From: address})
 	if err != nil {
-		log.Println("err=", err)
-	} else {
-		mp["name"] = name
-	}
-
-	symbol, err := instance.Symbol(&bind.CallOpts{})
-	if err != nil {
-		log.Println("err=", err)
-	} else {
-		mp["symbol"] = symbol
-	}
-
-	decimals, err := instance.Decimals(&bind.CallOpts{})
-	if err != nil {
-		log.Println("err=", err)
+		log.Printf("contract:%v,from:%v,err=%v", contractAddress, userAddress, err.Error())
+		return nil, err
 	} else {
 		mp["decimals"] = decimals
 	}
+
+	//name, err := instance.Name(&bind.CallOpts{})
+	//if err != nil {
+	//	log.Println("err=", err)
+	//} else {
+	//	mp["name"] = name
+	//}
+	//
+	//symbol, err := instance.Symbol(&bind.CallOpts{})
+	//if err != nil {
+	//	log.Println("err=", err)
+	//} else {
+	//	mp["symbol"] = symbol
+	//}
+
 	return mp, nil
 }

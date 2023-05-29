@@ -225,9 +225,9 @@ func GetReceiptFromJson(js string) *Receipt {
 	r := gjson.Parse(js)
 
 	logs := r.Get("logs").String()
-	var temp Logs
+	var temp []*Logs
 	_ = json.Unmarshal([]byte(logs), &temp)
-	receipt.Logs = &temp
+	receipt.Logs = temp
 	receipt.TransactionHash = r.Get("transactionHash").String()
 	receipt.BlockHash = r.Get("blockHash").String()
 	//receipt.BlockNumber=r.Get("blockNumber").String()
@@ -259,9 +259,9 @@ func GetReceiptListFromJson(js string) []*Receipt {
 	for _, r := range array {
 		var receipt Receipt
 		logs := r.Get("logs").String()
-		var temp Logs
+		var temp []*Logs
 		_ = json.Unmarshal([]byte(logs), &temp)
-		receipt.Logs = &temp
+		receipt.Logs = temp
 		receipt.TransactionHash = r.Get("transactionHash").String()
 		receipt.BlockHash = r.Get("blockHash").String()
 		//receipt.BlockNumber=r.Get("blockNumber").String()

@@ -6,23 +6,22 @@
   "Chains": [
     {
       "TaskKafka": {
-        "Host": "192.168.2.20",
+        "Host": "192.168.2.9",
         "Port": 9092,
-        "Topic": "11",
+        "Group": "21",
         "StartOffset": -1
       },
       "Kafka": {
-        "Host": "192.168.2.20",
+        "Host": "192.168.2.9",
         "Port": 9092
       },
       "Redis": {
-        "Addr": "localhost",
+        "Addr": "192.168.2.9",
         "Port": 6379,
         "DB": 0
       },
       "BlockChainName": "tron",
       "BlockChainCode": 205,
-      "NodeWeight": 1,
       "PullReceipt": false,
       "PullTx": true,
       "BlockTask": {
@@ -33,7 +32,7 @@
           }
         ],
         "Kafka": {
-          "Topic": "tron_block2",
+          "Topic": "tron_block",
           "Partition": 0
         }
       },
@@ -45,7 +44,7 @@
           }
         ],
         "Kafka": {
-          "Topic": "tron_tx2",
+          "Topic": "tron_tx",
           "Partition": 0
         }
       },
@@ -57,7 +56,7 @@
           }
         ],
         "Kafka": {
-          "Topic": "tron_receipt2",
+          "Topic": "tron_receipt",
           "Partition": 0
         }
       }

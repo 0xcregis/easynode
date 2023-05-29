@@ -30,8 +30,8 @@
           "Host": "192.168.2.9",
           "Port": 9092,
           "Topic": "ether_tx",
-          "Group": "1",
-          "StartOffset": 0,
+          "Group": "23",
+          "StartOffset": -1,
           "Partition": 0
         },
         "Block": {

@@ -6,17 +6,17 @@
   "Chains": [
     {
       "TaskKafka": {
-        "Host": "192.168.2.20",
+        "Host": "192.168.2.9",
         "Port": 9092,
-        "Group": "11",
+        "Group": "16",
         "StartOffset": -1
       },
       "Kafka": {
-        "Host": "192.168.2.20",
+        "Host": "192.168.2.9",
         "Port": 9092
       },
       "Redis": {
-        "Addr": "localhost",
+        "Addr": "192.168.2.9",
         "Port": 6379,
         "DB": 0
       },
@@ -32,7 +32,7 @@
           }
         ],
         "Kafka": {
-          "Topic": "ether_block2",
+          "Topic": "ether_block",
           "Partition": 0
         }
       },
@@ -44,7 +44,7 @@
           }
         ],
         "Kafka": {
-          "Topic": "ether_tx2",
+          "Topic": "ether_tx",
           "Partition": 0
         }
       },
@@ -56,7 +56,7 @@
           }
         ],
         "Kafka": {
-          "Topic": "ether_receipt2",
+          "Topic": "ether_receipt",
           "Partition": 0
         }
       }

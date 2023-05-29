@@ -132,6 +132,11 @@ func (t *Tron) GetTokenBalanceByHttp(host string, token string, contractAddress 
 		return nil, err
 	}
 	mp["decimals"] = decimal
+
+	if (len(balance) == 0 || balance == "0") && (len(decimal) == 0 || decimal == "0") {
+		return nil, errors.New("contract is error")
+	}
+
 	return mp, nil
 }
 

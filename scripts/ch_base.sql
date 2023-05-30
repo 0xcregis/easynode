@@ -14,8 +14,11 @@ CREATE TABLE IF NOT EXISTS  base.address
     `id` Int64
 ) ENGINE = ReplacingMergeTree ORDER BY id  SETTINGS index_granularity = 8192;
 
-CREATE TABLE base.token
+CREATE TABLE IF NOT EXISTS base.token
 (
+
+
+
 
     `token` String,
 

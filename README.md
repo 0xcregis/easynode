@@ -219,7 +219,7 @@ notes:
     curl --location --request POST 'http://localhost:9003/api/store/monitor/address' \
     --header 'Content-Type: application/json' \
     --data-raw '{
-        "blockChain": 200,
+        "blockChain": 200,//非必需，如果不传默认0，则表示 跨链监控
         "address": "0x28c6c06298d514db089934071355e5743bf21d61",
         "token": "5fe5f231-7051-4caf-9b52-108db92edbb4"
     }'

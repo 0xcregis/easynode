@@ -17,6 +17,9 @@ CREATE TABLE IF NOT EXISTS  base.address
 CREATE TABLE IF NOT EXISTS base.token
 (
 
+
+
+
     `token` String,
 
     `email` String,

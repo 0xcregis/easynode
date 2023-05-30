@@ -315,7 +315,7 @@ func (c *Cmd) ExecReceiptTask(receiptChan chan *service.NodeTask, kf chan []*kaf
 
 				for _, receipt := range receiptList {
 
-					t := &service.NodeTask{NodeId: taskReceipt.NodeId, BlockNumber: taskReceipt.BlockNumber, BlockHash: taskReceipt.BlockHash, TxHash: receipt.TransactionHash, TaskType: 3, BlockChain: receiptTask.BlockChain, TaskStatus: 3}
+					t := &service.NodeTask{NodeId: taskReceipt.NodeId, BlockNumber: taskReceipt.BlockNumber, BlockHash: taskReceipt.BlockHash, TxHash: receipt.TransactionHash, TaskType: 3, BlockChain: receiptTask.BlockChain, TaskStatus: 3, Id: time.Now().UnixNano(), CreateTime: time.Now(), LogTime: time.Now()}
 					receiptTaskList = append(receiptTaskList, t)
 					m, err := c.HandlerReceipt(receipt)
 					if err != nil {
@@ -440,7 +440,7 @@ func (c *Cmd) ExecTxTask(nodeId string, txCh chan *service.NodeTask, kf chan []*
 
 					for _, v := range txList {
 						//交易任务
-						t := &service.NodeTask{NodeId: taskTx.NodeId, BlockNumber: taskTx.BlockNumber, BlockHash: taskTx.BlockHash, TxHash: v.TxHash, TaskType: 1, BlockChain: taskTx.BlockChain, TaskStatus: 3}
+						t := &service.NodeTask{NodeId: taskTx.NodeId, BlockNumber: taskTx.BlockNumber, BlockHash: taskTx.BlockHash, TxHash: v.TxHash, TaskType: 1, BlockChain: taskTx.BlockChain, TaskStatus: 3, Id: time.Now().UnixNano(), CreateTime: time.Now(), LogTime: time.Now()}
 						//txTaskList = append(txTaskList, t)
 
 						//收据任务

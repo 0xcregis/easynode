@@ -8,8 +8,12 @@
       "TaskKafka": {
         "Host": "192.168.2.9",
         "Port": 9092,
-        "Group": "16",
-        "StartOffset": -1
+        "Group": "19",
+        "StartOffset": -1,
+        "Partition": 0,
+        "WritePartitions": [
+          0
+        ]
       },
       "Kafka": {
         "Host": "192.168.2.9",

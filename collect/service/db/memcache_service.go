@@ -11,6 +11,7 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service"
+	"math/rand"
 	"sync"
 	"time"
 )
@@ -156,14 +157,21 @@ func (s *Service) StoreNodeTask(key string, task *service.NodeTask) {
 	}
 }
 
-func (s *Service) SendNodeTask(list []*service.NodeTask) []*kafka.Message {
+func (s *Service) SendNodeTask(list []*service.NodeTask, partitions []int64) []*kafka.Message {
 	resultList := make([]*kafka.Message, 0)
 	for _, v := range list {
 		v.CreateTime = time.Now()
 		v.LogTime = time.Now()
 		v.Id = time.Now().UnixNano()
 		bs, _ := json.Marshal(v)
-		msg := &kafka.Message{Topic: fmt.Sprintf("task_%v", v.BlockChain), Partition: 0, Key: []byte(v.NodeId), Value: bs}
+
+		var p int
+		if len(partitions) > 0 {
+			p = rand.Intn(len(partitions))
+			p = int(partitions[p])
+		}
+
+		msg := &kafka.Message{Topic: fmt.Sprintf("task_%v", v.BlockChain), Partition: p, Key: []byte(v.NodeId), Value: bs}
 		resultList = append(resultList, msg)
 	}
 

@@ -220,7 +220,7 @@ func (s *Server) PushTxsTask(c *gin.Context) {
 		return
 	}
 
-	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 1, TaskStatus: 0, NodeId: s.nodeId}
+	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 4, TaskStatus: 0, NodeId: s.nodeId}
 	err = s.db.AddNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -299,7 +299,7 @@ func (s *Server) PushReceiptsTask(c *gin.Context) {
 		return
 	}
 
-	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 3, TaskStatus: 0, NodeId: s.nodeId}
+	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 5, TaskStatus: 0, NodeId: s.nodeId}
 	err = s.db.AddNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())

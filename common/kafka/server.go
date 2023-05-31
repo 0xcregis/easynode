@@ -99,10 +99,14 @@ func (easy *EasyKafka) WriteBatch(c *Config, ch chan []*kafka.Message, resp chan
 
 func (easy *EasyKafka) Write(c Config, ch chan []*kafka.Message, resp chan []*kafka.Message, ctx context.Context) {
 	// make a writer that produces to topic-A, using the least-bytes distribution
+	var f kafka.BalancerFunc = func(message kafka.Message, i ...int) int {
+		return message.Partition
+	}
+
 	w := &kafka.Writer{
 		Addr: kafka.TCP(c.Brokers...),
 		//Topic:       c.Topic,
-		Balancer:               &kafka.LeastBytes{},
+		Balancer:               f,
 		Logger:                 kafka.LoggerFunc(easy.Logf),
 		ErrorLogger:            kafka.LoggerFunc(easy.Logf),
 		BatchBytes:             70e6,

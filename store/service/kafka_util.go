@@ -108,7 +108,7 @@ func ParseTxForEther(msg *kafka.Message) (*SubTx, error) {
 			//data = string(bs)
 		} else {
 			//data, _ = util.HexToInt(data)
-			return nil, errors.New("tx.log.contract is error")
+			continue
 		}
 
 		tps := v.Get("topics").Array()
@@ -237,7 +237,7 @@ func ParseTxForTron(msg *kafka.Message) (*SubTx, error) {
 				//data = string(bs)
 			} else {
 				//data, _ = util.HexToInt(data)
-				return nil, errors.New("tx.log.contract is error")
+				continue
 			}
 
 			var from, to string

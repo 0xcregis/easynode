@@ -123,11 +123,15 @@ func GetBlockFromJson(json string) (*Block, []*Tx) {
 	txId := make([]string, 0)
 	txList := make([]*Tx, 0)
 	for _, tx := range txs {
-		x := GetTxFromJson(tx.String())
-		x.TxTime = block.BlockTime
-		x.BaseFee = block.BaseFee
-		txList = append(txList, x)
-		txId = append(txId, x.TxHash)
+		if tx.IsObject() {
+			x := GetTxFromJson(tx.String())
+			x.TxTime = block.BlockTime
+			x.BaseFee = block.BaseFee
+			txList = append(txList, x)
+			txId = append(txId, x.TxHash)
+		} else {
+			txId = append(txId, tx.String())
+		}
 	}
 
 	block.Transactions = txId

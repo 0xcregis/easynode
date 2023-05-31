@@ -56,10 +56,12 @@ func ParseTxForEther(msg *kafka.Message) (*SubTx, error) {
 	price, _ := util.HexToInt2(gasPrice)
 	bigPrice := big.NewInt(price)
 
+	if !root.Get("receipt").Exists() { //收据不存在的交易，则放弃
+		return nil, errors.New("receipt is error")
+	}
+
 	receipt := root.Get("receipt").String()
-
 	receiptRoot := gjson.Parse(receipt)
-
 	gasUsed := receiptRoot.Get("gasUsed").String()
 	gas, _ := util.HexToInt2(gasUsed)
 	bigGas := big.NewInt(gas)
@@ -92,22 +94,15 @@ func ParseTxForEther(msg *kafka.Message) (*SubTx, error) {
 			if err != nil {
 				return nil, errors.New("tx.log.contract is error")
 			}
-			//bigDecimals := math.Pow10(decimals)
-
-			//mp["contractDecimals"] = contractDecimals
 
 			fee := r.Get("data").String()
 			bigFee, err := util.HexToInt(fee)
 			if err == nil {
-				//fmt.Sprintf("%.5f", new(big.Float).Quo(new(big.Float).SetFloat64(float64(bigFee)), new(big.Float).SetFloat64(bigDecimals)))
 				data = div(bigFee, decimals)
 			} else {
 				return nil, errors.New("tx.log.contract is error")
 			}
-			//bs, _ := json.Marshal(mp)
-			//data = string(bs)
 		} else {
-			//data, _ = util.HexToInt(data)
 			continue
 		}
 
@@ -133,7 +128,9 @@ func ParseTxForEther(msg *kafka.Message) (*SubTx, error) {
 
 func ParseTxForTron(msg *kafka.Message) (*SubTx, error) {
 
-	txBody := gjson.ParseBytes(msg.Value).Get("tx").String()
+	root := gjson.ParseBytes(msg.Value)
+
+	txBody := root.Get("tx").String()
 	if len(txBody) < 5 {
 		return nil, errors.New("tx is error")
 	}
@@ -191,7 +188,11 @@ func ParseTxForTron(msg *kafka.Message) (*SubTx, error) {
 		r.Value = v.String()
 	}
 
-	receiptBody := gjson.ParseBytes(msg.Value).Get("receipt").String()
+	if !root.Get("receipt").Exists() { //收据不存在的交易，则放弃
+		return nil, errors.New("receipt is error")
+	}
+
+	receiptBody := root.Get("receipt").String()
 	if len(receiptBody) > 5 {
 		receiptRoot := gjson.Parse(receiptBody)
 		fee := receiptRoot.Get("fee").String()

@@ -154,10 +154,10 @@ func (s *Service) GetTx(txHash string, task *config.TxTask, eLog *logrus.Entry) 
 	//解析数据
 	tx := service.GetTxFromJson(resp)
 
-	rp := s.GetReceipt(tx.TxHash, nil, eLog)
+	receipt := s.GetReceipt(tx.TxHash, nil, eLog)
 
-	if rp != nil {
-		bs, _ := json.Marshal(rp.Receipt)
+	if receipt != nil {
+		bs, _ := json.Marshal(receipt.Receipt)
 		tx.Receipt = string(bs)
 	}
 
@@ -198,9 +198,11 @@ func (s *Service) GetReceiptByBlock(blockHash, number string, task *config.Recei
 	receiptList := service.GetReceiptListFromJson(resp)
 	rs := make([]*service.ReceiptInterface, 0, len(receiptList))
 	for _, v := range receiptList {
-		s.buildContract(v)
-		r := &service.ReceiptInterface{TransactionHash: v.TransactionHash, Receipt: v}
-		rs = append(rs, r)
+		v = s.buildContract(v)
+		if v != nil {
+			r := &service.ReceiptInterface{TransactionHash: v.TransactionHash, Receipt: v}
+			rs = append(rs, r)
+		}
 	}
 	return rs
 }
@@ -225,31 +227,38 @@ func (s *Service) GetReceipt(txHash string, task *config.ReceiptTask, eLog *logr
 
 	// 解析数据
 	receipt := service.GetReceiptFromJson(resp)
-	s.buildContract(receipt)
-	r := &service.ReceiptInterface{TransactionHash: receipt.TransactionHash, Receipt: receipt}
-	return r
+	receipt = s.buildContract(receipt)
+	if receipt != nil {
+		return &service.ReceiptInterface{TransactionHash: receipt.TransactionHash, Receipt: receipt}
+	} else {
+		return nil
+	}
 }
 
-func (s *Service) buildContract(receipt *service.Receipt) {
-	for _, g := range receipt.Logs {
+func (s *Service) buildContract(receipt *service.Receipt) *service.Receipt {
 
+	has := true
+
+	// 仅有 合约交易，才能有logs
+	for _, g := range receipt.Logs {
+		//忽律 非转移 事件
 		if len(g.Topics) < 3 || g.Topics[0] != service.EthTopic {
 			continue
 		}
 
-		//过滤721协议
+		//忽略 721协议
 		if len(g.Topics) == 4 && g.Topics[0] == service.EthTopic {
 			if len(g.Data) == 2 {
 				continue
 			}
 		}
+		//todo 忽略1155 协议
 
+		//处理 普通资产和 20 协议 资产转移
 		mp := make(map[string]interface{}, 2)
 		token, err := s.getToken(int64(s.chain.BlockChainCode), receipt.From, g.Address)
 		if err != nil {
-			nodeId, _ := util.GetLocalNodeId()
-			task := service.NodeTask{Id: time.Now().UnixNano(), BlockChain: s.chain.BlockChainCode, NodeId: nodeId, TxHash: receipt.TransactionHash, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
-			_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), receipt.TransactionHash, task)
+			has = false
 			break
 		}
 
@@ -257,15 +266,22 @@ func (s *Service) buildContract(receipt *service.Receipt) {
 		if v, ok := m["decimals"]; ok {
 			mp["contractDecimals"] = v.String()
 		} else {
-			nodeId, _ := util.GetLocalNodeId()
-			task := service.NodeTask{Id: time.Now().UnixNano(), NodeId: nodeId, BlockChain: s.chain.BlockChainCode, TxHash: receipt.TransactionHash, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
-			_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), receipt.TransactionHash, task)
-			continue
+			has = false
+			break
 		}
 
 		mp["data"] = g.Data
 		bs, _ := json.Marshal(mp)
 		g.Data = string(bs)
+	}
+
+	if has {
+		return receipt
+	} else {
+		nodeId, _ := util.GetLocalNodeId()
+		task := service.NodeTask{Id: time.Now().UnixNano(), BlockChain: s.chain.BlockChainCode, NodeId: nodeId, TxHash: receipt.TransactionHash, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
+		_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), receipt.TransactionHash, task)
+		return nil
 	}
 }
 

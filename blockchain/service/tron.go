@@ -100,7 +100,7 @@ func NewTron(cluster []*config.NodeCluster, xlog *xlog.XLog) API {
 	}
 }
 
-func (t *Tron) GetBlockByHash(chainCode int64, hash string) (string, error) {
+func (t *Tron) GetBlockByHash(chainCode int64, hash string, flag bool) (string, error) {
 	req := `{"value": "%v"}`
 	req = fmt.Sprintf(req, hash)
 	res, err := t.SendReq(chainCode, req, "wallet/getblockbyid")
@@ -119,7 +119,7 @@ func (t *Tron) GetBlockByHash(chainCode int64, hash string) (string, error) {
 	//}
 }
 
-func (t *Tron) GetBlockByNumber(chainCode int64, number string) (string, error) {
+func (t *Tron) GetBlockByNumber(chainCode int64, number string, flag bool) (string, error) {
 	req := `{"num": %v}`
 
 	n, err := strconv.ParseInt(number, 0, 64)

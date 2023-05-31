@@ -162,7 +162,7 @@ func (e *Ether) GetTransactionReceiptByHash(chainCode int64, hash string) (strin
 	return e.SendEthReq(chainCode, query)
 }
 
-func (e *Ether) GetBlockByHash(chainCode int64, hash string) (string, error) {
+func (e *Ether) GetBlockByHash(chainCode int64, hash string, flag bool) (string, error) {
 	req := `
 		{
 		  "id": 1,
@@ -170,15 +170,15 @@ func (e *Ether) GetBlockByHash(chainCode int64, hash string) (string, error) {
 		  "method": "eth_getBlockByHash",
 		  "params": [
 			"%v",
- 			true
+ 			%v
 		  ]
 		}`
 
-	req = fmt.Sprintf(req, hash)
+	req = fmt.Sprintf(req, hash, flag)
 	return e.SendEthReq(chainCode, req)
 }
 
-func (e *Ether) GetBlockByNumber(chainCode int64, number string) (string, error) {
+func (e *Ether) GetBlockByNumber(chainCode int64, number string, flag bool) (string, error) {
 	req := `
 			{
 			  "id": 1,
@@ -186,11 +186,11 @@ func (e *Ether) GetBlockByNumber(chainCode int64, number string) (string, error)
 			  "method": "eth_getBlockByNumber",
 			  "params": [
 				"%v",
-				true
+				%v
 			  ]
 			}
 			`
-	req = fmt.Sprintf(req, number)
+	req = fmt.Sprintf(req, number, flag)
 	return e.SendEthReq(chainCode, req)
 }
 

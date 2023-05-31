@@ -198,7 +198,7 @@ func (s *WsHandler) requestMsg(msg *WsReqMessage, log *logrus.Entry, errCh chan 
 				return
 			}
 
-			block, err := s.blockChainClients[blockChain].GetBlockByHash(blockChain, blockHash)
+			block, err := s.blockChainClients[blockChain].GetBlockByHash(blockChain, blockHash, true)
 			if err != nil {
 				errMsg := fmt.Sprintf("function=%v,msg.code=%v,err=%v", "GetBlockByHash", msg.Code, err.Error())
 				log.Errorf(errMsg)
@@ -220,7 +220,7 @@ func (s *WsHandler) requestMsg(msg *WsReqMessage, log *logrus.Entry, errCh chan 
 				return
 			}
 
-			block, err := s.blockChainClients[blockChain].GetBlockByNumber(blockChain, number)
+			block, err := s.blockChainClients[blockChain].GetBlockByNumber(blockChain, number, true)
 			if err != nil {
 				errMsg := fmt.Sprintf("function=%v,msg.code=%v,err=%v", "GetBlockByNumber", msg.Code, err.Error())
 				log.Errorf(errMsg)

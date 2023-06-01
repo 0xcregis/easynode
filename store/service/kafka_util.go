@@ -185,7 +185,7 @@ func ParseTxForTron(msg *kafka.Message) (*SubTx, error) {
 	if txType == "TransferContract" {
 		r.Value = div(v.Get("amount").String(), 6)
 	} else {
-		r.Value = v.String()
+		r.Value = "0"
 	}
 
 	if !root.Get("receipt").Exists() { //收据不存在的交易，则放弃

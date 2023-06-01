@@ -107,6 +107,7 @@ func (s *Service) CheckErrTx() {
 						v.BlockChain = int(blockchain)
 					}
 					v.Id = time.Now().UnixNano()
+					v.TaskStatus = 0
 					bs, _ := json.Marshal(v)
 					msg := &kafka.Message{Topic: fmt.Sprintf("task_%v", v.BlockChain), Partition: 0, Key: []byte(v.NodeId), Value: bs}
 					tempList = append(tempList, msg)

@@ -152,7 +152,7 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 			}
 
 			if task.Id <= 0 || task.NodeId != nodeId || task.TaskStatus != 0 {
-				c.log.Warnf("Read NodeTask offset=%v,task=%+v ,but it is error", msg.Offset, task)
+				c.log.Warnf("Read NodeTask offset=%v,task=%+v ,but it is wrong since id<=0 or nodeId !=local NodeId or status !=0 ", msg.Offset, task)
 				continue
 			}
 

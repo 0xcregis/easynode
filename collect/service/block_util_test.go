@@ -86,7 +86,7 @@ func TestGetBlockFromJson(t *testing.T) {
 
 	//log.Println(strconv.ParseInt("0xF3F089", 0, 64))
 	block, txs := GetBlockFromJson(str)
-	log.Println(block)
+	log.Printf("%+v", block)
 	log.Println(txs)
 }
 

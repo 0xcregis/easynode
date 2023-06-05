@@ -126,7 +126,7 @@ func (s *Service) GetReceiptByBlock(blockHash, number string, task *config.Recei
 	return rs
 }
 
-func (s *Service) GetBlockByNumber(blockNumber string, task *config.BlockTask, eLog *logrus.Entry) (*service.BlockInterface, []*service.TxInterface) {
+func (s *Service) GetBlockByNumber(blockNumber string, task *config.BlockTask, eLog *logrus.Entry, flag bool) (*service.BlockInterface, []*service.TxInterface) {
 	if !strings.HasPrefix(blockNumber, "0x") {
 		n, _ := strconv.ParseInt(blockNumber, 10, 64)
 		blockNumber = fmt.Sprintf("0x%x", n)
@@ -171,7 +171,7 @@ func (s *Service) GetBlockByNumber(blockNumber string, task *config.BlockTask, e
 	return r, txs
 }
 
-func (s *Service) GetBlockByHash(blockHash string, cfg *config.BlockTask, eLog *logrus.Entry) (*service.BlockInterface, []*service.TxInterface) {
+func (s *Service) GetBlockByHash(blockHash string, cfg *config.BlockTask, eLog *logrus.Entry, flag bool) (*service.BlockInterface, []*service.TxInterface) {
 	//调用接口
 	resp, err := tron.Eth_GetBlockByHash(s.blockChainClient, blockHash, s.log)
 	if err != nil {

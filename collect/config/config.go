@@ -17,12 +17,13 @@ type FromCluster struct {
 	ErrorCount int64  `json:"ErrorCount"`
 }
 type Kafka struct {
-	Host        string `json:"Host"`
-	Port        int    `json:"Port"`
-	Topic       string `json:"Topic"`
-	Partition   int    `json:"Partition"`
-	Group       string `json:"Group"`
-	StartOffset int64  `json:"StartOffset"`
+	Host        string  `json:"Host"`
+	Port        int     `json:"Port"`
+	Topic       string  `json:"Topic"`
+	Partition   int     `json:"Partition"`
+	Partitions  []int64 `json:"WritePartitions"`
+	Group       string  `json:"Group"`
+	StartOffset int64   `json:"StartOffset"`
 }
 
 type BlockTask struct {

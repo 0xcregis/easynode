@@ -1,0 +1,14 @@
+package service
+
+import (
+	"log"
+	"testing"
+)
+
+func TestParseTxForTron(t *testing.T) {
+
+	str := "{\n        \"receipt\":\"{\\\"id\\\":\\\"76f1ff8be6b3cf041f29b67c3a5d025f232d2a48a6d0810f0f234fc73c16adcc\\\",\\\"fee\\\":378000,\\\"blockNumber\\\":51662596,\\\"blockTimeStamp\\\":1685608278000,\\\"from\\\":\\\"\\\",\\\"to\\\":\\\"\\\",\\\"contractResult\\\":[\\\"0000000000000000000000000000000000000000000000000000000000000001\\\"],\\\"contract_address\\\":\\\"41b95d016bf2eda50aef5fe625085a8d565d2502ac\\\",\\\"receipt\\\":{\\\"energy_fee\\\":0,\\\"energy_usage_total\\\":2513,\\\"net_usage\\\":0,\\\"result\\\":\\\"SUCCESS\\\",\\\"energy_penalty_total\\\":0},\\\"log\\\":[{\\\"blockHash\\\":\\\"\\\",\\\"address\\\":\\\"b95d016bf2eda50aef5fe625085a8d565d2502ac\\\",\\\"logIndex\\\":\\\"\\\",\\\"data\\\":\\\"{\\\\\\\"contractDecimals\\\\\\\":\\\\\\\"18\\\\\\\",\\\\\\\"data\\\\\\\":\\\\\\\"0000000000000000000000000000000000000000000004cb433cf96ff45c0000\\\\\\\"}\\\",\\\"removed\\\":false,\\\"topics\\\":[\\\"ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef\\\",\\\"000000000000000000000000e77010756b927720694ddd1a04ccf294cf3fd057\\\",\\\"00000000000000000000000029dde2b936ecd864436eadcce5b6e17a7e618ca8\\\"],\\\"blockNumber\\\":\\\"\\\",\\\"transactionIndex\\\":\\\"\\\",\\\"transactionHash\\\":\\\"\\\"}]}\",\n        \"tx\":\"{\\\"ret\\\":[{\\\"contractRet\\\":\\\"SUCCESS\\\"}],\\\"signature\\\":[\\\"39988ae0443fc6847f00a27820b8e229fa10fcf37dabba41e819228559ac90de8d3885fc2a52058f43a2c46ff1b388d79c830022acb6b9f1bd6cf7b87beaf6ca00\\\"],\\\"txID\\\":\\\"76f1ff8be6b3cf041f29b67c3a5d025f232d2a48a6d0810f0f234fc73c16adcc\\\",\\\"raw_data\\\":{\\\"contract\\\":[{\\\"parameter\\\":{\\\"value\\\":{\\\"data\\\":\\\"23b872dd000000000000000000000041e77010756b927720694ddd1a04ccf294cf3fd05700000000000000000000004129dde2b936ecd864436eadcce5b6e17a7e618ca80000000000000000000000000000000000000000000004cb433cf96ff45c0000\\\",\\\"owner_address\\\":\\\"417700a00ce2ff73c5b5f7807338f63c3dfb2e629b\\\",\\\"contract_address\\\":\\\"41b95d016bf2eda50aef5fe625085a8d565d2502ac\\\"},\\\"type_url\\\":\\\"type.googleapis.com/protocol.TriggerSmartContract\\\"},\\\"type\\\":\\\"TriggerSmartContract\\\"}],\\\"ref_block_bytes\\\":\\\"4ef0\\\",\\\"ref_block_hash\\\":\\\"b2414e90a7f7ff13\\\",\\\"expiration\\\":1685608332000,\\\"fee_limit\\\":50000000,\\\"timestamp\\\":1685608273937},\\\"raw_data_hex\\\":\\\"0a024ef02208b2414e90a7f7ff1340e0f5d7b087315acf01081f12ca010a31747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e54726967676572536d617274436f6e74726163741294010a15417700a00ce2ff73c5b5f7807338f63c3dfb2e629b121541b95d016bf2eda50aef5fe625085a8d565d2502ac226423b872dd000000000000000000000041e77010756b927720694ddd1a04ccf294cf3fd05700000000000000000000004129dde2b936ecd864436eadcce5b6e17a7e618ca80000000000000000000000000000000000000000000004cb433cf96ff45c00007091b0d4b08731900180e1eb17\\\"}\\n\"\n    }"
+
+	log.Println(ParseTxForTron([]byte(str)))
+
+}

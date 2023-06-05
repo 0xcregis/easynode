@@ -11,6 +11,7 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service"
+	"math/rand"
 	"sync"
 	"time"
 )
@@ -66,10 +67,17 @@ func (s *Service) GetAllKeyForErrTx(blockchain int64, key string) ([]string, err
 }
 
 func (s *Service) StoreErrTxNodeTask(blockchain int64, key string, data any) error {
-	c, _, _ := s.GetErrTxNodeTask(blockchain, key)
+	c, d, err := s.GetErrTxNodeTask(blockchain, key)
 	//已存在且错误超过5次 忽略
 	if c > 5 {
 		return nil
+	}
+
+	if err != nil && len(d) > 0 {
+		var task service.NodeTask
+		_ = json.Unmarshal([]byte(d), &task)
+		task.LogTime = time.Now()
+		data = task
 	}
 
 	mp := make(map[string]any, 2)
@@ -77,7 +85,7 @@ func (s *Service) StoreErrTxNodeTask(blockchain int64, key string, data any) err
 	mp["data"] = data
 
 	bs, _ := json.Marshal(mp)
-	err := s.cacheClient.HSet(context.Background(), fmt.Sprintf("errTx_%v", blockchain), key, string(bs)).Err()
+	err = s.cacheClient.HSet(context.Background(), fmt.Sprintf("errTx_%v", blockchain), key, string(bs)).Err()
 	if err != nil {
 		s.log.Warnf("StoreErrTxNodeTask|err=%v", err.Error())
 		return err
@@ -156,14 +164,21 @@ func (s *Service) StoreNodeTask(key string, task *service.NodeTask) {
 	}
 }
 
-func (s *Service) SendNodeTask(list []*service.NodeTask) []*kafka.Message {
+func (s *Service) SendNodeTask(list []*service.NodeTask, partitions []int64) []*kafka.Message {
 	resultList := make([]*kafka.Message, 0)
 	for _, v := range list {
 		v.CreateTime = time.Now()
 		v.LogTime = time.Now()
 		v.Id = time.Now().UnixNano()
 		bs, _ := json.Marshal(v)
-		msg := &kafka.Message{Topic: fmt.Sprintf("task_%v", v.BlockChain), Partition: 0, Key: []byte(v.NodeId), Value: bs}
+
+		var p int
+		if len(partitions) > 0 {
+			p = rand.Intn(len(partitions))
+			p = int(partitions[p])
+		}
+
+		msg := &kafka.Message{Topic: fmt.Sprintf("task_%v", v.BlockChain), Partition: p, Key: []byte(v.NodeId), Value: bs}
 		resultList = append(resultList, msg)
 	}
 

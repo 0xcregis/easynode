@@ -17,7 +17,7 @@ func Init() (service.BlockChainInterface, config.Config, *xlog.XLog) {
 
 func TestService_GetBlockByNumber(t *testing.T) {
 	s, cfg, x := Init()
-	b, _ := s.GetBlockByNumber("16939002", cfg.Chains[0].BlockTask, x.WithFields(logrus.Fields{}))
+	b, _ := s.GetBlockByNumber("16939002", cfg.Chains[0].BlockTask, x.WithFields(logrus.Fields{}), true)
 	log.Printf("%+v", b)
 }
 

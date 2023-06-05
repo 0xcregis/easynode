@@ -107,6 +107,7 @@ func (s *Service) CheckErrTx() {
 						v.BlockChain = int(blockchain)
 					}
 					v.Id = time.Now().UnixNano()
+					v.TaskStatus = 0
 					bs, _ := json.Marshal(v)
 					msg := &kafka.Message{Topic: fmt.Sprintf("task_%v", v.BlockChain), Partition: 0, Key: []byte(v.NodeId), Value: bs}
 					tempList = append(tempList, msg)
@@ -144,6 +145,9 @@ func (s *Service) clearLog() {
 
 				chainInfoLog := fmt.Sprintf("%v_%v", "chain_info_log", datePath)
 				_ = util.DeleteFile(path.Join(p, chainInfoLog))
+
+				monitorLog := fmt.Sprintf("%v_%v", "monitor_log", datePath)
+				_ = util.DeleteFile(path.Join(p, monitorLog))
 
 				t = t.Add(-24 * time.Hour)
 			}

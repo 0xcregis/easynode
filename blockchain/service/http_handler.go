@@ -32,7 +32,7 @@ func (h *HttpHandler) GetBlockByHash(ctx *gin.Context) {
 	}
 	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
 	hash := gjson.ParseBytes(b).Get("hash").String()
-	res, err := h.blockChainClients[blockChainCode].GetBlockByHash(blockChainCode, hash)
+	res, err := h.blockChainClients[blockChainCode].GetBlockByHash(blockChainCode, hash, true)
 
 	if err != nil {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
@@ -50,7 +50,7 @@ func (h *HttpHandler) GetBlockByNumber(ctx *gin.Context) {
 	}
 	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
 	number := gjson.ParseBytes(b).Get("number").String()
-	res, err := h.blockChainClients[blockChainCode].GetBlockByNumber(blockChainCode, number)
+	res, err := h.blockChainClients[blockChainCode].GetBlockByNumber(blockChainCode, number, true)
 
 	if err != nil {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())

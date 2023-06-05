@@ -12,7 +12,7 @@ type Common interface {
 }
 
 type StoreTaskInterface interface {
-	SendNodeTask(list []*NodeTask) []*kafka.Message
+	SendNodeTask(list []*NodeTask, partitions []int64) []*kafka.Message
 	UpdateNodeTaskStatus(key string, status int) error
 	UpdateNodeTaskStatusWithBatch(keys []string, status int) error
 	GetNodeTask(key string) (*NodeTask, error)
@@ -34,8 +34,8 @@ type BlockChainInterface interface {
 	GetTx(txHash string, task *config.TxTask, log *logrus.Entry) *TxInterface
 	GetReceipt(txHash string, task *config.ReceiptTask, log *logrus.Entry) *ReceiptInterface
 	GetReceiptByBlock(blockHash, number string, task *config.ReceiptTask, log *logrus.Entry) []*ReceiptInterface
-	GetBlockByNumber(blockNumber string, task *config.BlockTask, log *logrus.Entry) (*BlockInterface, []*TxInterface)
-	GetBlockByHash(blockHash string, cfg *config.BlockTask, log *logrus.Entry) (*BlockInterface, []*TxInterface)
+	GetBlockByNumber(blockNumber string, task *config.BlockTask, log *logrus.Entry, flag bool) (*BlockInterface, []*TxInterface)
+	GetBlockByHash(blockHash string, cfg *config.BlockTask, log *logrus.Entry, flag bool) (*BlockInterface, []*TxInterface)
 	BalanceCluster(key string, clusterList []*config.FromCluster) (*config.FromCluster, error)
 	Monitor()
 }

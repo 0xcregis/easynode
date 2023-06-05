@@ -9,7 +9,11 @@
         "Host": "easykafka",
         "Port": 9092,
         "Group": "11",
-        "StartOffset": -1
+        "StartOffset": -1,
+        "Partition": 0,
+        "WritePartitions": [
+          0
+        ]
       },
       "Kafka": {
         "Host": "easykafka",

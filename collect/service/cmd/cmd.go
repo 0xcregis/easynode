@@ -15,7 +15,6 @@ import (
 	"github.com/uduncloud/easynode/collect/service/db"
 	kafkaClient "github.com/uduncloud/easynode/common/kafka"
 	"github.com/uduncloud/easynode/common/util"
-	"strings"
 	"time"
 )
 
@@ -37,10 +36,8 @@ type Cmd struct {
 	txChan      chan *service.NodeTask
 	blockChan   chan *service.NodeTask
 	receiptChan chan *service.NodeTask
-	kafkaCh     chan []*kafka.Message
-	kafkaRespCh chan []*kafka.Message
 
-	taskKafkaCh chan []*kafka.Message
+	kafkaCh chan []*kafka.Message
 }
 
 func NewService(cfg *config.Chain, logConfig *config.LogConfig) *Cmd {
@@ -48,9 +45,7 @@ func NewService(cfg *config.Chain, logConfig *config.LogConfig) *Cmd {
 	txChan := make(chan *service.NodeTask, 10)
 	receiptChan := make(chan *service.NodeTask, 10)
 	blockChan := make(chan *service.NodeTask, 10)
-	kafkaCh := make(chan []*kafka.Message, 100)
-	kafkaRespCh := make(chan []*kafka.Message, 30)
-	taskKafkaCh := make(chan []*kafka.Message, 10)
+	kafkaCh := make(chan []*kafka.Message, 10)
 	store := db.NewTaskCacheService(cfg, log)
 	kf := kafkaClient.NewEasyKafka(log)
 	chain := getBlockChainService(cfg, logConfig, store)
@@ -65,8 +60,6 @@ func NewService(cfg *config.Chain, logConfig *config.LogConfig) *Cmd {
 		receiptChan: receiptChan,
 		blockChan:   blockChan,
 		kafkaCh:     kafkaCh,
-		kafkaRespCh: kafkaRespCh,
-		taskKafkaCh: taskKafkaCh,
 	}
 }
 
@@ -92,10 +85,10 @@ func (c *Cmd) Start() {
 	}
 
 	//task kafka write
-	go func() {
-		broker := fmt.Sprintf("%v:%v", c.chain.TaskKafka.Host, c.chain.TaskKafka.Port)
-		c.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker}}, c.taskKafkaCh, nil)
-	}()
+	//go func() {
+	//	broker := fmt.Sprintf("%v:%v", c.chain.TaskKafka.Host, c.chain.TaskKafka.Port)
+	//	c.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker}}, c.taskKafkaCh, nil)
+	//}()
 
 	go c.ReadNodeTaskFromKafka(nodeId, c.chain.BlockChainCode, c.blockChan, c.txChan, c.receiptChan)
 
@@ -118,11 +111,15 @@ func (c *Cmd) Start() {
 	}
 
 	//kafka 消息回调
-	go c.HandlerKafkaRespMessage(c.kafkaRespCh)
+	//go c.HandlerKafkaRespMessage(c.kafkaRespCh)
 
 	//发送Kafka
+	//tx,block,receipt 节点
 	broker := fmt.Sprintf("%v:%v", c.chain.Kafka.Host, c.chain.Kafka.Port)
-	c.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker}}, c.kafkaCh, c.kafkaRespCh)
+	//任务节点
+	broker2 := fmt.Sprintf("%v:%v", c.chain.TaskKafka.Host, c.chain.TaskKafka.Port)
+
+	c.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker, broker2}}, c.kafkaCh, c.HandlerKafkaRespMessage)
 }
 
 func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan *service.NodeTask, txCh chan *service.NodeTask, receiptChan chan *service.NodeTask) {
@@ -198,65 +195,57 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 
 }
 
-func (c *Cmd) HandlerKafkaRespMessageEx(kafkaRespCh chan []*kafka.Message) {
-	buff := make(chan int64, 10)
-	for true {
-		buff <- 1
-		go func(kafkaRespCh chan []*kafka.Message) {
-			c.HandlerKafkaRespMessage(kafkaRespCh)
-			<-buff
-		}(kafkaRespCh)
-	}
-}
+//func (c *Cmd) HandlerKafkaRespMessageEx(kafkaRespCh chan []*kafka.Message) {
+//	buff := make(chan int64, 10)
+//	for true {
+//		buff <- 1
+//		go func(kafkaRespCh chan []*kafka.Message) {
+//			c.HandlerKafkaRespMessage(kafkaRespCh)
+//			<-buff
+//		}(kafkaRespCh)
+//	}
+//}
 
-func (c *Cmd) HandlerKafkaRespMessage(kafkaRespCh chan []*kafka.Message) {
+func (c *Cmd) HandlerKafkaRespMessage(msList []*kafka.Message) {
 
-	for true {
+	//msList := <-kafkaRespCh
+	ids := make([]string, 0, 20)
+	log := c.log.WithFields(logrus.Fields{
+		"id":    time.Now().UnixMilli(),
+		"model": "HandlerKafkaRespMessage",
+	})
 
-		msList := <-kafkaRespCh
-		ids := make([]string, 0, 20)
-		log := c.log.WithFields(logrus.Fields{
-			"id":    time.Now().UnixMilli(),
-			"model": "HandlerKafkaRespMessage",
-		})
+	for _, msg := range msList {
+		topic := msg.Topic
 
-		for _, msg := range msList {
-			topic := msg.Topic
+		//交易消息回调，如下处理
+		r := gjson.ParseBytes(msg.Value)
+		//log.Printf("topic=%v,msg.value=%v", topic, string(msg.Value))
 
-			if strings.HasPrefix(topic, "task") {
-				//任务消息回调，暂不做处理
-				continue
-			}
-
-			//交易消息回调，如下处理
-			r := gjson.ParseBytes(msg.Value)
-			//log.Printf("topic=%v,msg.value=%v", topic, string(msg.Value))
-
-			//交易
-			if c.chain.TxTask != nil && topic == c.chain.TxTask.Kafka.Topic {
-				txHash := r.Get("hash").String()
-				ids = append(ids, fmt.Sprintf(KeyTxById, c.chain.BlockChainCode, txHash))
-			}
-
-			//收据
-			if c.chain.ReceiptTask != nil && topic == c.chain.ReceiptTask.Kafka.Topic {
-				txHash := r.Get("transactionHash").String()
-				ids = append(ids, fmt.Sprintf(KeyReceiptById, c.chain.BlockChainCode, txHash))
-			}
-
-			//区块
-			if c.chain.BlockTask != nil && topic == c.chain.BlockTask.Kafka.Topic {
-				blockHash := r.Get("hash").String()
-				ids = append(ids, fmt.Sprintf(KeyBlockById, c.chain.BlockChainCode, blockHash))
-			}
-
+		//交易
+		if c.chain.TxTask != nil && topic == c.chain.TxTask.Kafka.Topic {
+			txHash := r.Get("hash").String()
+			ids = append(ids, fmt.Sprintf(KeyTxById, c.chain.BlockChainCode, txHash))
 		}
 
-		if len(ids) > 0 {
-			err := c.taskStore.UpdateNodeTaskStatusWithBatch(ids, 1)
-			if err != nil {
-				log.Errorf("UpdateNodeTaskStatusWithBatch|err=%v", err)
-			}
+		//收据
+		if c.chain.ReceiptTask != nil && topic == c.chain.ReceiptTask.Kafka.Topic {
+			txHash := r.Get("transactionHash").String()
+			ids = append(ids, fmt.Sprintf(KeyReceiptById, c.chain.BlockChainCode, txHash))
+		}
+
+		//区块
+		if c.chain.BlockTask != nil && topic == c.chain.BlockTask.Kafka.Topic {
+			blockHash := r.Get("hash").String()
+			ids = append(ids, fmt.Sprintf(KeyBlockById, c.chain.BlockChainCode, blockHash))
+		}
+
+	}
+
+	if len(ids) > 0 {
+		err := c.taskStore.UpdateNodeTaskStatusWithBatch(ids, 1)
+		if err != nil {
+			log.Errorf("UpdateNodeTaskStatusWithBatch|err=%v", err)
 		}
 	}
 
@@ -490,7 +479,7 @@ func (c *Cmd) execMultiTx(taskTx *service.NodeTask, log *logrus.Entry) []*kafka.
 			//	//其他公链，则 批量获取收据
 			//	//根据区块获取收据，则 tx_hash 必需未空
 			task := &service.NodeTask{BlockChain: c.chain.BlockChainCode, TxHash: "", BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, TaskType: 5, TaskStatus: 0, NodeId: taskTx.NodeId}
-			c.taskKafkaCh <- c.taskStore.SendNodeTask([]*service.NodeTask{task}, c.chain.TaskKafka.Partitions)
+			c.kafkaCh <- c.taskStore.SendNodeTask([]*service.NodeTask{task}, c.chain.TaskKafka.Partitions)
 			//}
 
 		}
@@ -535,7 +524,7 @@ func (c *Cmd) execSingleTx(taskTx *service.NodeTask, log *logrus.Entry) []*kafka
 
 	//写入receipt task
 	if c.chain.PullReceipt {
-		c.taskKafkaCh <- c.taskStore.SendNodeTask([]*service.NodeTask{{BlockChain: c.chain.BlockChainCode, TxHash: tx.TxHash, BlockHash: "", BlockNumber: "", TaskType: 3, TaskStatus: 0, NodeId: taskTx.NodeId}}, c.chain.TaskKafka.Partitions)
+		c.kafkaCh <- c.taskStore.SendNodeTask([]*service.NodeTask{{BlockChain: c.chain.BlockChainCode, TxHash: tx.TxHash, BlockHash: "", BlockNumber: "", TaskType: 3, TaskStatus: 0, NodeId: taskTx.NodeId}}, c.chain.TaskKafka.Partitions)
 	}
 
 	//update status
@@ -599,7 +588,7 @@ func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Mes
 			//发出批量交易任务
 			if c.chain.PullTx {
 				s := &service.NodeTask{NodeId: taskBlock.NodeId, BlockChain: taskBlock.BlockChain, BlockNumber: taskBlock.BlockNumber, BlockHash: taskBlock.BlockHash, TaskType: 4, TaskStatus: 0}
-				c.taskKafkaCh <- c.taskStore.SendNodeTask([]*service.NodeTask{s}, c.chain.TaskKafka.Partitions)
+				c.kafkaCh <- c.taskStore.SendNodeTask([]*service.NodeTask{s}, c.chain.TaskKafka.Partitions)
 			}
 
 			//发出block

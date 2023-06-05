@@ -84,11 +84,11 @@ func (easy *EasyKafka) Read(c *Config, ch chan *kafka.Message, ctx context.Conte
 	time.Sleep(2 * time.Second)
 }
 
-func (easy *EasyKafka) WriteBatch(c *Config, ch chan []*kafka.Message, resp chan []*kafka.Message) {
+func (easy *EasyKafka) WriteBatch(c *Config, ch chan []*kafka.Message, resp func([]*kafka.Message)) {
 	query := make(chan int, 5)
 	for true {
 		query <- 1
-		go func(c *Config, ch chan []*kafka.Message, resp chan []*kafka.Message) {
+		go func(c *Config, ch chan []*kafka.Message, resp func([]*kafka.Message)) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			easy.Write(*c, ch, resp, ctx)
@@ -97,7 +97,7 @@ func (easy *EasyKafka) WriteBatch(c *Config, ch chan []*kafka.Message, resp chan
 	}
 }
 
-func (easy *EasyKafka) Write(c Config, ch chan []*kafka.Message, resp chan []*kafka.Message, ctx context.Context) {
+func (easy *EasyKafka) Write(c Config, ch chan []*kafka.Message, resp func([]*kafka.Message), ctx context.Context) {
 	// make a writer that produces to topic-A, using the least-bytes distribution
 	var f kafka.BalancerFunc = func(message kafka.Message, i ...int) int {
 		return message.Partition
@@ -151,7 +151,7 @@ func (easy *EasyKafka) Write(c Config, ch chan []*kafka.Message, resp chan []*ka
 
 }
 
-func (easy *EasyKafka) sendToKafka(w *kafka.Writer, ms []*kafka.Message, resp chan []*kafka.Message) error {
+func (easy *EasyKafka) sendToKafka(w *kafka.Writer, ms []*kafka.Message, resp func([]*kafka.Message)) error {
 	temp := make([]kafka.Message, 0, len(ms))
 	for _, v := range ms {
 		//easy.log.Printf("kafka|topic=%v p=%v,key=%v,value=%v", v.Topic, v.Partition, string(v.Key), string(v.Value))
@@ -176,7 +176,7 @@ func (easy *EasyKafka) sendToKafka(w *kafka.Writer, ms []*kafka.Message, resp ch
 	}
 
 	if resp != nil {
-		resp <- ms
+		resp(ms)
 	}
 	return nil
 }

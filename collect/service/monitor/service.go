@@ -146,6 +146,9 @@ func (s *Service) clearLog() {
 				chainInfoLog := fmt.Sprintf("%v_%v", "chain_info_log", datePath)
 				_ = util.DeleteFile(path.Join(p, chainInfoLog))
 
+				monitorLog := fmt.Sprintf("%v_%v", "monitor_log", datePath)
+				_ = util.DeleteFile(path.Join(p, monitorLog))
+
 				t = t.Add(-24 * time.Hour)
 			}
 		}

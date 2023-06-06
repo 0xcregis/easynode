@@ -6,6 +6,8 @@ type DbMonitorAddressInterface interface {
 	GetNodeTokenByEmail(email string) (error, *NodeToken)
 	AddMonitorAddress(blockchain int64, address *MonitorAddress) error
 	GetAddressByToken(blockchain int64, token string) ([]*MonitorAddress, error)
+	GetAddressByToken2(token string) ([]*MonitorAddress, error)
+	DelMonitorAddress(blockchain int64, token string, address string) error
 	NewTx(blockchain int64, tx []*Tx) error
 	NewBlock(blockchain int64, block []*Block) error
 	NewReceipt(blockchain int64, receipt []*Receipt) error

@@ -18,6 +18,23 @@ type ClickhouseDb struct {
 	baseConfig *config.Config
 }
 
+func (m *ClickhouseDb) GetAddressByToken2(token string) ([]*service.MonitorAddress, error) {
+	var list []*service.MonitorAddress
+	err := m.baseDb.Table(m.baseConfig.BaseDb.AddressTable).Select("address,block_chain").Where("token=?", token).Group("address,block_chain").Scan(&list).Error
+	if err != nil || len(list) < 1 {
+		return nil, errors.New("no record")
+	}
+	return list, nil
+}
+
+func (m *ClickhouseDb) DelMonitorAddress(blockchain int64, token string, address string) error {
+	err := m.baseDb.Table(m.baseConfig.BaseDb.AddressTable).Where("token=? and address=? and block_chain=?", token, address, blockchain).Delete(service.MonitorAddress{}).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (m *ClickhouseDb) NewToken(token *service.NodeToken) error {
 	return m.baseDb.Table(m.baseConfig.BaseDb.TokenTable).Create(token).Error
 }

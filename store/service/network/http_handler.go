@@ -69,6 +69,46 @@ func (s *Server) NewToken(c *gin.Context) {
 	s.Success(c, token.String(), c.Request.URL.Path)
 }
 
+func (s *Server) DelMonitorAddress(c *gin.Context) {
+
+	bs, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		s.Error(c, c.Request.URL.Path, err.Error())
+		return
+	}
+
+	r := gjson.ParseBytes(bs)
+	token := r.Get("token").String()
+	address := r.Get("address").String()
+	blockchain := r.Get("blockChain").Int()
+	err = s.db.DelMonitorAddress(blockchain, token, address)
+	if err != nil {
+		s.Error(c, c.Request.URL.Path, err.Error())
+		return
+	}
+
+	s.Success(c, nil, c.Request.URL.Path)
+}
+
+func (s *Server) GetMonitorAddress(c *gin.Context) {
+	bs, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		s.Error(c, c.Request.URL.Path, err.Error())
+		return
+	}
+
+	r := gjson.ParseBytes(bs)
+	token := r.Get("token").String()
+
+	list, err := s.db.GetAddressByToken2(token)
+	if err != nil {
+		s.Error(c, c.Request.URL.Path, err.Error())
+		return
+	}
+
+	s.Success(c, list, c.Request.URL.Path)
+}
+
 func (s *Server) MonitorAddress(c *gin.Context) {
 
 	bs, err := ioutil.ReadAll(c.Request.Body)

@@ -91,6 +91,8 @@ func startStore(configPath string) {
 	root.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: xLog.Out}))
 	root.POST("/monitor/token", srv.NewToken)
 	root.POST("/monitor/address", srv.MonitorAddress)
+	root.POST("/monitor/address/get", srv.GetMonitorAddress)
+	root.POST("/monitor/address/delete", srv.DelMonitorAddress)
 
 	//ws 协议
 	wsServer := network.NewWsHandler(&cfg, xLog)

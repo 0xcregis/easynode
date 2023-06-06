@@ -16,3 +16,8 @@ func TestTron_GetBlockByNumber(t *testing.T) {
 	c := Init2()
 	log.Println(c.GetBlockByNumber(205, "49477110", true))
 }
+
+func TestTron_GetBlockReceiptByBlockNumber(t *testing.T) {
+	c := Init2()
+	log.Println(c.GetBlockReceiptByBlockNumber(205, "34222872"))
+}

@@ -47,3 +47,13 @@ func TestClickhouseDb_GetNodeTokenByEmail(t *testing.T) {
 	s := Init()
 	log.Println(s.GetNodeTokenByEmail("125@qq.com"))
 }
+
+func TestClickhouseDb_GetAddressByToken2(t *testing.T) {
+	s := Init()
+	log.Println(s.GetAddressByToken2("36ee0ad5-f4bc-4bca-a1dc-c51db006e249"))
+}
+
+func TestClickhouseDb_DelMonitorAddress(t *testing.T) {
+	s := Init()
+	log.Println(s.DelMonitorAddress(200, "36ee0ad5-f4bc-4bca-a1dc-c51db006e249", "0x28c6c06298d514db089934071355e5743bf21d61"))
+}

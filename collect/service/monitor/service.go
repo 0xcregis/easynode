@@ -42,8 +42,57 @@ func (s *Service) Start() {
 	//错误交易重试
 	s.CheckErrTx()
 
+	//任务执行失败，重试5次
+	s.CheckNodeTask()
+
 	//构建合约数据
 	s.CheckContract()
+}
+
+func (s *Service) CheckNodeTask() {
+	go func() {
+
+		for true {
+			<-time.After(2 * time.Hour)
+
+			for blockchain, store := range s.taskStore {
+
+				list, err := store.GetAllKeyForNodeTask(blockchain)
+				if err != nil {
+					continue
+				}
+
+				tempList := make([]*kafka.Message, 0, 10)
+
+				for _, hash := range list {
+					count, task, err := store.GetNodeTask(blockchain, hash)
+					if err != nil || count >= 5 || task == nil {
+						continue
+					}
+
+					task.CreateTime = time.Now()
+					task.LogTime = time.Now()
+					if task.BlockChain < 1 {
+						task.BlockChain = int(blockchain)
+					}
+					task.Id = time.Now().UnixNano()
+					task.TaskStatus = 0
+					bs, _ := json.Marshal(task)
+					msg := &kafka.Message{Topic: fmt.Sprintf("task_%v", blockchain), Partition: 0, Key: []byte(task.NodeId), Value: bs}
+					tempList = append(tempList, msg)
+
+					if len(tempList) > 10 {
+						s.kafkaSender[blockchain] <- tempList
+						tempList = tempList[len(tempList):]
+					}
+				}
+
+				s.kafkaSender[blockchain] <- tempList
+			}
+
+		}
+
+	}()
 }
 
 func (s *Service) CheckContract() {

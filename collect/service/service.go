@@ -13,11 +13,13 @@ type Common interface {
 
 type StoreTaskInterface interface {
 	SendNodeTask(list []*NodeTask, partitions []int64) []*kafka.Message
+
 	UpdateNodeTaskStatus(key string, status int) error
 	UpdateNodeTaskStatusWithBatch(keys []string, status int) error
-	GetNodeTask(key string) (*NodeTask, error)
-	ResetNodeTask(oldKey, key string) error
+	GetNodeTask(blockchain int64, key string) (int64, *NodeTask, error)
+	ResetNodeTask(blockchain int64, oldKey, key string) error
 	StoreNodeTask(key string, task *NodeTask)
+	GetAllKeyForNodeTask(blockchain int64) ([]string, error)
 
 	StoreContract(blockchain int64, contract string, data string) error
 	GetContract(blockchain int64, contract string) (string, error)

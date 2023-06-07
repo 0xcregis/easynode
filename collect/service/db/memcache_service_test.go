@@ -48,3 +48,13 @@ func TestService_StoreNodeTask(t *testing.T) {
 	n.LogTime = time.Now()
 	s.StoreNodeTask("200_txId_0x5e856ee7b4b43efc94a0fd18960e2a085243b2cd5b0db798d6709bd67c39ac0d", &n)
 }
+
+func TestService_ResetNodeTask(t *testing.T) {
+	s := Init()
+	s.ResetNodeTask(205, "205_blockId_00000000020b63869ef3d3034d74200e46ba92271c286277b707ab47065b134f", "205_blockId_00000000020b63869ef3d3034d74200e46ba92271c286277b707ab47065b134f")
+}
+
+func TestService_UpdateNodeTaskStatus(t *testing.T) {
+	s := Init()
+	s.UpdateNodeTaskStatus("205_blockId_00000000020b63ef30ebe0507220f0d256cf09b3b76aa1db7d70bf73c7c1251e", 1)
+}

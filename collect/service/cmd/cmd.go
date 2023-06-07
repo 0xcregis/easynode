@@ -356,7 +356,7 @@ func (c *Cmd) execSingleReceipt(taskReceipt *service.NodeTask, log *logrus.Entry
 
 		//reset key
 		newKey := fmt.Sprintf(KeyReceiptById, taskReceipt.BlockChain, receipt.TransactionHash)
-		_ = c.taskStore.ResetNodeTask(key, newKey)
+		_ = c.taskStore.ResetNodeTask(int64(taskReceipt.BlockChain), key, newKey)
 
 		return []*kafka.Message{m}
 	}
@@ -532,7 +532,7 @@ func (c *Cmd) execSingleTx(taskTx *service.NodeTask, log *logrus.Entry) []*kafka
 
 	//reset key
 	newKey := fmt.Sprintf(KeyTxById, taskTx.BlockChain, tx.TxHash)
-	_ = c.taskStore.ResetNodeTask(key, newKey)
+	_ = c.taskStore.ResetNodeTask(int64(taskTx.BlockChain), key, newKey)
 
 	//kf <- []*kafka.Message{m}
 	return []*kafka.Message{m}
@@ -607,7 +607,7 @@ func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Mes
 
 			//重置缓存key
 			newKey := fmt.Sprintf(KeyBlockById, taskBlock.BlockChain, block.BlockHash)
-			_ = c.taskStore.ResetNodeTask(key, newKey)
+			_ = c.taskStore.ResetNodeTask(int64(taskBlock.BlockChain), key, newKey)
 
 			//区块发送到Kafka
 			kf <- []*kafka.Message{m}

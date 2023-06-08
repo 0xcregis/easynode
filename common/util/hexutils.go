@@ -171,7 +171,7 @@ func Hex2Address(hex string) (string, error) {
 
 func HexToInt(hex string) (string, error) {
 	if len(hex) < 1 {
-		return hex, errors.New("params is null")
+		return hex, errors.New("params is null when HexToInt is called")
 	}
 	if !strings.HasPrefix(hex, "0x") {
 		hex = "0x" + hex
@@ -181,7 +181,7 @@ func HexToInt(hex string) (string, error) {
 	if b {
 		return i.String(), nil
 	} else {
-		return hex, errors.New("parse error")
+		return hex, errors.New("parse error when HexToInt is called")
 	}
 
 	//i, err := strconv.ParseInt(hex, 0, 64)

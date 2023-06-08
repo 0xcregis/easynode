@@ -123,11 +123,10 @@ func (easy *EasyKafka) Write(c Config, ch chan []*kafka.Message, resp func([]*ka
 	running := true
 
 	go func(ctx context.Context) {
-		for true {
-			select {
-			case <-ctx.Done():
-				running = false
-			}
+		select {
+		case <-ctx.Done():
+			running = false
+			return
 		}
 	}(ctx)
 

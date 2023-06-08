@@ -159,7 +159,7 @@ func (ws *WsHandler) Start(ctx *gin.Context, w http.ResponseWriter, r *http.Requ
 	}
 
 	//延迟时间，待其他服务清理
-	<-time.After(3 * time.Second)
+	<-time.After(10 * time.Second)
 
 }
 

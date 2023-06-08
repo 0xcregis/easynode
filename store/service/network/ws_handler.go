@@ -214,6 +214,9 @@ func (ws *WsHandler) sendMessage(token string, SubKafkaConfig *config.KafkaConfi
 		}
 	}(blockChain, token, ctx)
 
+	//控制消息处理速度
+	lock := make(chan int64, 2)
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -245,6 +248,8 @@ func (ws *WsHandler) sendMessage(token string, SubKafkaConfig *config.KafkaConfi
 					continue
 				}
 
+				lock <- msg.Offset
+
 				//检查地址 是否和交易 相关
 				{
 					has := false
@@ -255,6 +260,9 @@ func (ws *WsHandler) sendMessage(token string, SubKafkaConfig *config.KafkaConfi
 					if blockChain == 205 {
 						has = ws.CheckAddressForTron(msg, list)
 					}
+
+					//不论结果，都需要释放
+					<-lock
 
 					if !has {
 						continue

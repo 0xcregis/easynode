@@ -174,6 +174,7 @@ func (ws *WsHandler) sendMessageEx(token string, kafkaConfig map[int64]*config.K
 func (ws *WsHandler) sendMessage(token string, SubKafkaConfig *config.KafkaConfig, kafkaConfig *config.KafkaConfig, blockChain int64, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
 	sender := make(chan []*kafka.Message, 10)
+	list := make([]*service.MonitorAddress, 0, 10)
 	go func(ctx context.Context) {
 		broker := fmt.Sprintf("%v:%v", kafkaConfig.Host, kafkaConfig.Port)
 		group := fmt.Sprintf("group_push_%v", kafkaConfig.Group)
@@ -190,6 +191,28 @@ func (ws *WsHandler) sendMessage(token string, SubKafkaConfig *config.KafkaConfi
 			ws.kafka.Write(kafkaClient.Config{Brokers: []string{broker}}, sender, nil, c)
 		}(ctx)
 	}
+
+	go func(blockChain int64, token string, ctx2 context.Context) {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				l, err := ws.db.GetAddressByToken(blockChain, token)
+				if err != nil {
+					continue
+				}
+
+				list = list[len(list):]
+				if len(l) > 0 {
+					list = append(list, l...)
+				}
+
+			case <-ctx2.Done():
+				return
+			}
+		}
+	}(blockChain, token, ctx)
 
 	for {
 		select {
@@ -217,8 +240,8 @@ func (ws *WsHandler) sendMessage(token string, SubKafkaConfig *config.KafkaConfi
 				// 其他各类交易
 				//该用户订阅的地址 是否和该交易相匹配
 				//不匹配 则返回
-				list, err := ws.db.GetAddressByToken(blockChain, token)
-				if err != nil || len(list) < 1 {
+				//list, err := ws.db.GetAddressByToken(blockChain, token)
+				if len(list) < 1 {
 					continue
 				}
 

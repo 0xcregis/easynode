@@ -174,7 +174,10 @@ func (ws *WsHandler) sendMessageEx(token string, kafkaConfig map[int64]*config.K
 func (ws *WsHandler) sendMessage(token string, SubKafkaConfig *config.KafkaConfig, kafkaConfig *config.KafkaConfig, blockChain int64, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
 	sender := make(chan []*kafka.Message, 10)
-	list := make([]*service.MonitorAddress, 0, 10)
+	addressList := make([]*service.MonitorAddress, 0, 10)
+	//控制消息处理速度
+	lock := make(chan int64, 2)
+
 	go func(ctx context.Context) {
 		broker := fmt.Sprintf("%v:%v", kafkaConfig.Host, kafkaConfig.Port)
 		group := fmt.Sprintf("group_push_%v", kafkaConfig.Group)
@@ -203,9 +206,9 @@ func (ws *WsHandler) sendMessage(token string, SubKafkaConfig *config.KafkaConfi
 					continue
 				}
 
-				list = list[len(list):]
+				addressList = addressList[len(addressList):]
 				if len(l) > 0 {
-					list = append(list, l...)
+					addressList = append(addressList, l...)
 				}
 
 			case <-ctx2.Done():
@@ -213,9 +216,6 @@ func (ws *WsHandler) sendMessage(token string, SubKafkaConfig *config.KafkaConfi
 			}
 		}
 	}(blockChain, token, ctx)
-
-	//控制消息处理速度
-	lock := make(chan int64, 2)
 
 	for {
 		select {
@@ -230,69 +230,68 @@ func (ws *WsHandler) sendMessage(token string, SubKafkaConfig *config.KafkaConfi
 		case msg := <-receiver:
 			//消息过滤
 			//根据这个用户（token）最新的订阅命令，筛选符合条件的交易且推送出去
-			//todo filter
 			if _, ok := ws.cmdMap[token]; !ok {
 				//用户不在线
 				continue
-			} else {
-				//用户在线
-				if _, ok := ws.cmdMap[token]; !ok { //没有订阅
-					continue
-				}
-
-				// 其他各类交易
-				//该用户订阅的地址 是否和该交易相匹配
-				//不匹配 则返回
-				//list, err := ws.db.GetAddressByToken(blockChain, token)
-				if len(list) < 1 {
-					continue
-				}
-
-				lock <- msg.Offset
-
-				//检查地址 是否和交易 相关
-				{
-					has := false
-					if blockChain == 200 {
-						has = ws.CheckAddressForEther(msg, list)
-					}
-
-					if blockChain == 205 {
-						has = ws.CheckAddressForTron(msg, list)
-					}
-
-					//不论结果，都需要释放
-					<-lock
-
-					if !has {
-						continue
-					}
-				}
-
 			}
 
-			data, err := service.ParseTx(blockChain, msg)
+			//用户在线 但没有订阅
+			if _, ok := ws.cmdMap[token]; !ok {
+				continue
+			}
+
+			//该用户无监控地址
+			if len(addressList) < 1 {
+				continue
+			}
+
+			//检查地址 是否和交易 相关
+			if !ws.checkTx(blockChain, msg, addressList, lock) {
+				continue
+			}
+
+			//parse tx
+			tx, err := service.ParseTx(blockChain, msg)
 			if err != nil {
 				ws.log.Warnf("ParseTx|blockchain:%v,kafka.msg:%v,err:%v", blockChain, string(msg.Value), err)
 				continue
 			}
-			wpm := service.WsPushMessage{Code: 1, BlockChain: blockChain, Data: data}
+
+			//push
+			wpm := service.WsPushMessage{Code: 1, BlockChain: blockChain, Data: tx}
 			bs, _ := json.Marshal(wpm)
 			err = ws.connMap[token].WriteMessage(websocket.TextMessage, bs)
 			if err != nil {
 				ws.log.Errorf("sendMessage|error=%v", err.Error())
 			}
 
+			//save to kafka
 			if SubKafkaConfig != nil {
-				r, _ := json.Marshal(data)
+				r, _ := json.Marshal(tx)
 				m := &kafka.Message{Topic: SubKafkaConfig.Topic, Key: []byte(uuid.New().String()), Value: r}
 				sender <- []*kafka.Message{m}
 			}
 
 		}
 
-		time.Sleep(1 * time.Second)
 	}
+}
+
+func (ws *WsHandler) checkTx(blockChain int64, msg *kafka.Message, list []*service.MonitorAddress, lock chan int64) bool {
+	lock <- msg.Offset
+	defer func() {
+		<-lock
+	}()
+
+	has := false
+	if blockChain == 200 {
+		has = ws.CheckAddressForEther(msg, list)
+	}
+
+	if blockChain == 205 {
+		has = ws.CheckAddressForTron(msg, list)
+	}
+	return has
 }
 
 func (ws *WsHandler) CheckAddressForEther(msg *kafka.Message, list []*service.MonitorAddress) bool {

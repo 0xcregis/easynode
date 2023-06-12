@@ -98,7 +98,7 @@ func (ws *WsHandler) Start(ctx *gin.Context, w http.ResponseWriter, r *http.Requ
 		return nil
 	})
 
-	//监听
+	//收到pong消息并处理
 	go func(PongCh chan string, ws *WsHandler, token string, cancel context.CancelFunc) {
 		ticker := time.NewTicker(10 * time.Minute)
 		defer ticker.Stop()

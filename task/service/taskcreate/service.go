@@ -24,32 +24,41 @@ type Service struct {
 	nodeId      string
 	kafkaClient *kafkaClient.EasyKafka
 	sendCh      chan []*kafka.Message
-	receiverCh  chan []*kafka.Message
+	//receiverCh  chan []*kafka.Message
 }
 
-func (s *Service) Start() {
+func (s *Service) Start(ctx context.Context) {
 
-	go s.startKafka()
+	go s.startKafka(ctx)
 
-	go s.updateLatestBlock()
+	go s.updateLatestBlock(ctx)
 
-	go func() {
-		for true {
+	go func(ctx context.Context) {
+		interrupt := true
+		for interrupt {
 			//处理自产生区块任务，包括：区块
 			s.startCreateBlockProc()
-			<-time.After(40 * time.Second)
+			//<-time.After(20 * time.Second)
+			select {
+			case <-ctx.Done():
+				interrupt = false
+				break
+			default:
+				time.Sleep(20 * time.Second)
+				continue
+			}
 		}
-	}()
+	}(ctx)
 }
 
-func (s *Service) startKafka() {
+func (s *Service) startKafka(ctx context.Context) {
 	broker := fmt.Sprintf("%v:%v", s.config.TaskKafka.Host, s.config.TaskKafka.Port)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	s.kafkaClient.Write(kafkaClient.Config{Brokers: []string{broker}}, s.sendCh, nil, ctx)
 }
 
-func (s *Service) updateLatestBlock() {
+func (s *Service) updateLatestBlock(ctx context.Context) {
 	log := s.log.WithFields(logrus.Fields{
 		"model": "updateLatestBlock",
 		"id":    time.Now().UnixMilli(),
@@ -60,7 +69,8 @@ func (s *Service) updateLatestBlock() {
 		return
 	}
 
-	for true {
+	interrupt := true
+	for interrupt {
 
 		for _, v := range blockConfigs {
 
@@ -82,7 +92,14 @@ func (s *Service) updateLatestBlock() {
 			}
 		}
 
-		<-time.After(20 * time.Second)
+		select {
+		case <-ctx.Done():
+			interrupt = false
+			break
+		default:
+			time.Sleep(10 * time.Second)
+			continue
+		}
 	}
 }
 func (s *Service) startCreateBlockProc() {
@@ -181,9 +198,12 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 	recentNumber := UsedMaxNumber - 1
 
 	//生成任务并保存
-	err = s.store.AddNodeTask(list)
+	msgList, err := s.store.AddNodeTask(list)
 	if err != nil {
 		return err
+	}
+	if len(msgList) > 0 {
+		s.sendCh <- msgList
 	}
 
 	//更新最新下发的区块高度
@@ -199,8 +219,8 @@ func NewService(config *config.Config) *Service {
 	xg := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFile("./log/task/create_task", 24*time.Hour)
 	kf := kafkaClient.NewEasyKafka(xg)
 	sendCh := make(chan []*kafka.Message, 5)
-	receiverCh := make(chan []*kafka.Message, 5)
-	store := db.NewFileTaskCreateService(config, sendCh, xg)
+	//receiverCh := make(chan []*kafka.Message, 5)
+	store := db.NewFileTaskCreateService(config, xg)
 	nodeId, err := util.GetLocalNodeId()
 	if err != nil {
 		panic(err)
@@ -212,6 +232,6 @@ func NewService(config *config.Config) *Service {
 		nodeId:      nodeId,
 		kafkaClient: kf,
 		sendCh:      sendCh,
-		receiverCh:  receiverCh,
+		//receiverCh:  receiverCh,
 	}
 }

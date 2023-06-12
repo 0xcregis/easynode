@@ -15,26 +15,26 @@ import (
 type TaskCreateFile struct {
 	config *config.Config
 	log    *xlog.XLog
-	sendCh chan []*kafka.Message
+	//sendCh chan []*kafka.Message
 }
 
-func NewFileTaskCreateService(config *config.Config, sendCh chan []*kafka.Message, xg *xlog.XLog) service.StoreTaskInterface {
+func NewFileTaskCreateService(config *config.Config, xg *xlog.XLog) service.StoreTaskInterface {
 	return &TaskCreateFile{
 		config: config,
 		log:    xg,
-		sendCh: sendCh,
+		//sendCh: sendCh,
 	}
 }
 
-func (t *TaskCreateFile) AddNodeTask(list []*service.NodeTask) error {
-	resultList := make([]*kafka.Message, 0)
+func (t *TaskCreateFile) AddNodeTask(list []*service.NodeTask) ([]*kafka.Message, error) {
+	resultList := make([]*kafka.Message, 0, 5)
 	for _, v := range list {
 		bs, _ := json.Marshal(v)
 		msg := &kafka.Message{Topic: fmt.Sprintf("task_%v", v.BlockChain), Partition: 0, Key: []byte(v.NodeId), Value: bs}
 		resultList = append(resultList, msg)
 	}
-	t.sendCh <- resultList
-	return nil
+	//t.sendCh <- resultList
+	return resultList, nil
 }
 
 func (t *TaskCreateFile) UpdateLastNumber(blockChainCode int64, latestNumber int64) error {

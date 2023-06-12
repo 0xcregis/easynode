@@ -425,7 +425,7 @@ func (e *Ether) SendEthReq(blockChain int64, reqBody string) (string, error) {
 	}
 
 	if blockChain == 200 {
-		return e.blockChainClient.EthSendRequestToChain(cluster.NodeUrl, cluster.NodeToken, reqBody)
+		return e.blockChainClient.SendRequestToChain(cluster.NodeUrl, cluster.NodeToken, reqBody)
 	}
 
 	return "", errors.New("blockChainCode is error")

@@ -74,7 +74,7 @@ func (t *Tron) GetBlockReceiptByBlockNumber(chainCode int64, number string) (str
 		return "", err
 	}
 	req = fmt.Sprintf(req, n)
-	return t.SendReq(chainCode, req, "walletsolidity/gettransactioninfobyblocknum")
+	return t.SendReq(chainCode, req, "wallet/gettransactioninfobyblocknum")
 }
 
 func (t *Tron) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string, error) {
@@ -161,7 +161,7 @@ func (t *Tron) SendJsonRpc(chainCode int64, req string) (string, error) {
 		return "", errors.New("blockchain node has not found")
 	}
 	url := fmt.Sprintf("%v/%v", cluster.NodeUrl, "jsonrpc")
-	return t.blockChainClient.EthSendRequestToChain(url, cluster.NodeToken, req)
+	return t.blockChainClient.SendRequestToChain(url, cluster.NodeToken, req)
 }
 
 func (t *Tron) Balance(chainCode int64, address string, tag string) (string, error) {

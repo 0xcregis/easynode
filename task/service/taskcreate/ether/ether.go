@@ -7,8 +7,8 @@ import (
 	"github.com/tidwall/gjson"
 	chainConfig "github.com/uduncloud/easynode/blockchain/config"
 	"github.com/uduncloud/easynode/blockchain/service"
+	"github.com/uduncloud/easynode/common/util"
 	"github.com/uduncloud/easynode/task/config"
-	"github.com/uduncloud/easynode/task/util"
 	"time"
 )
 
@@ -42,7 +42,7 @@ func (e *Ether) GetLatestBlockNumber(v *config.BlockConfig) (int64, error) {
 	}
 
 	number := gjson.Parse(jsonResult).Get("result").String()
-	lastNumber, err = util.HexToInt(number)
+	lastNumber, err = util.HexToInt2(number)
 	if err != nil {
 		log.Errorf("HexToInt|err=%v", err)
 		return 0, err

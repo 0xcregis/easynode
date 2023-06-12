@@ -40,7 +40,11 @@ func ParseTxForEther(body []byte) (*SubTx, error) {
 	input := root.Get("input").String()
 	r.Input = input
 	value := root.Get("value").String()
-	r.Value, _ = util.HexToInt(value)
+	v, err := util.HexToInt(value)
+	if err != nil {
+		return nil, err
+	}
+	r.Value = div(v, 18)
 	if len(input) > 5 {
 		//合约调用
 		r.TxType = 1
@@ -190,10 +194,12 @@ func ParseTxForTron(body []byte) (*SubTx, error) {
 	}
 	r.Input = input
 
-	if txType == "TransferContract" {
+	if txType == "TransferContract" { //普通交易
 		r.Value = div(v.Get("amount").String(), 6)
-	} else {
+	} else if txType == "TriggerSmartContract" { //合约调用
 		r.Value = "0"
+	} else { //其他
+		r.Value = v.String()
 	}
 
 	if !root.Get("receipt").Exists() { //收据不存在的交易，则放弃

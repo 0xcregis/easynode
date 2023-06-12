@@ -234,32 +234,35 @@ func (s *Service) ResetNodeTask(blockchain int64, oldKey, key string) error {
 	if err != nil {
 		return err
 	}
-	_ = s.cacheClient.HDel(context.Background(), ContractKey, oldKey)
+	_ = s.cacheClient.HDel(context.Background(), fmt.Sprintf(NodeTaskKey, task.BlockChain), oldKey)
 	s.StoreNodeTask(key, task)
 	return nil
 }
 
 func (s *Service) UpdateNodeTaskStatus(key string, status int) error {
 
+	strArray := strings.Split(key, "_")
+	var blockchain int64
+	if len(strArray) > 0 {
+		chain := strArray[0]
+		blockchain, _ = strconv.ParseInt(chain, 0, 64)
+	} else {
+		return errors.New(fmt.Sprintf("key is error,key:%v", key))
+	}
+
 	if status == 1 {
-		err := s.cacheClient.HDel(context.Background(), ContractKey, key).Err()
+		err := s.cacheClient.HDel(context.Background(), fmt.Sprintf(NodeTaskKey, blockchain), key).Err()
 		if err != nil {
 			s.log.Errorf("UpdateNodeTaskStatus|err=%v", err.Error())
 			return err
 		}
 	} else {
 
-		strArray := strings.Split(key, "_")
-
-		if len(strArray) > 0 {
-			chain := strArray[0]
-			blockchain, _ := strconv.ParseInt(chain, 0, 64)
-			_, task, err := s.GetNodeTask(blockchain, key)
-			if err == nil && task != nil {
-				task.TaskStatus = status
-				task.LogTime = time.Now()
-				s.StoreNodeTask(key, task)
-			}
+		_, task, err := s.GetNodeTask(blockchain, key)
+		if err == nil && task != nil {
+			task.TaskStatus = status
+			task.LogTime = time.Now()
+			s.StoreNodeTask(key, task)
 		}
 
 	}

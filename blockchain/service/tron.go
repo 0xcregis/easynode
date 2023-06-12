@@ -74,7 +74,7 @@ func (t *Tron) GetBlockReceiptByBlockNumber(chainCode int64, number string) (str
 		return "", err
 	}
 	req = fmt.Sprintf(req, n)
-	return t.SendReq(chainCode, req, "walletsolidity/gettransactioninfobyblocknum")
+	return t.SendReq(chainCode, req, "wallet/gettransactioninfobyblocknum")
 }
 
 func (t *Tron) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string, error) {

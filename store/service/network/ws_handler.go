@@ -198,6 +198,12 @@ func (ws *WsHandler) sendMessage(token string, SubKafkaConfig *config.KafkaConfi
 	go func(blockChain int64, token string, ctx2 context.Context) {
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
+
+		l, _ := ws.db.GetAddressByToken(blockChain, token)
+		if len(l) > 0 {
+			addressList = append(addressList, l...)
+		}
+
 		for {
 			select {
 			case <-ticker.C:
@@ -305,12 +311,6 @@ func (ws *WsHandler) CheckAddressForEther(msg *kafka.Message, list []*service.Mo
 			break
 		}
 
-		// 该交易是否是订阅的类型交易
-		//if v.TxType== tx.Type {
-		// has=true
-		//break
-		//}
-
 		// 普通交易且 地址包含订阅地址
 		if strings.HasPrefix(strings.ToLower(fromAddr), strings.ToLower(v.Address)) || strings.HasPrefix(strings.ToLower(toAddr), strings.ToLower(v.Address)) {
 			has = true
@@ -384,34 +384,29 @@ func (ws *WsHandler) CheckAddressForTron(msg *kafka.Message, list []*service.Mon
 			break
 		}
 
-		// 该交易是否是订阅的类型交易
-		//if v.TxType== tx.Type {
-		// has=true
-		//break
-		//}
+		var monitorAddr string
+		monitorAddr = v.Address
+
+		if strings.HasPrefix(v.Address, "0x") {
+			monitorAddr = strings.TrimLeft(v.Address, "0x") //去丢0x
+		}
+
+		if strings.HasPrefix(v.Address, "41") {
+			monitorAddr = strings.TrimLeft(v.Address, "41") //去丢41
+		}
+
+		if strings.HasPrefix(v.Address, "0x41") {
+			monitorAddr = strings.TrimLeft(v.Address, "0x41") //去丢41
+		}
 
 		// 普通交易且 地址包含订阅地址
 		if txType == "TransferContract" {
-			if strings.HasSuffix(fromAddr, v.Address) || strings.HasSuffix(toAddr, v.Address) {
+			if strings.HasSuffix(fromAddr, monitorAddr) || strings.HasSuffix(toAddr, monitorAddr) {
 				has = true
 				break
 			}
 		} else if txType == "TriggerSmartContract" {
-			//合约交易
-			var monitorAddr string
-			if strings.HasPrefix(v.Address, "0x") {
-				monitorAddr = strings.TrimLeft(v.Address, "0x") //去丢0x
-			}
-
-			if strings.HasPrefix(v.Address, "41") {
-				monitorAddr = strings.TrimLeft(v.Address, "41") //去丢41
-			}
-
-			if strings.HasPrefix(v.Address, "0x41") {
-				monitorAddr = strings.TrimLeft(v.Address, "0x41") //去丢41
-			}
-
-			//合约调用下的TRC20
+			//合约交易 合约调用下的TRC20
 			if len(logs) > 0 {
 				for _, v := range logs {
 

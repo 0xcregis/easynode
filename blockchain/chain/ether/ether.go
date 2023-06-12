@@ -52,7 +52,7 @@ func (e *Ether) GetTokenBalanceByHttp(host string, token string, contractAddress
 	panic("implement me")
 }
 
-func (e *Ether) EthSendRequestToChain(host string, token string, query string) (string, error) {
+func (e *Ether) SendRequestToChain(host string, token string, query string) (string, error) {
 
 	if len(token) > 1 {
 		host = fmt.Sprintf("%v/%v", host, token)

@@ -29,7 +29,7 @@ func NewChainClient() chain.BlockChain {
 	return &Tron{}
 }
 
-func (t *Tron) EthSendRequestToChain(host string, token string, query string) (string, error) {
+func (t *Tron) SendRequestToChain(host string, token string, query string) (string, error) {
 
 	//host = fmt.Sprintf("%v/%v", host, "jsonrpc")
 	payload := strings.NewReader(query)

@@ -161,7 +161,7 @@ func (t *Tron) SendJsonRpc(chainCode int64, req string) (string, error) {
 		return "", errors.New("blockchain node has not found")
 	}
 	url := fmt.Sprintf("%v/%v", cluster.NodeUrl, "jsonrpc")
-	return t.blockChainClient.EthSendRequestToChain(url, cluster.NodeToken, req)
+	return t.blockChainClient.SendRequestToChain(url, cluster.NodeToken, req)
 }
 
 func (t *Tron) Balance(chainCode int64, address string, tag string) (string, error) {

@@ -14,18 +14,18 @@ type Server struct {
 	log        *xlog.XLog
 	blockChain []int64
 	nodeId     string
-	cfg        *config.Config
-	db         DbApiInterface
+	cfg     *config.Config
+	handler TaskApiInterface
 }
 
 func NewServer(cfg *config.Config, blockChain []int64, log *xlog.XLog) *Server {
-	db := NewChService(cfg, log)
+	h := NewTaskHandler(cfg, log)
 	nodeId, err := util.GetLocalNodeId()
 	if err != nil {
 		panic(err)
 	}
 	return &Server{
-		db:         db,
+		handler:    h,
 		cfg:        cfg,
 		nodeId:     nodeId,
 		log:        log,
@@ -64,7 +64,7 @@ func (s *Server) PushBlockTask(c *gin.Context) {
 	}
 
 	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 2, TaskStatus: 0, NodeId: s.nodeId}
-	err = s.db.AddNodeTask(task)
+	err = s.handler.SendNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
@@ -72,84 +72,6 @@ func (s *Server) PushBlockTask(c *gin.Context) {
 
 	s.Success(c, nil, c.Request.URL.Path)
 }
-
-//func (s *Server) PushSyncTxTask(c *gin.Context) {
-//	bs, err := ioutil.ReadAll(c.Request.Body)
-//	if err != nil {
-//		s.Error(c, c.Request.URL.Path, err.Error())
-//		return
-//	}
-//
-//	r := gjson.ParseBytes(bs)
-//	blockChain := r.Get("blockChain").Int()
-//	has := false
-//	for _, c := range s.blockChain {
-//		if c == blockChain {
-//			has = true
-//			break
-//		}
-//	}
-//	if !has {
-//		s.Error(c, c.Request.URL.Path, errors.New("blockchain is wrong").Error())
-//		return
-//	}
-//
-//	txHash := r.Get("txHash").String()
-//
-//	if len(txHash) < 10 {
-//		s.Error(c, c.Request.URL.Path, errors.New("txHash is wrong").Error())
-//		return
-//	}
-//
-//	task := &NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 1, TaskStatus: 0, NodeId: s.nodeId}
-//	err = s.db.AddNodeTask(task)
-//	if err != nil {
-//		s.Error(c, c.Request.URL.Path, err.Error())
-//		return
-//	}
-//
-//	//开启超时定时器
-//	ch := make(chan *Tx)
-//	con, cancel := context.WithCancel(context.Background())
-//
-//	go func(ctx context.Context, respCh chan *Tx) {
-//
-//		has := true
-//		for has {
-//			//轮询的查询clickhouse
-//
-//			tx, err := s.db.QueryTxFromCh(blockChain, txHash)
-//			if err == nil && tx != nil {
-//				has = false
-//				respCh <- tx
-//				break
-//			}
-//
-//			if err != nil {
-//				s.log.Errorf("QueryTxFromCh|error=%v", err)
-//			}
-//			//设定结束条件：超时、已查询到结果
-//			select {
-//			case <-con.Done():
-//				has = false
-//			default:
-//				has = true
-//				<-time.After(2 * time.Second)
-//			}
-//
-//		}
-//	}(con, ch)
-//
-//	//返回
-//	select {
-//	case <-time.After(1 * time.Minute):
-//		cancel()
-//		s.Error(c, c.Request.URL.Path, "request is timeout")
-//	case tx := <-ch:
-//		cancel()
-//		s.Success(c, tx, c.Request.URL.Path)
-//	}
-//}
 
 func (s *Server) PushTxTask(c *gin.Context) {
 
@@ -181,7 +103,7 @@ func (s *Server) PushTxTask(c *gin.Context) {
 	}
 
 	task := &NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 1, TaskStatus: 0, NodeId: s.nodeId}
-	err = s.db.AddNodeTask(task)
+	err = s.handler.SendNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
@@ -221,7 +143,7 @@ func (s *Server) PushTxsTask(c *gin.Context) {
 	}
 
 	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 4, TaskStatus: 0, NodeId: s.nodeId}
-	err = s.db.AddNodeTask(task)
+	err = s.handler.SendNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
@@ -260,7 +182,7 @@ func (s *Server) PushReceiptTask(c *gin.Context) {
 	}
 
 	task := &NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 3, TaskStatus: 0, NodeId: s.nodeId}
-	err = s.db.AddNodeTask(task)
+	err = s.handler.SendNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
@@ -300,7 +222,7 @@ func (s *Server) PushReceiptsTask(c *gin.Context) {
 	}
 
 	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 5, TaskStatus: 0, NodeId: s.nodeId}
-	err = s.db.AddNodeTask(task)
+	err = s.handler.SendNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return

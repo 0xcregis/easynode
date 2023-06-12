@@ -8,7 +8,7 @@ const (
 type MonitorAddress struct {
 	Id         int64  `json:"id" gorm:"column:id"`
 	Token      string `json:"token" gorm:"column:token"`
-	Address    string `json:"address" gorm:"column:address"`
+	Address    string `json:"address" gorm:"column:address"` //hex
 	BlockChain int64  `json:"blockChain" gorm:"column:block_chain"`
 	TxType     string `json:"txType" gorm:"column:tx_type"`
 }

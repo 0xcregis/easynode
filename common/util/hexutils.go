@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"math/big"
+	"strconv"
 	"strings"
 )
 
@@ -189,4 +190,18 @@ func HexToInt(hex string) (string, error) {
 	//	return hex, err
 	//}
 	//return fmt.Sprintf("%v", i), nil
+}
+
+func HexToInt2(hex string) (int64, error) {
+	if len(hex) < 1 {
+		return 0, errors.New("params is null")
+	}
+	if !strings.HasPrefix(hex, "0x") {
+		return 0, errors.New("input string must be hex string")
+	}
+	i, err := strconv.ParseInt(hex, 0, 64)
+	if err != nil {
+		return 0, err
+	}
+	return i, nil
 }

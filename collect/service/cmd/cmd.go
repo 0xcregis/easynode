@@ -220,24 +220,46 @@ func (c *Cmd) HandlerKafkaRespMessage(msList []*kafka.Message) {
 
 		//交易消息回调，如下处理
 		r := gjson.ParseBytes(msg.Value)
-		//log.Printf("topic=%v,msg.value=%v", topic, string(msg.Value))
+		log.Printf("topic=%v,msg.offset=%v", topic, msg.Offset)
 
 		//交易
 		if c.chain.TxTask != nil && topic == c.chain.TxTask.Kafka.Topic {
-			txHash := r.Get("hash").String()
-			ids = append(ids, fmt.Sprintf(KeyTxById, c.chain.BlockChainCode, txHash))
+			var txHash string
+			if c.chain.BlockChainCode == 200 {
+				txHash = r.Get("hash").String()
+			} else if c.chain.BlockChainCode == 205 {
+				tx := r.Get("tx").String()
+				txHash = gjson.Parse(tx).Get("txID").String()
+			}
+
+			if len(txHash) > 0 {
+				ids = append(ids, fmt.Sprintf(KeyTxById, c.chain.BlockChainCode, txHash))
+			}
 		}
 
 		//收据
 		if c.chain.ReceiptTask != nil && topic == c.chain.ReceiptTask.Kafka.Topic {
-			txHash := r.Get("transactionHash").String()
+			var txHash string
+			if c.chain.BlockChainCode == 200 {
+				txHash = r.Get("transactionHash").String()
+			} else if c.chain.BlockChainCode == 205 {
+				txHash = r.Get("id").String()
+			}
 			ids = append(ids, fmt.Sprintf(KeyReceiptById, c.chain.BlockChainCode, txHash))
 		}
 
 		//区块
 		if c.chain.BlockTask != nil && topic == c.chain.BlockTask.Kafka.Topic {
-			blockHash := r.Get("hash").String()
-			ids = append(ids, fmt.Sprintf(KeyBlockById, c.chain.BlockChainCode, blockHash))
+			var blockHash string
+			if c.chain.BlockChainCode == 200 {
+				blockHash = r.Get("hash").String()
+			} else if c.chain.BlockChainCode == 205 {
+				blockHash = r.Get("blockID").String()
+			}
+
+			if len(blockHash) > 0 {
+				ids = append(ids, fmt.Sprintf(KeyBlockById, c.chain.BlockChainCode, blockHash))
+			}
 		}
 
 	}
@@ -304,18 +326,17 @@ func (c *Cmd) execMultiReceipt(taskReceipt *service.NodeTask, log *logrus.Entry)
 		return nil
 	}
 
-	receiptTaskList := make([]*service.NodeTask, 0, 10)
+	//receiptTaskList := make([]*service.NodeTask, 0, 10)
 	kafkaMsgList := make([]*kafka.Message, 0, 10)
 
 	for _, receipt := range receiptList {
 
 		t := &service.NodeTask{NodeId: taskReceipt.NodeId, BlockNumber: taskReceipt.BlockNumber, BlockHash: taskReceipt.BlockHash, TxHash: receipt.TransactionHash, TaskType: 3, BlockChain: taskReceipt.BlockChain, TaskStatus: 3, Id: time.Now().UnixNano(), CreateTime: time.Now(), LogTime: time.Now()}
-		receiptTaskList = append(receiptTaskList, t)
+		//receiptTaskList = append(receiptTaskList, t)
 		m, err := c.HandlerReceipt(receipt)
 		if err != nil {
 			log.Errorf("HandlerReceipt|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err.Error(), taskReceipt.Id)
 			t.TaskStatus = 2 //失败
-			//continue
 		} else {
 			t.TaskStatus = 4
 			kafkaMsgList = append(kafkaMsgList, m)

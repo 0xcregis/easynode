@@ -101,9 +101,9 @@ func NewTron(cluster []*config.NodeCluster, xlog *xlog.XLog) API {
 }
 
 func (t *Tron) GetBlockByHash(chainCode int64, hash string, flag bool) (string, error) {
-	req := `{"value": "%v"}`
-	req = fmt.Sprintf(req, hash)
-	res, err := t.SendReq(chainCode, req, "wallet/getblockbyid")
+	req := `{"id_or_num": "%v","detail":%v}`
+	req = fmt.Sprintf(req, hash, flag)
+	res, err := t.SendReq(chainCode, req, "wallet/getblock")
 	if err != nil {
 		return "", err
 	}
@@ -120,14 +120,14 @@ func (t *Tron) GetBlockByHash(chainCode int64, hash string, flag bool) (string, 
 }
 
 func (t *Tron) GetBlockByNumber(chainCode int64, number string, flag bool) (string, error) {
-	req := `{"num": %v}`
+	req := `{"id_or_num": "%v","detail":%v}`
 
 	n, err := strconv.ParseInt(number, 0, 64)
 	if err != nil {
 		return "", err
 	}
-	req = fmt.Sprintf(req, n)
-	res, err := t.SendReq(chainCode, req, "wallet/getblockbynum")
+	req = fmt.Sprintf(req, n, flag)
+	res, err := t.SendReq(chainCode, req, "wallet/getblock")
 	if err != nil {
 		return "", err
 	}

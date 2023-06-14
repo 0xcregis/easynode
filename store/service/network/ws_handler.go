@@ -163,15 +163,15 @@ func (ws *WsHandler) Start(ctx *gin.Context, w http.ResponseWriter, r *http.Requ
 
 }
 
-func (ws *WsHandler) sendMessageEx(token string, kafkaConfig map[int64]*config.KafkaConfig, subKafkaConfig map[int64]*config.KafkaConfig, ctx context.Context) {
+func (ws *WsHandler) sendMessageEx(code int64, token string, kafkaConfig map[int64]*config.KafkaConfig, subKafkaConfig map[int64]*config.KafkaConfig, ctx context.Context) {
 	for b, k := range kafkaConfig {
 		s := subKafkaConfig[b]
-		go ws.sendMessage(token, s, k, b, ctx)
+		go ws.sendMessage(code, token, s, k, b, ctx)
 	}
 }
 
 // kafka->ws.push
-func (ws *WsHandler) sendMessage(token string, SubKafkaConfig *config.KafkaConfig, kafkaConfig *config.KafkaConfig, blockChain int64, ctx context.Context) {
+func (ws *WsHandler) sendMessage(code int64, token string, SubKafkaConfig *config.KafkaConfig, kafkaConfig *config.KafkaConfig, blockChain int64, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
 	sender := make(chan []*kafka.Message, 10)
 	addressList := make([]*service.MonitorAddress, 0, 10)
@@ -251,9 +251,14 @@ func (ws *WsHandler) sendMessage(token string, SubKafkaConfig *config.KafkaConfi
 				continue
 			}
 
-			//检查地址 是否和交易 相关
-			if !ws.checkTx(blockChain, msg, addressList, lock) {
-				continue
+			switch code {
+
+			case 1: //资产交易
+				//检查地址 是否和交易 相关
+				if !ws.checkTx(blockChain, msg, addressList, lock) {
+					continue
+				}
+
 			}
 
 			//parse tx
@@ -264,7 +269,7 @@ func (ws *WsHandler) sendMessage(token string, SubKafkaConfig *config.KafkaConfi
 			}
 
 			//push
-			wpm := service.WsPushMessage{Code: 1, BlockChain: blockChain, Data: tx}
+			wpm := service.WsPushMessage{Code: code, BlockChain: blockChain, Data: tx}
 			bs, _ := json.Marshal(wpm)
 			err = ws.connMap[token].WriteMessage(websocket.TextMessage, bs)
 			if err != nil {
@@ -501,7 +506,7 @@ func (ws *WsHandler) handlerMessage(ctx context.Context, token string, c *websoc
 			ws.cmdMap[token] = msg
 			kafkaCtx, cancel := context.WithCancel(ctx)
 			ws.ctxMap[token] = cancel
-			ws.sendMessageEx(token, txKafkaParams, subKafkaParams, kafkaCtx)
+			ws.sendMessageEx(msg.Code, token, txKafkaParams, subKafkaParams, kafkaCtx)
 		}
 	} else if msg.Code == 2 {
 		if f, ok := ws.ctxMap[token]; ok {

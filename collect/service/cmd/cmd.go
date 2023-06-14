@@ -7,11 +7,9 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
-	"github.com/tidwall/gjson"
 	"github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service"
-	"github.com/uduncloud/easynode/collect/service/cmd/chain/ether"
-	"github.com/uduncloud/easynode/collect/service/cmd/chain/tron2"
+	"github.com/uduncloud/easynode/collect/service/cmd/chain"
 	"github.com/uduncloud/easynode/collect/service/db"
 	kafkaClient "github.com/uduncloud/easynode/common/kafka"
 	"github.com/uduncloud/easynode/common/util"
@@ -48,14 +46,14 @@ func NewService(cfg *config.Chain, logConfig *config.LogConfig) *Cmd {
 	kafkaCh := make(chan []*kafka.Message, 10)
 	store := db.NewTaskCacheService(cfg, log)
 	kf := kafkaClient.NewEasyKafka(log)
-	chain := getBlockChainService(cfg, logConfig, store)
+	chainApi := getBlockChainApi(cfg, logConfig, store)
 
 	return &Cmd{
 		log:         log,
 		taskStore:   store,
 		chain:       cfg,
 		kafka:       kf,
-		blockChain:  chain,
+		blockChain:  chainApi,
 		txChan:      txChan,
 		receiptChan: receiptChan,
 		blockChan:   blockChan,
@@ -63,14 +61,8 @@ func NewService(cfg *config.Chain, logConfig *config.LogConfig) *Cmd {
 	}
 }
 
-func getBlockChainService(c *config.Chain, logConfig *config.LogConfig, store service.StoreTaskInterface) service.BlockChainInterface {
-	x := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/chain_info", logConfig.Path), 24*time.Hour)
-	var srv service.BlockChainInterface
-	if c.BlockChainCode == 200 {
-		srv = ether.NewService(c, x, store)
-	} else if c.BlockChainCode == 205 {
-		srv = tron2.NewService(c, x, store)
-	}
+func getBlockChainApi(c *config.Chain, logConfig *config.LogConfig, store service.StoreTaskInterface) service.BlockChainInterface {
+	srv := chain.GetBlockchain(c.BlockChainCode, c, store, logConfig)
 	//第三方节点监控
 	srv.Monitor()
 	return srv
@@ -216,22 +208,13 @@ func (c *Cmd) HandlerKafkaRespMessage(msList []*kafka.Message) {
 	})
 
 	for _, msg := range msList {
-		topic := msg.Topic
-
 		//交易消息回调，如下处理
-		r := gjson.ParseBytes(msg.Value)
+		topic := msg.Topic
 		log.Printf("topic=%v,msg.offset=%v", topic, msg.Offset)
 
 		//交易
 		if c.chain.TxTask != nil && topic == c.chain.TxTask.Kafka.Topic {
-			var txHash string
-			if c.chain.BlockChainCode == 200 {
-				txHash = r.Get("hash").String()
-			} else if c.chain.BlockChainCode == 205 {
-				tx := r.Get("tx").String()
-				txHash = gjson.Parse(tx).Get("txID").String()
-			}
-
+			txHash := chain.GetTxHashFromKafka(c.chain.BlockChainCode, msg.Value)
 			if len(txHash) > 0 {
 				ids = append(ids, fmt.Sprintf(KeyTxById, c.chain.BlockChainCode, txHash))
 			}
@@ -239,24 +222,15 @@ func (c *Cmd) HandlerKafkaRespMessage(msList []*kafka.Message) {
 
 		//收据
 		if c.chain.ReceiptTask != nil && topic == c.chain.ReceiptTask.Kafka.Topic {
-			var txHash string
-			if c.chain.BlockChainCode == 200 {
-				txHash = r.Get("transactionHash").String()
-			} else if c.chain.BlockChainCode == 205 {
-				txHash = r.Get("id").String()
+			txHash := chain.GetReceiptHashFromKafka(c.chain.BlockChainCode, msg.Value)
+			if len(txHash) > 0 {
+				ids = append(ids, fmt.Sprintf(KeyReceiptById, c.chain.BlockChainCode, txHash))
 			}
-			ids = append(ids, fmt.Sprintf(KeyReceiptById, c.chain.BlockChainCode, txHash))
 		}
 
 		//区块
 		if c.chain.BlockTask != nil && topic == c.chain.BlockTask.Kafka.Topic {
-			var blockHash string
-			if c.chain.BlockChainCode == 200 {
-				blockHash = r.Get("hash").String()
-			} else if c.chain.BlockChainCode == 205 {
-				blockHash = r.Get("blockID").String()
-			}
-
+			blockHash := chain.GetBlockHashFromKafka(c.chain.BlockChainCode, msg.Value)
 			if len(blockHash) > 0 {
 				ids = append(ids, fmt.Sprintf(KeyBlockById, c.chain.BlockChainCode, blockHash))
 			}

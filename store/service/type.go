@@ -234,7 +234,7 @@ type Block struct {
 
 type WsReqMessage struct {
 	Id         int64
-	Code       int64   //1:订阅资产转移交易，2:取消订阅资产转移交易
+	Code       int64   //1:订阅资产转移交易，2:取消订阅资产转移交易 ，3:质押资产 4:取消质押资产 5:解锁资产 6:取消解锁资产 7:提取 8:取消提取 9:代理资源 10:取消代理资源 11:回收资源 12:取消回收资源
 	BlockChain []int64 `json:"blockChain"`
 	Params     map[string]string
 }

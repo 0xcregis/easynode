@@ -241,38 +241,29 @@ func (s *Service) buildContract(receipt *service.Receipt) *service.Receipt {
 
 	// 仅有 合约交易，才能有logs
 	for _, g := range receipt.Logs {
-		//忽律 非转移 事件
-		if len(g.Topics) < 3 || g.Topics[0] != service.EthTopic {
-			continue
-		}
 
-		//忽略 721协议
-		if len(g.Topics) == 4 && g.Topics[0] == service.EthTopic {
-			if len(g.Data) == 2 {
-				continue
+		//erc20
+		if len(g.Topics) == 3 && g.Topics[0] == service.EthTopic {
+			//处理 普通资产和 20 协议 资产转移
+			mp := make(map[string]interface{}, 2)
+			token, err := s.getToken(int64(s.chain.BlockChainCode), receipt.From, g.Address)
+			if err != nil {
+				has = false
+				break
 			}
-		}
-		//todo 忽略1155 协议
 
-		//处理 普通资产和 20 协议 资产转移
-		mp := make(map[string]interface{}, 2)
-		token, err := s.getToken(int64(s.chain.BlockChainCode), receipt.From, g.Address)
-		if err != nil {
-			has = false
-			break
-		}
+			m := gjson.Parse(token).Map()
+			if v, ok := m["decimals"]; ok {
+				mp["contractDecimals"] = v.String()
+			} else {
+				has = false
+				break
+			}
 
-		m := gjson.Parse(token).Map()
-		if v, ok := m["decimals"]; ok {
-			mp["contractDecimals"] = v.String()
-		} else {
-			has = false
-			break
+			mp["data"] = g.Data
+			bs, _ := json.Marshal(mp)
+			g.Data = string(bs)
 		}
-
-		mp["data"] = g.Data
-		bs, _ := json.Marshal(mp)
-		g.Data = string(bs)
 	}
 
 	if has {

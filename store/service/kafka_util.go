@@ -22,6 +22,28 @@ func ParseTx(blockchain int64, msg *kafka.Message) (*SubTx, error) {
 	return nil, nil
 }
 
+func GetTxType(blockchain int64, msg *kafka.Message) (uint64, error) {
+	if blockchain == 200 {
+		return GetTxTypeForEther(msg.Value)
+	}
+	if blockchain == 205 {
+		return GetTxTypeForTron(msg.Value)
+	}
+	return 0, nil
+}
+
+func GetTxTypeForEther(body []byte) (uint64, error) {
+	root := gjson.ParseBytes(body)
+	input := root.Get("input").String()
+	if len(input) > 5 {
+		//合约调用
+		return 1, nil
+	} else {
+		//普通资产转移
+		return 2, nil
+	}
+}
+
 func ParseTxForEther(body []byte) (*SubTx, error) {
 	var r SubTx
 	root := gjson.ParseBytes(body)
@@ -45,13 +67,12 @@ func ParseTxForEther(body []byte) (*SubTx, error) {
 		return nil, err
 	}
 	r.Value = div(v, 18)
-	if len(input) > 5 {
-		//合约调用
-		r.TxType = 1
-	} else {
-		//普通资产转移
-		r.TxType = 2
+
+	tp, err := GetTxTypeForEther(body)
+	if err != nil {
+		return nil, err
 	}
+	r.TxType = tp
 
 	txTime := root.Get("txTime").String()
 	r.TxTime = txTime
@@ -138,6 +159,40 @@ func ParseTxForEther(body []byte) (*SubTx, error) {
 	return &r, nil
 }
 
+func GetTxTypeForTron(body []byte) (uint64, error) {
+
+	root := gjson.ParseBytes(body)
+	txBody := root.Get("tx").String()
+	if len(txBody) < 5 {
+		return 0, errors.New("tx is error")
+	}
+
+	txRoot := gjson.Parse(txBody)
+
+	var tx uint64
+	txType := txRoot.Get("raw_data.contract.0.type").String()
+	if txType == "TransferContract" {
+		tx = 2
+	} else if txType == "TriggerSmartContract" {
+		tx = 1
+	} else if txType == "DelegateResourceContract" {
+		tx = 3
+	} else if txType == "UnDelegateResourceContract" {
+		tx = 4
+	} else if txType == "AccountCreateContract" {
+		tx = 5
+	} else if txType == "FreezeBalanceV2Contract" {
+		tx = 6
+	} else if txType == "UnfreezeBalanceV2Contract" {
+		tx = 7
+	} else if txType == "WithdrawExpireUnfreezeContract" {
+		tx = 8
+	} else {
+		return 0, errors.New("undefined type of tx")
+	}
+	return tx, nil
+}
+
 func ParseTxForTron(body []byte) (*SubTx, error) {
 
 	root := gjson.ParseBytes(body)
@@ -165,27 +220,37 @@ func ParseTxForTron(body []byte) (*SubTx, error) {
 	r.BlockHash = blockHash
 	txTime := txRoot.Get("raw_data.timestamp").String()
 	r.TxTime = txTime
-	txType := txRoot.Get("raw_data.contract.0.type").String()
-	if txType == "TransferContract" {
-		r.TxType = 2
-	} else if txType == "TriggerSmartContract" {
-		r.TxType = 1
+
+	tp, err := GetTxTypeForTron(body)
+	if err != nil {
+		return nil, err
 	}
+	r.TxType = tp
+
 	v := txRoot.Get("raw_data.contract.0.parameter.value")
 	from := v.Get("owner_address").String()
 	r.From = from
 	var to string
+	//DelegateResourceContract
 	if v.Get("receiver_address").Exists() {
 		to = v.Get("receiver_address").String()
 	}
 
+	//TransferContract 转帐
 	if v.Get("to_address").Exists() {
 		to = v.Get("to_address").String()
 	}
 
+	//TriggerSmartContract
 	if v.Get("contract_address").Exists() {
 		to = v.Get("contract_address").String()
 	}
+
+	//AccountCreateContract
+	if v.Get("account_address").Exists() {
+		to = v.Get("account_address").String()
+	}
+
 	r.To = to
 
 	var input string
@@ -194,9 +259,9 @@ func ParseTxForTron(body []byte) (*SubTx, error) {
 	}
 	r.Input = input
 
-	if txType == "TransferContract" { //普通交易
+	if r.TxType == 2 { //普通交易
 		r.Value = div(v.Get("amount").String(), 6)
-	} else if txType == "TriggerSmartContract" { //合约调用
+	} else if r.TxType == 1 { //合约调用
 		r.Value = "0"
 	} else { //其他
 		r.Value = v.String()

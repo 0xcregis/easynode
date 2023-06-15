@@ -246,41 +246,33 @@ func (s *Service) GetBlockByHash(blockHash string, cfg *config.BlockTask, eLog *
 }
 
 func (s *Service) buildContract(receipt *service.TronReceipt) *service.TronReceipt {
+
 	has := true
 
 	//仅合约交易 有log
 	for _, g := range receipt.Log {
 
-		//忽略非资产转移事件
-		if len(g.Topics) < 3 || g.Topics[0] != service.TronTopic {
-			continue
-		}
-
-		//忽略 721协议
-		if len(g.Topics) == 4 && g.Topics[0] == service.TronTopic {
-			if len(g.Data) == 0 {
-				continue
+		//trc20合约
+		if len(g.Topics) == 3 && g.Topics[0] == service.TronTopic {
+			mp := make(map[string]interface{}, 2)
+			contractAddr := fmt.Sprintf("41%v", g.Address)
+			token, err := s.getToken(int64(s.chain.BlockChainCode), contractAddr, contractAddr)
+			if err != nil {
+				has = false
+				break
 			}
-		}
+			m := gjson.Parse(token).Map()
+			if v, ok := m["decimals"]; ok {
+				mp["contractDecimals"] = v.String()
+			} else {
+				has = false
+				break
+			}
 
-		mp := make(map[string]interface{}, 2)
-		contractAddr := fmt.Sprintf("41%v", g.Address)
-		token, err := s.getToken(int64(s.chain.BlockChainCode), contractAddr, contractAddr)
-		if err != nil {
-			has = false
-			break
+			mp["data"] = g.Data
+			bs, _ := json.Marshal(mp)
+			g.Data = string(bs)
 		}
-		m := gjson.Parse(token).Map()
-		if v, ok := m["decimals"]; ok {
-			mp["contractDecimals"] = v.String()
-		} else {
-			has = false
-			break
-		}
-
-		mp["data"] = g.Data
-		bs, _ := json.Marshal(mp)
-		g.Data = string(bs)
 	}
 
 	if has {

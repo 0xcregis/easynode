@@ -71,24 +71,14 @@ func (s *Service) updateLatestBlock(ctx context.Context) {
 
 	interrupt := true
 	for interrupt {
-
 		for _, v := range blockConfigs {
-
-			log.Infof("blockConfig=%+v", v)
-
-			//获取公链最新区块高度
-			if v.BlockChainCode == 200 {
-				//ether
-				err := s.GetLastBlockNumberForEther(v)
-				if err != nil {
-					log.Errorf("GetLastBlockNumberForEther|err=%v", err)
-				}
-			} else if v.BlockChainCode == 205 {
-				//tron
-				err := s.GetLastBlockNumberForTron(v)
-				if err != nil {
-					log.Errorf("GetLastBlockNumberForTron|err=%v", err)
-				}
+			lastNumber, err := GetLastBlockNumber(v.BlockChainCode, s.log, v)
+			if err != nil {
+				log.Errorf("GetLastBlockNumber|err=%v", err)
+				continue
+			}
+			if lastNumber > 1 {
+				_ = s.store.UpdateLastNumber(v.BlockChainCode, lastNumber)
 			}
 		}
 

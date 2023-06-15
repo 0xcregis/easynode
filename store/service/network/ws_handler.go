@@ -32,15 +32,15 @@ type WsHandler struct {
 	ctxMap  map[string]context.CancelFunc
 }
 
-func NewWsHandler(cfg *config.Config, xlog *xlog.XLog) *WsHandler {
-	kfk := kafkaClient.NewEasyKafka(xlog)
-	db := db2.NewChService(cfg, xlog)
+func NewWsHandler(cfg *config.Config, log *xlog.XLog) *WsHandler {
+	kfk := kafkaClient.NewEasyKafka(log)
+	db := db2.NewChService(cfg, log)
 	mp := make(map[int64]*config.Chain, 2)
 	for _, v := range cfg.Chains {
 		mp[v.BlockChain] = v
 	}
 	return &WsHandler{
-		log:     xlog.WithField("model", "wsSrv"),
+		log:     log.WithField("model", "wsSrv"),
 		db:      db,
 		cfg:     mp,
 		kafka:   kfk,
@@ -58,7 +58,7 @@ func (ws *WsHandler) Start(ctx *gin.Context, w http.ResponseWriter, r *http.Requ
 		_, _ = ctx.Writer.Write([]byte(resp))
 		return
 	}
-	upgrader := websocket.Upgrader{
+	upGrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 		// 解决跨域问题
@@ -66,15 +66,17 @@ func (ws *WsHandler) Start(ctx *gin.Context, w http.ResponseWriter, r *http.Requ
 			return true
 		},
 	} // use default options
-	c, err := upgrader.Upgrade(w, r, nil)
+	c, err := upGrader.Upgrade(w, r, nil)
 	if err != nil {
 		ws.log.Errorf("upgrade|err=%v", err)
 		return
 	}
-	defer c.Close()
+	defer func() {
+		_ = c.Close()
+	}()
 
 	if old, ok := ws.connMap[token]; ok {
-		old.Close()
+		_ = old.Close()
 		delete(ws.connMap, token)
 	}
 	ws.connMap[token] = c
@@ -83,7 +85,7 @@ func (ws *WsHandler) Start(ctx *gin.Context, w http.ResponseWriter, r *http.Requ
 		err := c.WriteControl(websocket.PongMessage, []byte(message), time.Now().Add(1*time.Second))
 		if err == websocket.ErrCloseSent {
 			return nil
-		} else if e, ok := err.(net.Error); ok && e.Temporary() {
+		} else if e, ok := err.(net.Error); ok && e.Timeout() {
 			return nil
 		}
 		return err
@@ -143,7 +145,7 @@ func (ws *WsHandler) Start(ctx *gin.Context, w http.ResponseWriter, r *http.Requ
 	//read cmd
 	for {
 
-		log := ws.log.WithFields(logrus.Fields{
+		logger := ws.log.WithFields(logrus.Fields{
 			"id":    time.Now().UnixMilli(),
 			"model": "ws.start",
 		})
@@ -155,7 +157,7 @@ func (ws *WsHandler) Start(ctx *gin.Context, w http.ResponseWriter, r *http.Requ
 			break
 		}
 		//log.Printf("ReadMessage: %s", message)
-		ws.handlerMessage(cx, token, c, mt, message, log)
+		ws.handlerMessage(cx, token, c, mt, message, logger)
 	}
 
 	//延迟时间，待其他服务清理
@@ -251,14 +253,51 @@ func (ws *WsHandler) sendMessage(code int64, token string, SubKafkaConfig *confi
 				continue
 			}
 
+			tp, err := service.GetTxType(blockChain, msg)
+			if err != nil {
+				continue
+			}
+
+			push := false
 			switch code {
-
 			case 1: //资产交易
-				//检查地址 是否和交易 相关
-				if !ws.checkTx(blockChain, msg, addressList, lock) {
-					continue
+				if tp == 1 || tp == 2 {
+					push = true
 				}
+			case 3: //质押
+				if tp == 6 {
+					push = true
+				}
+			case 5: //解质押
+				if tp == 7 {
+					push = true
+				}
+			case 7: //解提取
+				if tp == 8 {
+					push = true
+				}
+			case 9: //代理资源
+				if tp == 3 {
+					push = true
+				}
+			case 11: //代理资源（资源回收）
+				if tp == 4 {
+					push = true
+				}
+			case 13: //激活账户
+				if tp == 5 {
+					push = true
+				}
+			}
 
+			//不符合订阅条件
+			if !push {
+				continue
+			}
+
+			//检查地址 是否和交易 相关
+			if !ws.checkTx(blockChain, msg, addressList, lock) {
+				continue
 			}
 
 			//parse tx
@@ -269,11 +308,13 @@ func (ws *WsHandler) sendMessage(code int64, token string, SubKafkaConfig *confi
 			}
 
 			//push
-			wpm := service.WsPushMessage{Code: code, BlockChain: blockChain, Data: tx}
-			bs, _ := json.Marshal(wpm)
-			err = ws.connMap[token].WriteMessage(websocket.TextMessage, bs)
-			if err != nil {
-				ws.log.Errorf("sendMessage|error=%v", err.Error())
+			if push {
+				wpm := service.WsPushMessage{Code: code, BlockChain: blockChain, Data: tx}
+				bs, _ := json.Marshal(wpm)
+				err = ws.connMap[token].WriteMessage(websocket.TextMessage, bs)
+				if err != nil {
+					ws.log.Errorf("sendMessage|error=%v", err.Error())
+				}
 			}
 
 			//save to kafka
@@ -367,12 +408,29 @@ func (ws *WsHandler) CheckAddressForTron(msg *kafka.Message, list []*service.Mon
 	var fromAddr, toAddr string
 	var logs []gjson.Result
 	var internalTransactions []gjson.Result
+
 	if txType == "TransferContract" {
 		fromAddr = r.Get("parameter.value.owner_address").String()
 		toAddr = r.Get("parameter.value.to_address").String()
 		//r.Get("parameter.value.amount").String()
-	} else if txType == "TriggerSmartContract" {
+	}
 
+	//DelegateResourceContract,UnDelegateResourceContract
+	if r.Get("receiver_address").Exists() {
+		toAddr = r.Get("receiver_address").String()
+	}
+
+	//TriggerSmartContract
+	if r.Get("contract_address").Exists() {
+		toAddr = r.Get("contract_address").String()
+	}
+
+	//AccountCreateContract
+	if r.Get("account_address").Exists() {
+		toAddr = r.Get("account_address").String()
+	}
+
+	if txType == "TriggerSmartContract" {
 		receipt := root.Get("receipt").String()
 		receiptRoot := gjson.Parse(receipt)
 		if receiptRoot.Get("receipt.result").String() != "SUCCESS" {
@@ -405,12 +463,12 @@ func (ws *WsHandler) CheckAddressForTron(msg *kafka.Message, list []*service.Mon
 		}
 
 		// 普通交易且 地址包含订阅地址
-		if txType == "TransferContract" {
-			if strings.HasSuffix(fromAddr, monitorAddr) || strings.HasSuffix(toAddr, monitorAddr) {
-				has = true
-				break
-			}
-		} else if txType == "TriggerSmartContract" {
+		if strings.HasSuffix(fromAddr, monitorAddr) || strings.HasSuffix(toAddr, monitorAddr) {
+			has = true
+			break
+		}
+
+		if txType == "TriggerSmartContract" {
 			//合约交易 合约调用下的TRC20
 			if len(logs) > 0 {
 				for _, v := range logs {

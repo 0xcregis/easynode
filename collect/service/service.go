@@ -17,18 +17,19 @@ type StoreTaskInterface interface {
 	UpdateNodeTaskStatus(key string, status int) error
 	UpdateNodeTaskStatusWithBatch(keys []string, status int) error
 	GetNodeTask(blockchain int64, key string) (int64, *NodeTask, error)
+	DelNodeTask(blockchain int64, key string) (int64, *NodeTask, error)
 	ResetNodeTask(blockchain int64, oldKey, key string) error
 	StoreNodeTask(key string, task *NodeTask)
 	GetAllKeyForNodeTask(blockchain int64) ([]string, error)
 
 	StoreContract(blockchain int64, contract string, data string) error
 	GetContract(blockchain int64, contract string) (string, error)
-	GetAllKeyForContract(blockchain int64, key string) ([]string, error)
+	GetAllKeyForContract(blockchain int64) ([]string, error)
 
 	StoreErrTxNodeTask(blockchain int64, key string, data any) error
 	GetErrTxNodeTask(blockchain int64, key string) (int64, string, error)
 	DelErrTxNodeTask(blockchain int64, key string) (string, error)
-	GetAllKeyForErrTx(blockchain int64, key string) ([]string, error)
+	GetAllKeyForErrTx(blockchain int64) ([]string, error)
 }
 
 // BlockChainInterface 公链接口

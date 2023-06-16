@@ -70,6 +70,12 @@ func (s *Service) CheckNodeTask() {
 						continue
 					}
 
+					//清理 已经重试成功的交易
+					if count < 5 && time.Now().Sub(task.LogTime) >= 24*time.Hour {
+						_, _, _ = store.DelNodeTask(blockchain, hash)
+						continue
+					}
+
 					task.CreateTime = time.Now()
 					task.LogTime = time.Now()
 					if task.BlockChain < 1 {
@@ -100,11 +106,11 @@ func (s *Service) CheckContract() {
 	go func() {
 
 		for true {
-			<-time.After(30 * time.Minute)
+			<-time.After(1 * time.Hour)
 
 			for blockchain, store := range s.taskStore {
 
-				list, err := store.GetAllKeyForContract(blockchain, "")
+				list, err := store.GetAllKeyForContract(blockchain)
 				if err != nil {
 					continue
 				}
@@ -130,11 +136,11 @@ func (s *Service) CheckErrTx() {
 	go func() {
 
 		for true {
-			<-time.After(20 * time.Minute)
+			<-time.After(3 * time.Hour)
 
 			for blockchain, store := range s.taskStore {
 
-				list, err := store.GetAllKeyForErrTx(blockchain, "")
+				list, err := store.GetAllKeyForErrTx(blockchain)
 				if err != nil {
 					continue
 				}
@@ -150,6 +156,13 @@ func (s *Service) CheckErrTx() {
 					//todo 重发交易任务
 					var v service.NodeTask
 					_ = json.Unmarshal([]byte(data), &v)
+
+					//清理 已经重试成功的交易
+					if count < 5 && time.Now().Sub(v.LogTime) >= 24*time.Hour {
+						_, _ = store.DelErrTxNodeTask(blockchain, hash)
+						continue
+					}
+
 					v.CreateTime = time.Now()
 					v.LogTime = time.Now()
 					if v.BlockChain < 1 {

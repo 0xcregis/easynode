@@ -30,6 +30,15 @@ type Service struct {
 	cacheClient *redis.Client
 }
 
+func (s *Service) DelNodeTask(blockchain int64, key string) (int64, *service.NodeTask, error) {
+	c, task, err := s.GetNodeTask(blockchain, key)
+	if err != nil {
+		return c, nil, err
+	}
+	_ = s.cacheClient.HDel(context.Background(), fmt.Sprintf(NodeTaskKey, task.BlockChain), key)
+	return c, task, nil
+}
+
 func (s *Service) DelErrTxNodeTask(blockchain int64, key string) (string, error) {
 	_, task, err := s.GetErrTxNodeTask(blockchain, key)
 	if err != nil || task == "" {
@@ -59,7 +68,7 @@ func (s *Service) GetAllKeyForNodeTask(blockchain int64) ([]string, error) {
 	return list, nil
 }
 
-func (s *Service) GetAllKeyForContract(blockchain int64, key string) ([]string, error) {
+func (s *Service) GetAllKeyForContract(blockchain int64) ([]string, error) {
 	list, err := s.cacheClient.HKeys(context.Background(), fmt.Sprintf(ContractKey, blockchain)).Result()
 	if err != nil {
 		s.log.Warnf("GetAllKeyForContract|err=%v", err.Error())
@@ -74,7 +83,7 @@ func (s *Service) GetAllKeyForContract(blockchain int64, key string) ([]string, 
 	return list, nil
 }
 
-func (s *Service) GetAllKeyForErrTx(blockchain int64, key string) ([]string, error) {
+func (s *Service) GetAllKeyForErrTx(blockchain int64) ([]string, error) {
 	list, err := s.cacheClient.HKeys(context.Background(), fmt.Sprintf(ErrTxKey, blockchain)).Result()
 	if err != nil {
 		s.log.Warnf("GetAllKeyForErrTx|err=%v", err.Error())
@@ -202,7 +211,7 @@ func (s *Service) GetNodeTask(blockchain int64, key string) (int64, *service.Nod
 	return count, &t, nil
 }
 
-// StoreExecTask key which tx:tx_txHash,receipt:receipt_txHash, block: block_number_blockHash
+// StoreNodeTask StoreExecTask key which tx:tx_txHash,receipt:receipt_txHash, block: block_number_blockHash
 func (s *Service) StoreNodeTask(key string, task *service.NodeTask) {
 
 	c, d, err := s.GetNodeTask(int64(task.BlockChain), key)
@@ -278,31 +287,11 @@ func (s *Service) UpdateNodeTaskStatusWithBatch(keys []string, status int) error
 }
 
 func NewTaskCacheService(cfg *config.Chain, x *xlog.XLog) service.StoreTaskInterface {
-	//opt := func(o *store.Options) {
-	//	o.Expiration = 1 * time.Hour
-	//}
-	//
-	//var store store.StoreInterface
-
 	client := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%v:%v", cfg.Redis.Addr, cfg.Redis.Port),
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
-
-	//if cfg.Redis == nil {
-	//	c, _ := bigcache.New(context.Background(), bigcache.DefaultConfig(30*time.Minute))
-	//	store = bigcacheStore.NewBigcache(c, opt)
-	//} else {
-	//	store = redisStore.NewRedis(redis.NewClient(&redis.Options{
-	//		Addr:         fmt.Sprintf("%v:%v", cfg.Redis.Addr, cfg.Redis.Port),
-	//		DB:           cfg.Redis.DB,
-	//		DialTimeout:  time.Second,
-	//		ReadTimeout:  time.Second,
-	//		WriteTimeout: time.Second}), opt)
-	//}
-
-	//cacheClient := cache.New[string](store)
 	return &Service{
 		log:         x,
 		cacheClient: client,

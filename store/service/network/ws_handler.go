@@ -18,6 +18,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -50,14 +51,31 @@ func NewWsHandler(cfg *config.Config, log *xlog.XLog) *WsHandler {
 	}
 }
 
-func (ws *WsHandler) Start(ctx *gin.Context, w http.ResponseWriter, r *http.Request) {
+func (ws *WsHandler) Sub2(ctx *gin.Context, w http.ResponseWriter, r *http.Request) {
 
+	chainCode := ctx.Query("chainCode")
 	token := ctx.Param("token")
 	if len(token) < 1 {
 		resp := "{\"code\":1,\"data\":\"not found token\"}"
 		_, _ = ctx.Writer.Write([]byte(resp))
 		return
 	}
+
+	if len(chainCode) > 0 {
+		token = fmt.Sprintf("%v_%v", chainCode, token)
+	}
+
+	ws.Sub(ctx, w, r, token)
+}
+
+func (ws *WsHandler) Sub(ctx *gin.Context, w http.ResponseWriter, r *http.Request, token string) {
+
+	//token := ctx.Param("token")
+	//if len(token) < 1 {
+	//	resp := "{\"code\":1,\"data\":\"not found token\"}"
+	//	_, _ = ctx.Writer.Write([]byte(resp))
+	//	return
+	//}
 	upGrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -111,11 +129,11 @@ func (ws *WsHandler) Start(ctx *gin.Context, w http.ResponseWriter, r *http.Requ
 				continue
 			case <-ticker.C: //已经超时，仍然未收到客户端的响应
 				//清理
-				delete(ws.cmdMap, token)
-				if c, ok := ws.connMap[token]; ok {
-					_ = c.Close()
-				}
-				delete(ws.connMap, token)
+				//delete(ws.cmdMap, token)
+				//if c, ok := ws.connMap[token]; ok {
+				//	_ = c.Close()
+				//}
+				//delete(ws.connMap, token)
 				cancel()
 				return
 			}
@@ -142,26 +160,41 @@ func (ws *WsHandler) Start(ctx *gin.Context, w http.ResponseWriter, r *http.Requ
 	//tx->push
 	//go ws.sendMessage(token, ws.cfg.KafkaCfg["Tx"], ws.cfg.BlockChain, cx)
 
+	interrupt := true
 	//read cmd
-	for {
+	for interrupt {
+		select {
+		case <-cx.Done():
+			//清理
+			delete(ws.cmdMap, token)
+			if c, ok := ws.connMap[token]; ok {
+				_ = c.Close()
+			}
+			delete(ws.connMap, token)
+			if f, ok := ws.ctxMap[token]; ok {
+				f()
+			}
+			delete(ws.ctxMap, token)
+			interrupt = false
+		default:
+			logger := ws.log.WithFields(logrus.Fields{
+				"id":    time.Now().UnixMilli(),
+				"model": "ws.start",
+			})
 
-		logger := ws.log.WithFields(logrus.Fields{
-			"id":    time.Now().UnixMilli(),
-			"model": "ws.start",
-		})
-
-		mt, message, err := c.ReadMessage()
-		if err != nil {
-			fmt.Printf("ReadMessage|err=%v", err)
-			cancel()
-			break
+			mt, message, err := c.ReadMessage()
+			if err != nil {
+				fmt.Printf("ReadMessage|err=%v", err)
+				cancel()
+				break
+			}
+			//log.Printf("ReadMessage: %s", message)
+			ws.handlerMessage(cx, token, c, mt, message, logger)
 		}
-		//log.Printf("ReadMessage: %s", message)
-		ws.handlerMessage(cx, token, c, mt, message, logger)
 	}
 
 	//延迟时间，待其他服务清理
-	<-time.After(10 * time.Second)
+	<-time.After(4 * time.Second)
 
 }
 
@@ -200,6 +233,13 @@ func (ws *WsHandler) sendMessage(code int64, token string, SubKafkaConfig *confi
 	go func(blockChain int64, token string, ctx2 context.Context) {
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
+
+		if strings.Contains(token, "_") {
+			ls := strings.Split(token, "_")
+			if len(ls) == 2 {
+				token = ls[1]
+			}
+		}
 
 		l, _ := ws.db.GetAddressByToken(blockChain, token)
 		if len(l) > 0 {
@@ -409,25 +449,26 @@ func (ws *WsHandler) CheckAddressForTron(msg *kafka.Message, list []*service.Mon
 	var logs []gjson.Result
 	var internalTransactions []gjson.Result
 
+	fromAddr = r.Get("parameter.value.owner_address").String()
+
 	if txType == "TransferContract" {
-		fromAddr = r.Get("parameter.value.owner_address").String()
 		toAddr = r.Get("parameter.value.to_address").String()
 		//r.Get("parameter.value.amount").String()
 	}
 
 	//DelegateResourceContract,UnDelegateResourceContract
-	if r.Get("receiver_address").Exists() {
-		toAddr = r.Get("receiver_address").String()
+	if r.Get("parameter.value.receiver_address").Exists() {
+		toAddr = r.Get("parameter.value.receiver_address").String()
 	}
 
 	//TriggerSmartContract
-	if r.Get("contract_address").Exists() {
-		toAddr = r.Get("contract_address").String()
+	if r.Get("parameter.value.contract_address").Exists() {
+		toAddr = r.Get("parameter.value.contract_address").String()
 	}
 
 	//AccountCreateContract
-	if r.Get("account_address").Exists() {
-		toAddr = r.Get("account_address").String()
+	if r.Get("parameter.value.account_address").Exists() {
+		toAddr = r.Get("parameter.value.account_address").String()
 	}
 
 	if txType == "TriggerSmartContract" {
@@ -518,6 +559,20 @@ func (ws *WsHandler) handlerMessage(ctx context.Context, token string, c *websoc
 		ws.returnMsg(errMsg, log, mt, c)
 		return
 	}
+
+	// 如果请求路径中 包含了 chainCode ,则 直接使用路径 chainCode,消息体中该参数忽略
+	if strings.Contains(token, "_") {
+		ls := strings.Split(token, "_")
+		code, _ := strconv.ParseInt(ls[0], 0, 64)
+		if len(ls) == 2 {
+			msg.BlockChain = []int64{code}
+		} else {
+			errMsg := &service.WsRespMessage{Id: msg.Id, Code: msg.Code, Err: "params of path is error", Params: msg.Params, Status: 1, BlockChain: msg.BlockChain, Resp: nil}
+			ws.returnMsg(errMsg, log, mt, c)
+			return
+		}
+	}
+
 	//初始化返回
 	returnMsg.Id = msg.Id
 	returnMsg.Code = msg.Code

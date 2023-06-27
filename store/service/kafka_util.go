@@ -217,8 +217,9 @@ func ParseTxForTron(body []byte) (*SubTx, error) {
 
 	hash := txRoot.Get("txID").String()
 	r.Hash = hash
-	blockHash := txRoot.Get("raw_data.ref_block_hash").String()
-	r.BlockHash = blockHash
+	//tron block_hash 比较特殊，是hash 部分，暂时不返回了
+	//blockHash := txRoot.Get("raw_data.ref_block_hash").String()
+	//r.BlockHash = blockHash
 	txTime := txRoot.Get("raw_data.timestamp").String()
 	r.TxTime = txTime
 
@@ -230,7 +231,7 @@ func ParseTxForTron(body []byte) (*SubTx, error) {
 
 	v := txRoot.Get("raw_data.contract.0.parameter.value")
 	from := v.Get("owner_address").String()
-	r.From = from
+	r.From = util.HexToAddress(from).Base58()
 	var to string
 	//DelegateResourceContract
 	if v.Get("receiver_address").Exists() {
@@ -252,7 +253,7 @@ func ParseTxForTron(body []byte) (*SubTx, error) {
 		to = v.Get("account_address").String()
 	}
 
-	r.To = to
+	r.To = util.HexToAddress(to).Base58()
 
 	var input string
 	if v.Get("data").Exists() {
@@ -327,10 +328,14 @@ func ParseTxForTron(body []byte) (*SubTx, error) {
 				from = tps[1].String()
 				to = tps[2].String()
 				var m ContractTx
-				m.Contract = contract
+				m.Contract = util.HexToAddress(fmt.Sprintf("41%v", contract)).Base58()
 				m.Value = data
-				m.From, _ = util.Hex2Address(from)
-				m.To, _ = util.Hex2Address(to)
+
+				from, _ := util.Hex2Address2(from)
+				m.From = util.HexToAddress(from).Base58()
+
+				to, _ := util.Hex2Address2(to)
+				m.To = util.HexToAddress(to).Base58()
 				m.Method = "Transfer"
 				contractTx = append(contractTx, &m)
 			}

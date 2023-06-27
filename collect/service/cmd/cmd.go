@@ -129,19 +129,21 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 		c.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: topic, Group: group, Partition: c.chain.TaskKafka.Partition, StartOffset: c.chain.TaskKafka.StartOffset}, receiver, ctx)
 	}()
 
+	log := c.log.WithFields(logrus.Fields{"model": "Execution", "id": time.Now().UnixMilli()})
+
 	for true {
 		select {
 		case msg := <-receiver:
-			c.log.Printf("Read NodeTask offset=%v,topic=%v,value=%v", msg.Offset, msg.Topic, string(msg.Value))
+			//log.Printf("Read NodeTask offset=%v,topic=%v,value=%v", msg.Offset, msg.Topic, string(msg.Value))
 			task := service.NodeTask{}
 			err := json.Unmarshal(msg.Value, &task)
 			if err != nil {
-				c.log.Errorf("Read NodeTask offset=%v,error=%v", msg.Offset, err.Error())
+				log.Errorf("Read NodeTask offset=%v,error=%v", msg.Offset, err.Error())
 				continue
 			}
 
 			if task.Id <= 0 || task.NodeId != nodeId || task.TaskStatus != 0 {
-				c.log.Warnf("Read NodeTask offset=%v,task=%+v ,but it is wrong since id<=0 or nodeId !=local NodeId or status !=0 ", msg.Offset, task)
+				log.Warnf("Read NodeTask offset=%v,task=%+v ,but it is wrong since id<=0 or nodeId !=local NodeId or status !=0 ", msg.Offset, task)
 				continue
 			}
 
@@ -149,11 +151,13 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 			{
 				if task.TaskType == 1 { //单个交易
 					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyTx, task.BlockChain, task.TxHash), &task)
+					log.Printf("Tx|blockchain:%v,txHash:%v", task.BlockChain, task.TxHash)
 					txCh <- &task
 				}
 
 				if task.TaskType == 4 { //区块所有交易
 					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyTx, task.BlockChain, task.BlockHash+task.BlockNumber), &task)
+					log.Printf("Tx:blockchain:%v,blockNumber:%v,blockHash:%v", task.BlockChain, task.BlockNumber, task.BlockHash)
 					txCh <- &task
 				}
 
@@ -166,6 +170,7 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 				} else if len(task.BlockHash) > 0 {
 					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockHash), &task)
 				}
+				log.Printf("Block:blockchain:%v,blockNumber:%v,blockHash:%v", task.BlockChain, task.BlockNumber, task.BlockHash)
 				blockCh <- &task
 			}
 

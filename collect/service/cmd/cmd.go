@@ -410,6 +410,12 @@ func (c *Cmd) ExecTxTask(nodeId string, txCh chan *service.NodeTask, kf chan []*
 }
 
 func (c *Cmd) execMultiTx(taskTx *service.NodeTask, log *logrus.Entry) []*kafka.Message {
+
+	start := time.Now()
+	defer func() {
+		log.Printf("execMultiTx,Duration=%v", time.Now().Sub(start))
+	}()
+
 	key := fmt.Sprintf(KeyTx, taskTx.BlockChain, taskTx.BlockHash+taskTx.BlockNumber)
 	err := c.taskStore.UpdateNodeTaskStatus(key, 3)
 	if err != nil {
@@ -492,6 +498,12 @@ func (c *Cmd) execMultiTx(taskTx *service.NodeTask, log *logrus.Entry) []*kafka.
 }
 
 func (c *Cmd) execSingleTx(taskTx *service.NodeTask, log *logrus.Entry) []*kafka.Message {
+
+	start := time.Now()
+	defer func() {
+		log.Printf("execSingleTx,Duration=%v", time.Now().Sub(start))
+	}()
+
 	key := fmt.Sprintf(KeyTx, taskTx.BlockChain, taskTx.TxHash)
 
 	err := c.taskStore.UpdateNodeTaskStatus(key, 3)
@@ -548,8 +560,10 @@ func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Mes
 		//log.Printf("taskBlock=%+v", blockTask)
 
 		go func(taskBlock *service.NodeTask, buffCh chan struct{}, kf chan []*kafka.Message, log *logrus.Entry) {
+			start := time.Now()
 			defer func() {
 				<-buffCh
+				log.Printf("ExecBlockTask,Duration=%v", time.Now().Sub(start))
 			}()
 
 			var key string

@@ -75,6 +75,7 @@ func ParseTxForEther(body []byte) (*SubTx, error) {
 	r.TxType = tp
 
 	txTime := root.Get("txTime").String()
+	txTime = fmt.Sprintf("%v000", txTime)
 	r.TxTime = txTime
 
 	gasPrice := root.Get("gasPrice").String() //单位：wei

@@ -215,7 +215,7 @@ func (c *Cmd) HandlerKafkaRespMessage(msList []*kafka.Message) {
 	for _, msg := range msList {
 		//交易消息回调，如下处理
 		topic := msg.Topic
-		log.Printf("topic=%v,msg.offset=%v", topic, msg.Offset)
+		//log.Printf("topic=%v,msg.offset=%v", topic, msg.Offset)
 
 		//交易
 		if c.chain.TxTask != nil && topic == c.chain.TxTask.Kafka.Topic {

@@ -46,13 +46,21 @@ func (s *Service) GetTx(txHash string, task *config.TxTask, eLog *logrus.Entry) 
 		return nil
 	}
 
+	hash := gjson.Parse(resp).Get("txID").String()
+
 	fullTx := make(map[string]interface{}, 2)
 	fullTx["tx"] = resp
 
-	hash := gjson.Parse(resp).Get("txID").String()
 	receipt := s.GetReceipt(hash, nil, eLog)
 	if receipt != nil {
 		fullTx["receipt"] = receipt.Receipt
+	}
+
+	//tron 交易中缺失 完整的blockHash
+	block, _ := s.blockChainClient.GetBlockByNumber(int64(s.chain.BlockChainCode), fmt.Sprintf("%v", receipt.BlockNumber), false)
+	if len(block) > 0 {
+		blockId := gjson.Parse(block).Get("blockID").String()
+		fullTx["blockId"] = blockId
 	}
 
 	r := &service.TxInterface{TxHash: hash, Tx: fullTx}
@@ -83,7 +91,7 @@ func (s *Service) GetReceipt(txHash string, task *config.ReceiptTask, eLog *logr
 
 	if p != nil {
 		bs, _ := json.Marshal(receipt)
-		r := &service.ReceiptInterface{TransactionHash: hash, Receipt: string(bs)}
+		r := &service.ReceiptInterface{TransactionHash: hash, Receipt: string(bs), BlockNumber: receipt.BlockNumber, BlockTimeStamp: receipt.BlockTimeStamp}
 		return r
 	} else {
 		return nil
@@ -183,6 +191,7 @@ func (s *Service) GetBlockByNumber(blockNumber string, task *config.BlockTask, e
 		hash := tx.Get("txID").String()
 		fullTx := make(map[string]interface{}, 2)
 		fullTx["tx"] = tx.String()
+		fullTx["blockId"] = blockID
 		if v, ok := mp[hash]; ok {
 			fullTx["receipt"] = v
 		}
@@ -235,6 +244,7 @@ func (s *Service) GetBlockByHash(blockHash string, cfg *config.BlockTask, eLog *
 		hash := tx.Get("txID").String()
 		fullTx := make(map[string]interface{}, 2)
 		fullTx["tx"] = tx.String()
+		fullTx["blockId"] = blockID
 		if v, ok := mp[hash]; ok {
 			fullTx["receipt"] = v
 		}

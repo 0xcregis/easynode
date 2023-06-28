@@ -63,7 +63,7 @@ func (s *StoreService) readSubTxFromKafka(blockChain int64, kafkaCfg map[string]
 	go func() {
 		Kafka := kafkaCfg["SubTx"]
 		broker := fmt.Sprintf("%v:%v", Kafka.Host, Kafka.Port)
-		group := fmt.Sprintf("group_store_subtx_%v", Kafka.Group)
+		group := fmt.Sprintf("gr_store_subtx_%v", Kafka.Group)
 		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: Kafka.Topic, Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx)
 	}()
 
@@ -78,7 +78,7 @@ func (s *StoreService) readSubTxFromKafka(blockChain int64, kafkaCfg map[string]
 			if len(list) > 0 {
 				err := s.core.NewSubTx(blockChain, list)
 				if err != nil {
-					s.log.Errorf("readTxFromKafka|error=%v", err.Error())
+					s.log.Errorf("ReadSubTxFromKafka|blockChain=%v,error=%v", blockChain, err.Error())
 				}
 				list = list[:0]
 			}
@@ -92,7 +92,7 @@ func (s *StoreService) readSubTxFromKafka(blockChain int64, kafkaCfg map[string]
 			var tx service.SubTx
 			err := json.Unmarshal(msg.Value, &tx)
 			if err != nil {
-				s.log.Errorf("readTxFromKafka|error=%v", err.Error())
+				s.log.Errorf("ReadSubTxFromKafka|blockChain=%v,error=%v", blockChain, err.Error())
 				continue
 			}
 
@@ -110,7 +110,7 @@ func (s *StoreService) readTxFromKafka(blockChain int64, kafkaCfg map[string]*co
 	go func() {
 		Kafka := kafkaCfg["Tx"]
 		broker := fmt.Sprintf("%v:%v", Kafka.Host, Kafka.Port)
-		group := fmt.Sprintf("group_store_tx_%v", Kafka.Group)
+		group := fmt.Sprintf("gr_store_tx_%v", Kafka.Group)
 		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: Kafka.Topic, Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx)
 	}()
 
@@ -125,7 +125,7 @@ func (s *StoreService) readTxFromKafka(blockChain int64, kafkaCfg map[string]*co
 			if len(list) > 0 {
 				err := s.core.NewTx(blockChain, list)
 				if err != nil {
-					s.log.Errorf("readTxFromKafka|error=%v", err.Error())
+					s.log.Errorf("ReadTxFromKafka|blockChain=%v,error=%v", blockChain, err.Error())
 				}
 				list = list[:0]
 			}
@@ -140,7 +140,7 @@ func (s *StoreService) readTxFromKafka(blockChain int64, kafkaCfg map[string]*co
 			if blockChain == 200 {
 				err := json.Unmarshal(msg.Value, &tx)
 				if err != nil {
-					s.log.Errorf("readTxFromKafka|error=%v", err.Error())
+					s.log.Errorf("ReadTxFromKafka|blockChain=%v,error=%v", blockChain, err.Error())
 					continue
 				}
 			} else if blockChain == 205 {
@@ -213,7 +213,7 @@ func (s *StoreService) readBlockFromKafka(blockChain int64, kafkaCfg map[string]
 	go func() {
 		Kafka := kafkaCfg["Block"]
 		broker := fmt.Sprintf("%v:%v", Kafka.Host, Kafka.Port)
-		group := fmt.Sprintf("group_store_block_%v", Kafka.Group)
+		group := fmt.Sprintf("gr_store_block_%v", Kafka.Group)
 		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: Kafka.Topic, Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx)
 	}()
 
@@ -227,7 +227,7 @@ func (s *StoreService) readBlockFromKafka(blockChain int64, kafkaCfg map[string]
 			if len(list) > 0 {
 				err := s.core.NewBlock(blockChain, list)
 				if err != nil {
-					s.log.Errorf("readTxFromKafka|error=%v", err.Error())
+					s.log.Errorf("ReadBlockFromKafka|blockChain=%v,error=%v", blockChain, err.Error())
 				}
 				list = list[:0]
 			}
@@ -240,7 +240,7 @@ func (s *StoreService) readBlockFromKafka(blockChain int64, kafkaCfg map[string]
 			if blockChain == 200 {
 				err := json.Unmarshal(msg.Value, &block)
 				if err != nil {
-					s.log.Errorf("readTxFromKafka|error=%v", err.Error())
+					s.log.Errorf("ReadBlockFromKafka|blockChain=%v,error=%v", blockChain, err.Error())
 					continue
 				}
 			} else if blockChain == 205 {
@@ -283,7 +283,7 @@ func (s *StoreService) readReceiptFromKafka(blockChain int64, kafkaCfg map[strin
 	go func() {
 		Kafka := kafkaCfg["Receipt"]
 		broker := fmt.Sprintf("%v:%v", Kafka.Host, Kafka.Port)
-		group := fmt.Sprintf("group_store_receipt_%v", Kafka.Group)
+		group := fmt.Sprintf("gr_store_receipt_%v", Kafka.Group)
 		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: Kafka.Topic, Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx)
 	}()
 
@@ -298,7 +298,7 @@ func (s *StoreService) readReceiptFromKafka(blockChain int64, kafkaCfg map[strin
 			if len(list) > 0 {
 				err := s.core.NewReceipt(blockChain, list)
 				if err != nil {
-					s.log.Errorf("readTxFromKafka|error=%v", err.Error())
+					s.log.Errorf("ReadReceiptFromKafka|blockChain=%v,error=%v", blockChain, err.Error())
 				}
 				list = list[:0]
 			}
@@ -313,7 +313,7 @@ func (s *StoreService) readReceiptFromKafka(blockChain int64, kafkaCfg map[strin
 			if blockChain == 200 {
 				err := json.Unmarshal(msg.Value, &receipt)
 				if err != nil {
-					s.log.Errorf("readTxFromKafka|error=%v", err.Error())
+					s.log.Errorf("ReadReceiptFromKafka|blockChain=%v,error=%v", blockChain, err.Error())
 					continue
 				}
 			} else if blockChain == 205 {

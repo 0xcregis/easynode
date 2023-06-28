@@ -157,9 +157,6 @@ func (ws *WsHandler) Sub(ctx *gin.Context, w http.ResponseWriter, r *http.Reques
 		}
 	}(c, token, cx)
 
-	//tx->push
-	//go ws.sendMessage(token, ws.cfg.KafkaCfg["Tx"], ws.cfg.BlockChain, cx)
-
 	interrupt := true
 	//read cmd
 	for interrupt {

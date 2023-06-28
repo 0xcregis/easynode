@@ -43,7 +43,7 @@ func NewService(cfg *config.Chain, logConfig *config.LogConfig) *Cmd {
 	txChan := make(chan *service.NodeTask, 10)
 	receiptChan := make(chan *service.NodeTask, 10)
 	blockChan := make(chan *service.NodeTask, 10)
-	kafkaCh := make(chan []*kafka.Message, 10)
+	kafkaCh := make(chan []*kafka.Message, 100)
 	store := db.NewTaskCacheService(cfg, log)
 	kf := kafkaClient.NewEasyKafka(log)
 	chainApi := getBlockChainApi(cfg, logConfig, store)
@@ -111,7 +111,7 @@ func (c *Cmd) Start() {
 	//任务节点
 	broker2 := fmt.Sprintf("%v:%v", c.chain.TaskKafka.Host, c.chain.TaskKafka.Port)
 
-	c.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker, broker2}}, c.kafkaCh, c.HandlerKafkaRespMessage)
+	c.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker, broker2}}, c.kafkaCh, c.HandlerKafkaRespMessage, 10)
 }
 
 func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan *service.NodeTask, txCh chan *service.NodeTask, receiptChan chan *service.NodeTask) {
@@ -253,7 +253,7 @@ func (c *Cmd) HandlerKafkaRespMessage(msList []*kafka.Message) {
 }
 
 func (c *Cmd) ExecReceiptTask(receiptChan chan *service.NodeTask, kf chan []*kafka.Message) {
-	buffCh := make(chan struct{}, 5)
+	buffCh := make(chan struct{}, 10)
 	for true {
 		//控制协程数量
 		buffCh <- struct{}{}
@@ -365,7 +365,7 @@ func (c *Cmd) execSingleReceipt(taskReceipt *service.NodeTask, log *logrus.Entry
 }
 
 func (c *Cmd) ExecTxTask(nodeId string, txCh chan *service.NodeTask, kf chan []*kafka.Message) {
-	buffCh := make(chan struct{}, 5)
+	buffCh := make(chan struct{}, 20)
 	for true {
 		//控制协程数量
 		buffCh <- struct{}{}
@@ -551,7 +551,7 @@ func (c *Cmd) execSingleTx(taskTx *service.NodeTask, log *logrus.Entry) []*kafka
 }
 
 func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Message) {
-	buffCh := make(chan struct{}, 5)
+	buffCh := make(chan struct{}, 10)
 	for true {
 		//控制协程数量
 		buffCh <- struct{}{}

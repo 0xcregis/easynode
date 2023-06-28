@@ -84,8 +84,8 @@ func (easy *EasyKafka) Read(c *Config, ch chan *kafka.Message, ctx context.Conte
 	time.Sleep(2 * time.Second)
 }
 
-func (easy *EasyKafka) WriteBatch(c *Config, ch chan []*kafka.Message, resp func([]*kafka.Message)) {
-	query := make(chan int, 5)
+func (easy *EasyKafka) WriteBatch(c *Config, ch chan []*kafka.Message, resp func([]*kafka.Message), count int) {
+	query := make(chan int, count)
 	for true {
 		query <- 1
 		go func(c *Config, ch chan []*kafka.Message, resp func([]*kafka.Message)) {
@@ -110,7 +110,7 @@ func (easy *EasyKafka) Write(c Config, ch chan []*kafka.Message, resp func([]*ka
 		Logger:                 kafka.LoggerFunc(easy.Logf),
 		ErrorLogger:            kafka.LoggerFunc(easy.Logf),
 		BatchBytes:             70e6,
-		BatchSize:              20,
+		BatchSize:              100,
 		AllowAutoTopicCreation: true,
 	}
 
@@ -133,7 +133,7 @@ func (easy *EasyKafka) Write(c Config, ch chan []*kafka.Message, resp func([]*ka
 	for running {
 		//easy.log.Printf("kafka|Write|length=%v", len(ch))
 		ms := <-ch
-		step := 10
+		step := 30
 		for i := 0; i < len(ms); i += step {
 			n := i + step
 			if len(ms) <= n {
@@ -151,6 +151,13 @@ func (easy *EasyKafka) Write(c Config, ch chan []*kafka.Message, resp func([]*ka
 }
 
 func (easy *EasyKafka) sendToKafka(w *kafka.Writer, ms []*kafka.Message, resp func([]*kafka.Message)) error {
+
+	start := time.Now()
+
+	defer func() {
+		easy.log.Printf("sendToKafka.durtion:%v, len(ms):%v", time.Now().Sub(start), len(ms))
+	}()
+
 	temp := make([]kafka.Message, 0, len(ms))
 	for _, v := range ms {
 		//easy.log.Printf("kafka|topic=%v p=%v,key=%v,value=%v", v.Topic, v.Partition, string(v.Key), string(v.Value))

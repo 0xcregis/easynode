@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/segmentio/kafka-go"
 	"github.com/tidwall/gjson"
+	"github.com/uduncloud/easynode/collect/service"
 	"github.com/uduncloud/easynode/common/util"
 	"math/big"
 	"strconv"
@@ -392,4 +393,176 @@ func div(str string, pos int) string {
 		}
 	}
 	return result
+}
+
+func CheckAddress(blockChain int64, msg *kafka.Message, list []*MonitorAddress) bool {
+	if blockChain == 200 {
+		return CheckAddressForEther(msg, list)
+	} else if blockChain == 205 {
+		return CheckAddressForTron(msg, list)
+	} else {
+		return false
+	}
+
+}
+
+func CheckAddressForEther(msg *kafka.Message, list []*MonitorAddress) bool {
+	root := gjson.ParseBytes(msg.Value)
+	fromAddr := root.Get("from").String()
+	toAddr := root.Get("to").String()
+	has := false
+	for _, v := range list {
+		//已经判断出该交易 符合要求了，不需要在检查其他地址了
+		if has {
+			break
+		}
+
+		// 普通交易且 地址包含订阅地址
+		if strings.HasPrefix(strings.ToLower(fromAddr), strings.ToLower(v.Address)) || strings.HasPrefix(strings.ToLower(toAddr), strings.ToLower(v.Address)) {
+			has = true
+			break
+		}
+
+		//合约交易
+		monitorAddr := strings.TrimLeft(v.Address, "0x") //去丢0x
+		if root.Get("receipt").Exists() {
+			receipt := root.Get("receipt").String()
+			receiptRoot := gjson.Parse(receipt)
+			list := receiptRoot.Get("logs").Array()
+			for _, v := range list {
+
+				//过滤没有合约信息的交易，出现这种情况原因：1. 合约获取失败会重试 2:非20合约
+				data := v.Get("data").String()
+				if !gjson.Parse(data).IsObject() {
+					continue
+				}
+
+				topics := v.Get("topics").Array()
+				//Transfer()
+				if len(topics) >= 3 && topics[0].String() == service.EthTopic {
+					if strings.HasSuffix(strings.ToLower(topics[1].String()), strings.ToLower(monitorAddr)) || strings.HasSuffix(strings.ToLower(topics[2].String()), strings.ToLower(monitorAddr)) {
+						has = true
+						break
+					}
+
+				}
+
+			}
+
+		}
+	}
+	return has
+}
+
+func CheckAddressForTron(msg *kafka.Message, list []*MonitorAddress) bool {
+	root := gjson.ParseBytes(msg.Value)
+	tx := root.Get("tx").String()
+	txRoot := gjson.Parse(tx)
+	contracts := txRoot.Get("raw_data.contract").Array()
+	if len(contracts) < 1 {
+		return false
+	}
+	r := contracts[0]
+	txType := r.Get("type").String()
+
+	var fromAddr, toAddr string
+	var logs []gjson.Result
+	var internalTransactions []gjson.Result
+
+	fromAddr = r.Get("parameter.value.owner_address").String()
+
+	if txType == "TransferContract" {
+		toAddr = r.Get("parameter.value.to_address").String()
+		//r.Get("parameter.value.amount").String()
+	}
+
+	//DelegateResourceContract,UnDelegateResourceContract
+	if r.Get("parameter.value.receiver_address").Exists() {
+		toAddr = r.Get("parameter.value.receiver_address").String()
+	}
+
+	//TriggerSmartContract
+	if r.Get("parameter.value.contract_address").Exists() {
+		toAddr = r.Get("parameter.value.contract_address").String()
+	}
+
+	//AccountCreateContract
+	if r.Get("parameter.value.account_address").Exists() {
+		toAddr = r.Get("parameter.value.account_address").String()
+	}
+
+	if txType == "TriggerSmartContract" {
+		receipt := root.Get("receipt").String()
+		receiptRoot := gjson.Parse(receipt)
+		if receiptRoot.Get("receipt.result").String() != "SUCCESS" {
+			return false
+		}
+		logs = receiptRoot.Get("log").Array()
+		internalTransactions = receiptRoot.Get("internal_transactions").Array()
+	}
+
+	has := false
+	for _, v := range list {
+		//已经判断出该交易 符合要求了，不需要在检查其他地址了
+		if has {
+			break
+		}
+
+		var monitorAddr string
+		monitorAddr = v.Address
+
+		if strings.HasPrefix(v.Address, "0x") {
+			monitorAddr = strings.TrimLeft(v.Address, "0x") //去丢0x
+		}
+
+		if strings.HasPrefix(v.Address, "41") {
+			monitorAddr = strings.TrimLeft(v.Address, "41") //去丢41
+		}
+
+		if strings.HasPrefix(v.Address, "0x41") {
+			monitorAddr = strings.TrimLeft(v.Address, "0x41") //去丢41
+		}
+
+		// 普通交易且 地址包含订阅地址
+		if strings.HasSuffix(fromAddr, monitorAddr) || strings.HasSuffix(toAddr, monitorAddr) {
+			has = true
+			break
+		}
+
+		if txType == "TriggerSmartContract" {
+			//合约交易 合约调用下的TRC20
+			if len(logs) > 0 {
+				for _, v := range logs {
+
+					//过滤没有合约信息的交易，出现这种情况原因：1. 合约获取失败会重试 2:非20合约
+					data := v.Get("data").String()
+					if !gjson.Parse(data).IsObject() {
+						continue
+					}
+
+					topics := v.Get("topics").Array()
+					//Transfer()
+					if len(topics) >= 3 && topics[0].String() == service.TronTopic {
+						if strings.HasSuffix(topics[1].String(), monitorAddr) || strings.HasSuffix(topics[2].String(), monitorAddr) {
+							has = true
+							break
+						}
+					}
+				}
+			}
+
+			//合约调用下的内部交易TRX转帐和TRC10转账：
+			if len(internalTransactions) > 0 {
+				for _, v := range internalTransactions {
+					fromAddr = v.Get("caller_address").String()
+					toAddr = v.Get("transferTo_address").String()
+					if strings.HasSuffix(fromAddr, monitorAddr) || strings.HasSuffix(toAddr, monitorAddr) {
+						has = true
+						break
+					}
+				}
+			}
+		}
+	}
+	return has
 }

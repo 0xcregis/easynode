@@ -10,7 +10,6 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
-	"github.com/tidwall/gjson"
 	kafkaClient "github.com/uduncloud/easynode/common/kafka"
 	"github.com/uduncloud/easynode/store/config"
 	"github.com/uduncloud/easynode/store/service"
@@ -29,8 +28,8 @@ type WsHandler struct {
 	kafka   *kafkaClient.EasyKafka
 	db      service.DbMonitorAddressInterface
 	connMap map[string]*websocket.Conn
-	cmdMap  map[string]service.WsReqMessage
-	ctxMap  map[string]context.CancelFunc
+	cmdMap  map[string]map[int64]service.WsReqMessage
+	ctxMap  map[string]map[int64]context.CancelFunc
 }
 
 func NewWsHandler(cfg *config.Config, log *xlog.XLog) *WsHandler {
@@ -46,8 +45,8 @@ func NewWsHandler(cfg *config.Config, log *xlog.XLog) *WsHandler {
 		cfg:     mp,
 		kafka:   kfk,
 		connMap: make(map[string]*websocket.Conn, 5),
-		cmdMap:  make(map[string]service.WsReqMessage, 5),
-		ctxMap:  make(map[string]context.CancelFunc, 5),
+		cmdMap:  make(map[string]map[int64]service.WsReqMessage, 5),
+		ctxMap:  make(map[string]map[int64]context.CancelFunc, 5),
 	}
 }
 
@@ -69,13 +68,6 @@ func (ws *WsHandler) Sub2(ctx *gin.Context, w http.ResponseWriter, r *http.Reque
 }
 
 func (ws *WsHandler) Sub(ctx *gin.Context, w http.ResponseWriter, r *http.Request, token string) {
-
-	//token := ctx.Param("token")
-	//if len(token) < 1 {
-	//	resp := "{\"code\":1,\"data\":\"not found token\"}"
-	//	_, _ = ctx.Writer.Write([]byte(resp))
-	//	return
-	//}
 	upGrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -128,12 +120,6 @@ func (ws *WsHandler) Sub(ctx *gin.Context, w http.ResponseWriter, r *http.Reques
 				ticker.Reset(10 * time.Minute)
 				continue
 			case <-ticker.C: //已经超时，仍然未收到客户端的响应
-				//清理
-				//delete(ws.cmdMap, token)
-				//if c, ok := ws.connMap[token]; ok {
-				//	_ = c.Close()
-				//}
-				//delete(ws.connMap, token)
 				cancel()
 				return
 			}
@@ -168,8 +154,10 @@ func (ws *WsHandler) Sub(ctx *gin.Context, w http.ResponseWriter, r *http.Reques
 				_ = c.Close()
 			}
 			delete(ws.connMap, token)
-			if f, ok := ws.ctxMap[token]; ok {
-				f()
+			if fs, ok := ws.ctxMap[token]; ok {
+				for _, f := range fs {
+					f()
+				}
 			}
 			delete(ws.ctxMap, token)
 			interrupt = false
@@ -212,7 +200,7 @@ func (ws *WsHandler) sendMessage(code int64, token string, SubKafkaConfig *confi
 
 	go func(ctx context.Context) {
 		broker := fmt.Sprintf("%v:%v", kafkaConfig.Host, kafkaConfig.Port)
-		group := fmt.Sprintf("group_push_%v", kafkaConfig.Group)
+		group := fmt.Sprintf("gr_push_%v", kafkaConfig.Group)
 		c, cancel := context.WithCancel(ctx)
 		defer cancel()
 		ws.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: kafkaConfig.Topic, Group: group, Partition: kafkaConfig.Partition, StartOffset: kafkaConfig.StartOffset}, receiver, c)
@@ -255,27 +243,16 @@ func (ws *WsHandler) sendMessage(code int64, token string, SubKafkaConfig *confi
 				if len(l) > 0 {
 					addressList = append(addressList, l...)
 				}
-
-			case <-ctx2.Done():
-				return
 			}
 		}
 	}(blockChain, token, ctx)
 
 	for {
 		select {
-		case <-ctx.Done():
-			if _, ok := ws.ctxMap[token]; ok {
-				delete(ws.ctxMap, token)
-			}
-			if _, ok := ws.cmdMap[token]; ok {
-				delete(ws.cmdMap, token)
-			}
-			return
 		case msg := <-receiver:
 			//消息过滤
 			//根据这个用户（token）最新的订阅命令，筛选符合条件的交易且推送出去
-			if _, ok := ws.cmdMap[token]; !ok {
+			if _, ok := ws.connMap[token]; !ok {
 				//用户不在线
 				continue
 			}
@@ -371,177 +348,7 @@ func (ws *WsHandler) checkTx(blockChain int64, msg *kafka.Message, list []*servi
 	defer func() {
 		<-lock
 	}()
-
-	has := false
-	if blockChain == 200 {
-		has = ws.CheckAddressForEther(msg, list)
-	}
-
-	if blockChain == 205 {
-		has = ws.CheckAddressForTron(msg, list)
-	}
-	return has
-}
-
-func (ws *WsHandler) CheckAddressForEther(msg *kafka.Message, list []*service.MonitorAddress) bool {
-	root := gjson.ParseBytes(msg.Value)
-	fromAddr := root.Get("from").String()
-	toAddr := root.Get("to").String()
-	has := false
-	for _, v := range list {
-		//已经判断出该交易 符合要求了，不需要在检查其他地址了
-		if has {
-			break
-		}
-
-		// 普通交易且 地址包含订阅地址
-		if strings.HasPrefix(strings.ToLower(fromAddr), strings.ToLower(v.Address)) || strings.HasPrefix(strings.ToLower(toAddr), strings.ToLower(v.Address)) {
-			has = true
-			break
-		}
-
-		//合约交易
-		monitorAddr := strings.TrimLeft(v.Address, "0x") //去丢0x
-		if root.Get("receipt").Exists() {
-			receipt := root.Get("receipt").String()
-			receiptRoot := gjson.Parse(receipt)
-			list := receiptRoot.Get("logs").Array()
-			for _, v := range list {
-
-				//过滤没有合约信息的交易，出现这种情况原因：1. 合约获取失败会重试 2:非20合约
-				data := v.Get("data").String()
-				if !gjson.Parse(data).IsObject() {
-					continue
-				}
-
-				topics := v.Get("topics").Array()
-				//Transfer()
-				if len(topics) >= 3 && topics[0].String() == service.EthTopic {
-					if strings.HasSuffix(strings.ToLower(topics[1].String()), strings.ToLower(monitorAddr)) || strings.HasSuffix(strings.ToLower(topics[2].String()), strings.ToLower(monitorAddr)) {
-						has = true
-						break
-					}
-
-				}
-
-			}
-
-		}
-	}
-	return has
-}
-
-func (ws *WsHandler) CheckAddressForTron(msg *kafka.Message, list []*service.MonitorAddress) bool {
-	root := gjson.ParseBytes(msg.Value)
-	tx := root.Get("tx").String()
-	txRoot := gjson.Parse(tx)
-	contracts := txRoot.Get("raw_data.contract").Array()
-	if len(contracts) < 1 {
-		return false
-	}
-	r := contracts[0]
-	txType := r.Get("type").String()
-
-	var fromAddr, toAddr string
-	var logs []gjson.Result
-	var internalTransactions []gjson.Result
-
-	fromAddr = r.Get("parameter.value.owner_address").String()
-
-	if txType == "TransferContract" {
-		toAddr = r.Get("parameter.value.to_address").String()
-		//r.Get("parameter.value.amount").String()
-	}
-
-	//DelegateResourceContract,UnDelegateResourceContract
-	if r.Get("parameter.value.receiver_address").Exists() {
-		toAddr = r.Get("parameter.value.receiver_address").String()
-	}
-
-	//TriggerSmartContract
-	if r.Get("parameter.value.contract_address").Exists() {
-		toAddr = r.Get("parameter.value.contract_address").String()
-	}
-
-	//AccountCreateContract
-	if r.Get("parameter.value.account_address").Exists() {
-		toAddr = r.Get("parameter.value.account_address").String()
-	}
-
-	if txType == "TriggerSmartContract" {
-		receipt := root.Get("receipt").String()
-		receiptRoot := gjson.Parse(receipt)
-		if receiptRoot.Get("receipt.result").String() != "SUCCESS" {
-			return false
-		}
-		logs = receiptRoot.Get("log").Array()
-		internalTransactions = receiptRoot.Get("internal_transactions").Array()
-	}
-
-	has := false
-	for _, v := range list {
-		//已经判断出该交易 符合要求了，不需要在检查其他地址了
-		if has {
-			break
-		}
-
-		var monitorAddr string
-		monitorAddr = v.Address
-
-		if strings.HasPrefix(v.Address, "0x") {
-			monitorAddr = strings.TrimLeft(v.Address, "0x") //去丢0x
-		}
-
-		if strings.HasPrefix(v.Address, "41") {
-			monitorAddr = strings.TrimLeft(v.Address, "41") //去丢41
-		}
-
-		if strings.HasPrefix(v.Address, "0x41") {
-			monitorAddr = strings.TrimLeft(v.Address, "0x41") //去丢41
-		}
-
-		// 普通交易且 地址包含订阅地址
-		if strings.HasSuffix(fromAddr, monitorAddr) || strings.HasSuffix(toAddr, monitorAddr) {
-			has = true
-			break
-		}
-
-		if txType == "TriggerSmartContract" {
-			//合约交易 合约调用下的TRC20
-			if len(logs) > 0 {
-				for _, v := range logs {
-
-					//过滤没有合约信息的交易，出现这种情况原因：1. 合约获取失败会重试 2:非20合约
-					data := v.Get("data").String()
-					if !gjson.Parse(data).IsObject() {
-						continue
-					}
-
-					topics := v.Get("topics").Array()
-					//Transfer()
-					if len(topics) >= 3 && topics[0].String() == service.TronTopic {
-						if strings.HasSuffix(topics[1].String(), monitorAddr) || strings.HasSuffix(topics[2].String(), monitorAddr) {
-							has = true
-							break
-						}
-					}
-				}
-			}
-
-			//合约调用下的内部交易TRX转帐和TRC10转账：
-			if len(internalTransactions) > 0 {
-				for _, v := range internalTransactions {
-					fromAddr = v.Get("caller_address").String()
-					toAddr = v.Get("transferTo_address").String()
-					if strings.HasSuffix(fromAddr, monitorAddr) || strings.HasSuffix(toAddr, monitorAddr) {
-						has = true
-						break
-					}
-				}
-			}
-		}
-	}
-	return has
+	return service.CheckAddress(blockChain, msg, list)
 }
 
 func (ws *WsHandler) handlerMessage(ctx context.Context, token string, c *websocket.Conn, mt int, message []byte, log *logrus.Entry) {
@@ -604,26 +411,47 @@ func (ws *WsHandler) handlerMessage(ctx context.Context, token string, c *websoc
 		}
 	}
 
-	//最新一次命令
-	if msg.Code == 1 {
-		//仅能保存一个订阅的命令
-		if _, ok := ws.cmdMap[token]; ok {
+	if msg.Code == 1 || msg.Code == 3 || msg.Code == 5 || msg.Code == 7 || msg.Code == 9 || msg.Code == 11 || msg.Code == 13 {
+		//订阅请求
+		v, ok := ws.cmdMap[token]
+		if ok {
+			_, ok = v[msg.Code]
+		}
+		if ok {
 			//已经订阅了，则返回订阅失败
 			returnMsg.Err = fmt.Sprintf("sub cmd is already existed")
 			returnMsg.Status = 1
 		} else {
 			//未订阅时，则订阅成功
-			ws.cmdMap[token] = msg
+			if _, ok := ws.cmdMap[token]; !ok {
+				ws.cmdMap[token] = map[int64]service.WsReqMessage{msg.Code: msg}
+			} else {
+				ws.cmdMap[token][msg.Code] = msg
+			}
+
 			kafkaCtx, cancel := context.WithCancel(ctx)
-			ws.ctxMap[token] = cancel
+			if _, ok := ws.ctxMap[token]; !ok {
+				ws.ctxMap[token] = map[int64]context.CancelFunc{msg.Code: cancel}
+			} else {
+				ws.ctxMap[token][msg.Code] = cancel
+			}
 			ws.sendMessageEx(msg.Code, token, txKafkaParams, subKafkaParams, kafkaCtx)
 		}
-	} else if msg.Code == 2 {
-		if f, ok := ws.ctxMap[token]; ok {
-			f()
+	} else if msg.Code == 2 || msg.Code == 4 || msg.Code == 6 || msg.Code == 8 || msg.Code == 10 || msg.Code == 12 || msg.Code == 14 {
+		//取消订阅，回收资源
+		if fs, ok := ws.ctxMap[token]; ok {
+			if f, ok2 := fs[msg.Code-1]; ok2 {
+				f()
+			}
 		}
-		delete(ws.ctxMap, token)
-		delete(ws.cmdMap, token)
+
+		if v, ok := ws.ctxMap[token]; ok {
+			delete(v, msg.Code-1)
+		}
+
+		if v, ok := ws.cmdMap[token]; ok {
+			delete(v, msg.Code-1)
+		}
 	}
 
 }

@@ -98,6 +98,8 @@ func GetTxFromKafka(value []byte, blockChain int64) (*service.Tx, error) {
 		}
 	} else if blockChain == 205 {
 
+		blockId := gjson.ParseBytes(value).Get("blockId").String()
+
 		txBody := gjson.ParseBytes(value).Get("tx").String()
 		if len(txBody) < 5 {
 			return nil, errors.New("tx data is error")
@@ -106,7 +108,7 @@ func GetTxFromKafka(value []byte, blockChain int64) (*service.Tx, error) {
 
 		status := txRoot.Get("ret.0.contractRet").String()
 		hash := txRoot.Get("txID").String()
-		blockHash := txRoot.Get("raw_data.ref_block_hash").String()
+		//blockHash := txRoot.Get("raw_data.ref_block_hash").String()
 		txTime := txRoot.Get("raw_data.timestamp").Uint()
 		limit := txRoot.Get("raw_data.fee_limit").Uint()
 		txType := txRoot.Get("raw_data.contract.0.type").String()
@@ -133,7 +135,7 @@ func GetTxFromKafka(value []byte, blockChain int64) (*service.Tx, error) {
 		txValue := v.String()
 		tx.Id = uint64(time.Now().UnixNano())
 		tx.Value = txValue
-		tx.BlockHash = blockHash
+		tx.BlockHash = blockId
 		tx.TxHash = hash
 		tx.TxStatus = status
 		tx.TxTime = fmt.Sprintf("%v", txTime)

@@ -57,10 +57,12 @@ func (s *Service) GetTx(txHash string, task *config.TxTask, eLog *logrus.Entry) 
 	}
 
 	//tron 交易中缺失 完整的blockHash
-	block, _ := s.blockChainClient.GetBlockByNumber(int64(s.chain.BlockChainCode), fmt.Sprintf("%v", receipt.BlockNumber), false)
-	if len(block) > 0 {
-		blockId := gjson.Parse(block).Get("blockID").String()
-		fullTx["blockId"] = blockId
+	if receipt != nil {
+		block, _ := s.blockChainClient.GetBlockByNumber(int64(s.chain.BlockChainCode), fmt.Sprintf("%v", receipt.BlockNumber), false)
+		if len(block) > 0 {
+			blockId := gjson.Parse(block).Get("blockID").String()
+			fullTx["blockId"] = blockId
+		}
 	}
 
 	r := &service.TxInterface{TxHash: hash, Tx: fullTx}

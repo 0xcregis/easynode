@@ -199,6 +199,7 @@ func ParseTxForTron(body []byte) (*SubTx, error) {
 
 	root := gjson.ParseBytes(body)
 
+	blockId := root.Get("blockId").String()
 	txBody := root.Get("tx").String()
 	if len(txBody) < 5 {
 		return nil, errors.New("tx is error")
@@ -220,7 +221,7 @@ func ParseTxForTron(body []byte) (*SubTx, error) {
 	r.Hash = hash
 	//tron block_hash 比较特殊，是hash 部分，暂时不返回了
 	//blockHash := txRoot.Get("raw_data.ref_block_hash").String()
-	//r.BlockHash = blockHash
+	r.BlockHash = blockId
 	txTime := txRoot.Get("raw_data.timestamp").String()
 	r.TxTime = txTime
 

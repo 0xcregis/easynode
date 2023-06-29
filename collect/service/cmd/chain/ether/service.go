@@ -71,10 +71,15 @@ func (s *Service) GetBlockByHash(blockHash string, cfg *config.BlockTask, eLog *
 		}
 		//}
 	}
+
+	addressList, _ := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
 	txs := make([]*service.TxInterface, 0, len(txList))
 	for _, tx := range txList {
-		t := &service.TxInterface{TxHash: tx.TxHash, Tx: tx}
-		txs = append(txs, t)
+		bs, _ := json.Marshal(tx)
+		if s.CheckAddress(bs, addressList) {
+			t := &service.TxInterface{TxHash: tx.TxHash, Tx: tx}
+			txs = append(txs, t)
+		}
 	}
 	//r := &service.BlockInterface{BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, Block: block}
 	return r, txs
@@ -125,10 +130,15 @@ func (s *Service) GetBlockByNumber(blockNumber string, task *config.BlockTask, e
 		}
 		//}
 	}
+
+	addressList, _ := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
 	txs := make([]*service.TxInterface, 0, len(txList))
 	for _, tx := range txList {
-		t := &service.TxInterface{TxHash: tx.TxHash, Tx: tx}
-		txs = append(txs, t)
+		bs, _ := json.Marshal(tx)
+		if s.CheckAddress(bs, addressList) {
+			t := &service.TxInterface{TxHash: tx.TxHash, Tx: tx}
+			txs = append(txs, t)
+		}
 	}
 	//r := &service.BlockInterface{BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, Block: block}
 	return r, txs
@@ -298,6 +308,47 @@ func (s *Service) getToken(blockChain int64, from string, contract string) (stri
 		return token, nil
 	}
 	return "", errors.New("wait for response")
+}
+
+func (s *Service) CheckAddress(tx []byte, addrList []string) bool {
+	root := gjson.ParseBytes(tx)
+	fromAddr := root.Get("from").String()
+	toAddr := root.Get("to").String()
+	has := false
+	for _, v := range addrList {
+		//已经判断出该交易 符合要求了，不需要在检查其他地址了
+		if has {
+			break
+		}
+
+		// 普通交易且 地址包含订阅地址
+		if strings.HasPrefix(strings.ToLower(fromAddr), strings.ToLower(v)) || strings.HasPrefix(strings.ToLower(toAddr), strings.ToLower(v)) {
+			has = true
+			break
+		}
+
+		//合约交易
+		monitorAddr := strings.TrimLeft(v, "0x") //去丢0x
+		if root.Get("receipt").Exists() {
+			receipt := root.Get("receipt").String()
+			receiptRoot := gjson.Parse(receipt)
+			list := receiptRoot.Get("logs").Array()
+			for _, v := range list {
+				topics := v.Get("topics").Array()
+				//Transfer()
+				if len(topics) >= 3 && topics[0].String() == service.EthTopic {
+					if strings.HasSuffix(strings.ToLower(topics[1].String()), strings.ToLower(monitorAddr)) || strings.HasSuffix(strings.ToLower(topics[2].String()), strings.ToLower(monitorAddr)) {
+						has = true
+						break
+					}
+
+				}
+
+			}
+
+		}
+	}
+	return has
 }
 
 func NewService(c *config.Chain, x *xlog.XLog, store service.StoreTaskInterface) service.BlockChainInterface {

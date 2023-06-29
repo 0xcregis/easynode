@@ -22,12 +22,28 @@ var (
 	ContractKey = "contract_%v"
 	ErrTxKey    = "errTx_%v"
 	NodeTaskKey = "nodeTask_%v"
+	MonitorKey  = "monitorAddress_%v"
 )
 
 type Service struct {
 	log         *xlog.XLog
 	lock        *sync.RWMutex
 	cacheClient *redis.Client
+}
+
+func (s *Service) GetMonitorAddress(blockChain int64) ([]string, error) {
+
+	list, err := s.cacheClient.HKeys(context.Background(), fmt.Sprintf(MonitorKey, blockChain)).Result()
+	if err != nil {
+		s.log.Warnf("GetMonitorAddress|err=%v", err.Error())
+		return nil, errors.New("no record")
+	}
+
+	if len(list) < 1 {
+		s.log.Warnf("GetMonitorAddress|err=no data")
+		return nil, errors.New("no record")
+	}
+	return list, nil
 }
 
 func (s *Service) DelNodeTask(blockchain int64, key string) (int64, *service.NodeTask, error) {

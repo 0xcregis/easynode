@@ -61,6 +61,11 @@
         "BlockTable": "block",
         "ReceiptTable": "receipt",
         "SubTxTable": "sub_tx"
+      },
+      "Redis": {
+        "Addr": "192.168.2.9",
+        "Port": 6379,
+        "DB": 0
       }
     }
   ]

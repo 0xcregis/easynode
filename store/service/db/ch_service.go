@@ -155,3 +155,12 @@ func (m *ClickhouseDb) GetAddressByToken(blockchain int64, token string) ([]*ser
 	}
 	return list, nil
 }
+
+func (m *ClickhouseDb) GetAddressByToken3(blockchain int64) ([]*service.MonitorAddress, error) {
+	var list []*service.MonitorAddress
+	err := m.baseDb.Table(m.baseConfig.BaseDb.AddressTable).Select("address").Where("block_chain in (?)", []int64{blockchain, 0}).Group("address").Scan(&list).Error
+	if err != nil || len(list) < 1 {
+		return nil, errors.New("no record")
+	}
+	return list, nil
+}

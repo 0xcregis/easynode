@@ -23,13 +23,15 @@ import (
 )
 
 type WsHandler struct {
-	log     *logrus.Entry
-	cfg     map[int64]*config.Chain
-	kafka   *kafkaClient.EasyKafka
-	db      service.DbMonitorAddressInterface
-	connMap map[string]*websocket.Conn
-	cmdMap  map[string]map[int64]service.WsReqMessage
-	ctxMap  map[string]map[int64]context.CancelFunc
+	log            *logrus.Entry
+	cfg            map[int64]*config.Chain
+	kafka          *kafkaClient.EasyKafka
+	db             service.DbMonitorAddressInterface
+	cache          *db2.CacheService
+	connMap        map[string]*websocket.Conn
+	cmdMap         map[string]map[int64]service.WsReqMessage
+	ctxMap         map[string]map[int64]context.CancelFunc
+	monitorAddress map[int64][]*service.MonitorAddress
 }
 
 func NewWsHandler(cfg *config.Config, log *xlog.XLog) *WsHandler {
@@ -39,15 +41,34 @@ func NewWsHandler(cfg *config.Config, log *xlog.XLog) *WsHandler {
 	for _, v := range cfg.Chains {
 		mp[v.BlockChain] = v
 	}
+	cache := db2.NewCacheService(cfg.Chains, log)
 	return &WsHandler{
-		log:     log.WithField("model", "wsSrv"),
-		db:      db,
-		cfg:     mp,
-		kafka:   kfk,
-		connMap: make(map[string]*websocket.Conn, 5),
-		cmdMap:  make(map[string]map[int64]service.WsReqMessage, 5),
-		ctxMap:  make(map[string]map[int64]context.CancelFunc, 5),
+		log:            log.WithField("model", "wsSrv"),
+		db:             db,
+		cfg:            mp,
+		kafka:          kfk,
+		cache:          cache,
+		connMap:        make(map[string]*websocket.Conn, 5),
+		cmdMap:         make(map[string]map[int64]service.WsReqMessage, 5),
+		ctxMap:         make(map[string]map[int64]context.CancelFunc, 5),
+		monitorAddress: map[int64][]*service.MonitorAddress{},
 	}
+}
+
+func (ws *WsHandler) Start() {
+	go func() {
+		for {
+			for _, w := range ws.cfg {
+				l, err := ws.db.GetAddressByToken3(w.BlockChain)
+				if err != nil {
+					continue
+				}
+				_ = ws.cache.SetMonitorAddress(w.BlockChain, l)
+			}
+
+			<-time.After(30 * time.Second)
+		}
+	}()
 }
 
 func (ws *WsHandler) Sub2(ctx *gin.Context, w http.ResponseWriter, r *http.Request) {

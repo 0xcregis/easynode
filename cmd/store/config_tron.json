@@ -30,7 +30,7 @@
           "Host": "192.168.2.9",
           "Port": 9092,
           "Topic": "tron_tx",
-          "Group": "5",
+          "Group": "8",
           "StartOffset": -1,
           "Partition": 0
         },
@@ -38,7 +38,7 @@
           "Host": "192.168.2.9",
           "Port": 9092,
           "Topic": "tron_block",
-          "Group": "2",
+          "Group": "3",
           "StartOffset": -1,
           "Partition": 0
         },
@@ -61,6 +61,11 @@
         "BlockTable": "block",
         "ReceiptTable": "receipt",
         "SubTxTable": "sub_tx"
+      },
+      "Redis": {
+        "Addr": "192.168.2.9",
+        "Port": 6379,
+        "DB": 0
       }
     }
   ]

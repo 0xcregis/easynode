@@ -472,9 +472,9 @@ func CheckAddressForTron(msg *kafka.Message, list []*MonitorAddress) bool {
 
 	fromAddr = r.Get("parameter.value.owner_address").String()
 
-	if txType == "TransferContract" {
+	//TransferContract,TransferAssetContract
+	if r.Get("parameter.value.to_address").Exists() {
 		toAddr = r.Get("parameter.value.to_address").String()
-		//r.Get("parameter.value.amount").String()
 	}
 
 	//DelegateResourceContract,UnDelegateResourceContract
@@ -509,8 +509,7 @@ func CheckAddressForTron(msg *kafka.Message, list []*MonitorAddress) bool {
 			break
 		}
 
-		var monitorAddr string
-		monitorAddr = v.Address
+		monitorAddr := v.Address
 
 		if strings.HasPrefix(v.Address, "0x") {
 			monitorAddr = strings.TrimLeft(v.Address, "0x") //去丢0x

@@ -40,6 +40,7 @@ func main() {
 
 	//ws 协议
 	wsServer := network.NewWsHandler(&cfg, xLog)
+	wsServer.Start()
 	root.Handle("GET", "/ws/:token", func(ctx *gin.Context) {
 		wsServer.Sub2(ctx, ctx.Writer, ctx.Request)
 	})

@@ -239,7 +239,7 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 	sender := make(chan []*kafka.Message, 10)
 	//addressList := make([]*service.MonitorAddress, 0, 10)
 	//控制消息处理速度
-	lock := make(chan int64, 2)
+	//lock := make(chan int64)
 
 	go func(ctx context.Context) {
 		broker := fmt.Sprintf("%v:%v", kafkaConfig.Host, kafkaConfig.Port)
@@ -317,41 +317,9 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 			}
 
 			for token, mp := range ws.cmdMap {
-				push := false
-				var code int64
-				for c, _ := range mp {
-					code = c
-					switch c {
-					case 1: //资产交易
-						if tp == 1 || tp == 2 {
-							push = true
-						}
-					case 3: //质押
-						if tp == 6 {
-							push = true
-						}
-					case 5: //解质押
-						if tp == 7 {
-							push = true
-						}
-					case 7: //解提取
-						if tp == 8 {
-							push = true
-						}
-					case 9: //代理资源
-						if tp == 3 {
-							push = true
-						}
-					case 11: //代理资源（资源回收）
-						if tp == 4 {
-							push = true
-						}
-					case 13: //激活账户
-						if tp == 5 {
-							push = true
-						}
-					}
-				}
+				//push := false
+				//var code int64
+				code, push := ws.CheckCode(mp, tp)
 
 				//不符合订阅条件
 				if !push {
@@ -361,7 +329,7 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 				//检查地址 是否和交易 相关
 				if v, ok := ws.monitorAddress[blockChain]; ok {
 					if tokenAddress, ok := v[token]; ok {
-						if !ws.checkTx(blockChain, msg, tokenAddress.List, lock) {
+						if !ws.checkTx(blockChain, msg, tokenAddress.List) {
 							continue
 						}
 					} else {
@@ -396,16 +364,59 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 				}
 			}
 
+			//<-lock
 		}
 
 	}
 }
 
-func (ws *WsHandler) checkTx(blockChain int64, msg *kafka.Message, list []*service.MonitorAddress, lock chan int64) bool {
-	lock <- msg.Offset
-	defer func() {
-		<-lock
-	}()
+func (ws *WsHandler) CheckCode(mp map[int64]service.WsReqMessage, tp uint64) (int64, bool) {
+	push := false
+	var code int64
+	for c, _ := range mp {
+		switch c {
+		case 1: //资产交易
+			if tp == 1 || tp == 2 {
+				push = true
+				code = c
+			}
+		case 3: //质押
+			if tp == 6 {
+				push = true
+				code = c
+			}
+		case 5: //解质押
+			if tp == 7 {
+				push = true
+				code = c
+			}
+		case 7: //解提取
+			if tp == 8 {
+				push = true
+				code = c
+			}
+		case 9: //代理资源
+			if tp == 3 {
+				push = true
+				code = c
+			}
+		case 11: //代理资源（资源回收）
+			if tp == 4 {
+				push = true
+				code = c
+			}
+		case 13: //激活账户
+			if tp == 5 {
+				push = true
+				code = c
+			}
+		}
+	}
+
+	return code, push
+}
+
+func (ws *WsHandler) checkTx(blockChain int64, msg *kafka.Message, list []*service.MonitorAddress) bool {
 	return service.CheckAddress(blockChain, msg, list)
 }
 

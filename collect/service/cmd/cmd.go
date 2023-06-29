@@ -297,7 +297,7 @@ func (c *Cmd) execMultiReceipt(taskReceipt *service.NodeTask, log *logrus.Entry)
 	_ = c.taskStore.UpdateNodeTaskStatus(key, 3)
 
 	//读取区块
-	receiptList := c.blockChain.GetReceiptByBlock(taskReceipt.BlockHash, taskReceipt.BlockNumber, c.chain.ReceiptTask, log)
+	receiptList, _ := c.blockChain.GetReceiptByBlock(taskReceipt.BlockHash, taskReceipt.BlockNumber, c.chain.ReceiptTask, log)
 
 	if receiptList == nil || len(receiptList) < 1 {
 		_ = c.taskStore.UpdateNodeTaskStatus(key, 2) //失败
@@ -338,7 +338,7 @@ func (c *Cmd) execSingleReceipt(taskReceipt *service.NodeTask, log *logrus.Entry
 		err := c.taskStore.UpdateNodeTaskStatus(key, 3)
 
 		//根据交易
-		receipt := c.blockChain.GetReceipt(taskReceipt.TxHash, c.chain.ReceiptTask, log)
+		receipt, _ := c.blockChain.GetReceipt(taskReceipt.TxHash, c.chain.ReceiptTask, log)
 		if receipt == nil {
 			_ = c.taskStore.UpdateNodeTaskStatus(key, 2) //失败
 			log.Errorf("GetReceipt|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, "receipt is null", taskReceipt.Id)

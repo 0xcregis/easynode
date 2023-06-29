@@ -141,6 +141,16 @@ type WsReqMessage struct {
 	Params     map[string]string //非必需
 }
 
+//WsReqMessage.Code 说明
+	1:订阅资产转移交易，     2:取消订阅：资产转移交易 
+	3:质押资产             4:取消订阅：质押资产 
+	5:解锁资产             6:取消订阅：解锁资产 
+	7:提取                8:取消订阅：提取 
+	9:代理资源             10:取消订阅：代理资源
+	11:回收资源（取消代理）  12:取消订阅： 回收资源（取消代理） 
+	13:激活账号            14:取消订阅：激活账号
+
+
 //返回数据结构：
 type WsRespMessage struct {
 	Id         int64 //请求的序列号，和请求保持一致
@@ -153,7 +163,7 @@ type WsRespMessage struct {
 }
 //推送数据结构
 type WsPushMessage struct {
-	Code       int64 //1:tx,2:block,3:receipt //推送数据业务码
+	Code       int64  //推送数据业务码
 	BlockChain int64 `json:"blockChain"` //公链代码
 	Data       interface{} //推送的数据
 }
@@ -166,7 +176,7 @@ type WsPushMessage struct {
    
    ws://localhost:9003/api/store/ws/{token} 
    
-   ws://localhost:9003/api/store/ws/{token}?chainCode={chainCode}
+   ws://localhost:9003/api/store/ws/{token}?serialId={serialId}
   
    入参：
            {
@@ -218,19 +228,21 @@ type WsPushMessage struct {
         "value": "0" //交易额 
       }
   }         
-            
-                        
-   
+    
+       
+    
+                     
 ``````
+- 交易类型说明：
+
+    1:合约调用，2:普通资产转移 3:资源代理 4:资源回收 5:激活 6:质押 7:解质押 8:解质押提现
 
 
 - notes
 
-    - 同一token ，同一时刻仅能有一个 订阅命令，需要订阅其他命令，需要先取消已订阅的命令
     - 同一token ，多次连接时，会自动关闭上一个连接
     - 客户端 必需 实现 ping ,pong命令，长时间未收到客户端发出ping ，则会自动关闭连接
     - 服务端 定时的发送ping 命令，客户端收到时，需要及时返回 pong命令
-    - 如果在路径中指定blockChain,则在消息中 blockChain 则失效
-    - 【ws://localhost:9003/api/store/ws/{token}?chainCode={chainCode}】 仅在 同一个token 需要多次连接同一个服务节点时使用(订阅不同链的数据)，但仍然推荐 使用一个连接同时订阅多个链的方案
+    - ws://localhost:9003/api/store/ws/{token}?serialId={serialId} 这种请求时最终token=token_serialId
 
 

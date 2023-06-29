@@ -17,41 +17,47 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 )
 
 type WsHandler struct {
-	log            *logrus.Entry
-	cfg            map[int64]*config.Chain
-	kafka          *kafkaClient.EasyKafka
-	db             service.DbMonitorAddressInterface
-	cache          *db2.CacheService
-	connMap        map[string]*websocket.Conn
-	cmdMap         map[string]map[int64]service.WsReqMessage
-	ctxMap         map[string]map[int64]context.CancelFunc
-	monitorAddress map[int64][]*service.MonitorAddress
+	log     *logrus.Entry
+	cfg     map[int64]*config.Chain
+	kafka   *kafkaClient.EasyKafka
+	db      service.DbMonitorAddressInterface
+	cache   *db2.CacheService
+	connMap map[string]*websocket.Conn                //token:conn
+	cmdMap  map[string]map[int64]service.WsReqMessage //token:code-wsReq
+	//ctxMap         map[string]map[int64]context.CancelFunc
+	monitorAddress map[int64]map[string]*TokenAddress //blockchain:token-tokenAddress
+}
+
+type TokenAddress struct {
+	Token string
+	List  []*service.MonitorAddress
 }
 
 func NewWsHandler(cfg *config.Config, log *xlog.XLog) *WsHandler {
 	kfk := kafkaClient.NewEasyKafka(log)
 	db := db2.NewChService(cfg, log)
 	mp := make(map[int64]*config.Chain, 2)
+	mp2 := make(map[int64]map[string]*TokenAddress, 2)
 	for _, v := range cfg.Chains {
 		mp[v.BlockChain] = v
+		mp2[v.BlockChain] = make(map[string]*TokenAddress, 2)
 	}
 	cache := db2.NewCacheService(cfg.Chains, log)
 	return &WsHandler{
-		log:            log.WithField("model", "wsSrv"),
-		db:             db,
-		cfg:            mp,
-		kafka:          kfk,
-		cache:          cache,
-		connMap:        make(map[string]*websocket.Conn, 5),
-		cmdMap:         make(map[string]map[int64]service.WsReqMessage, 5),
-		ctxMap:         make(map[string]map[int64]context.CancelFunc, 5),
-		monitorAddress: map[int64][]*service.MonitorAddress{},
+		log:     log.WithField("model", "wsSrv"),
+		db:      db,
+		cfg:     mp,
+		kafka:   kfk,
+		cache:   cache,
+		connMap: make(map[string]*websocket.Conn, 5),
+		cmdMap:  make(map[string]map[int64]service.WsReqMessage, 5),
+		//ctxMap:         make(map[string]map[int64]context.CancelFunc, 5),
+		monitorAddress: mp2,
 	}
 }
 
@@ -69,11 +75,27 @@ func (ws *WsHandler) Start() {
 			<-time.After(30 * time.Second)
 		}
 	}()
+
+	//go func() {
+	// 订阅链的配置
+	txKafkaParams := make(map[int64]*config.KafkaConfig, 2)
+	subKafkaParams := make(map[int64]*config.KafkaConfig, 2)
+	kafkaCtx, _ := context.WithCancel(context.Background())
+	//defer cancel()
+	for b, c := range ws.cfg {
+		f := c.KafkaCfg["Tx"]
+		txKafkaParams[b] = f
+
+		s := c.KafkaCfg["SubTx"]
+		subKafkaParams[b] = s
+	}
+	ws.sendMessageEx(txKafkaParams, subKafkaParams, kafkaCtx)
+	//}()
 }
 
 func (ws *WsHandler) Sub2(ctx *gin.Context, w http.ResponseWriter, r *http.Request) {
 
-	chainCode := ctx.Query("chainCode")
+	serialId := ctx.Query("serialId")
 	token := ctx.Param("token")
 	if len(token) < 1 {
 		resp := "{\"code\":1,\"data\":\"not found token\"}"
@@ -81,8 +103,8 @@ func (ws *WsHandler) Sub2(ctx *gin.Context, w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if len(chainCode) > 0 {
-		token = fmt.Sprintf("%v_%v", chainCode, token)
+	if len(serialId) > 0 {
+		token = fmt.Sprintf("%v_%v", serialId, token)
 	}
 
 	ws.Sub(ctx, w, r, token)
@@ -175,12 +197,12 @@ func (ws *WsHandler) Sub(ctx *gin.Context, w http.ResponseWriter, r *http.Reques
 				_ = c.Close()
 			}
 			delete(ws.connMap, token)
-			if fs, ok := ws.ctxMap[token]; ok {
-				for _, f := range fs {
-					f()
-				}
-			}
-			delete(ws.ctxMap, token)
+			//if fs, ok := ws.ctxMap[token]; ok {
+			//	for _, f := range fs {
+			//		f()
+			//	}
+			//}
+			//delete(ws.ctxMap, token)
 			interrupt = false
 		default:
 			logger := ws.log.WithFields(logrus.Fields{
@@ -204,18 +226,18 @@ func (ws *WsHandler) Sub(ctx *gin.Context, w http.ResponseWriter, r *http.Reques
 
 }
 
-func (ws *WsHandler) sendMessageEx(code int64, token string, kafkaConfig map[int64]*config.KafkaConfig, subKafkaConfig map[int64]*config.KafkaConfig, ctx context.Context) {
+func (ws *WsHandler) sendMessageEx(kafkaConfig map[int64]*config.KafkaConfig, subKafkaConfig map[int64]*config.KafkaConfig, ctx context.Context) {
 	for b, k := range kafkaConfig {
 		s := subKafkaConfig[b]
-		go ws.sendMessage(code, token, s, k, b, ctx)
+		go ws.sendMessage(s, k, b, ctx)
 	}
 }
 
 // kafka->ws.push
-func (ws *WsHandler) sendMessage(code int64, token string, SubKafkaConfig *config.KafkaConfig, kafkaConfig *config.KafkaConfig, blockChain int64, ctx context.Context) {
+func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig *config.KafkaConfig, blockChain int64, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
 	sender := make(chan []*kafka.Message, 10)
-	addressList := make([]*service.MonitorAddress, 0, 10)
+	//addressList := make([]*service.MonitorAddress, 0, 10)
 	//控制消息处理速度
 	lock := make(chan int64, 2)
 
@@ -236,55 +258,56 @@ func (ws *WsHandler) sendMessage(code int64, token string, SubKafkaConfig *confi
 		}(ctx)
 	}
 
-	go func(blockChain int64, token string, ctx2 context.Context) {
-		ticker := time.NewTicker(30 * time.Second)
-		defer ticker.Stop()
-
-		if strings.Contains(token, "_") {
-			ls := strings.Split(token, "_")
-			if len(ls) == 2 {
-				token = ls[1]
-			}
-		}
-
-		l, _ := ws.db.GetAddressByToken(blockChain, token)
-		if len(l) > 0 {
-			addressList = append(addressList, l...)
-		}
-
-		for {
+	// 定时更新监控地址池
+	go func(blockChain int64, ctx2 context.Context) {
+		interrupt := true
+		for interrupt {
 			select {
-			case <-ticker.C:
-				l, err := ws.db.GetAddressByToken(blockChain, token)
-				if err != nil {
-					continue
-				}
+			case <-ctx2.Done():
+				interrupt = false
+				break
+			default:
+				mp := make(map[string]*TokenAddress, 10)
+				for token, _ := range ws.connMap {
+					//path中包含serialId请求方式
+					if strings.Contains(token, "_") {
+						ls := strings.Split(token, "_")
+						if len(ls) == 2 {
+							token = ls[1]
+						}
+					}
 
-				addressList = addressList[len(addressList):]
-				if len(l) > 0 {
-					addressList = append(addressList, l...)
+					l, _ := ws.db.GetAddressByToken(blockChain, token)
+
+					mp[token] = &TokenAddress{
+						Token: token,
+						List:  l,
+					}
 				}
+				ws.monitorAddress[blockChain] = mp
 			}
+
+			<-time.After(3 * time.Second)
 		}
-	}(blockChain, token, ctx)
+	}(blockChain, ctx)
 
 	for {
 		select {
 		case msg := <-receiver:
 			//消息过滤
 			//根据这个用户（token）最新的订阅命令，筛选符合条件的交易且推送出去
-			if _, ok := ws.connMap[token]; !ok {
+			if len(ws.connMap) < 1 {
 				//用户不在线
 				continue
 			}
 
 			//用户在线 但没有订阅
-			if _, ok := ws.cmdMap[token]; !ok {
+			if len(ws.cmdMap) < 1 {
 				continue
 			}
 
-			//该用户无监控地址
-			if len(addressList) < 1 {
+			//无用户监控
+			if l, ok := ws.monitorAddress[blockChain]; !ok || len(l) < 1 {
 				continue
 			}
 
@@ -293,70 +316,84 @@ func (ws *WsHandler) sendMessage(code int64, token string, SubKafkaConfig *confi
 				continue
 			}
 
-			push := false
-			switch code {
-			case 1: //资产交易
-				if tp == 1 || tp == 2 {
-					push = true
+			for token, mp := range ws.cmdMap {
+				push := false
+				var code int64
+				for c, _ := range mp {
+					code = c
+					switch c {
+					case 1: //资产交易
+						if tp == 1 || tp == 2 {
+							push = true
+						}
+					case 3: //质押
+						if tp == 6 {
+							push = true
+						}
+					case 5: //解质押
+						if tp == 7 {
+							push = true
+						}
+					case 7: //解提取
+						if tp == 8 {
+							push = true
+						}
+					case 9: //代理资源
+						if tp == 3 {
+							push = true
+						}
+					case 11: //代理资源（资源回收）
+						if tp == 4 {
+							push = true
+						}
+					case 13: //激活账户
+						if tp == 5 {
+							push = true
+						}
+					}
 				}
-			case 3: //质押
-				if tp == 6 {
-					push = true
-				}
-			case 5: //解质押
-				if tp == 7 {
-					push = true
-				}
-			case 7: //解提取
-				if tp == 8 {
-					push = true
-				}
-			case 9: //代理资源
-				if tp == 3 {
-					push = true
-				}
-			case 11: //代理资源（资源回收）
-				if tp == 4 {
-					push = true
-				}
-			case 13: //激活账户
-				if tp == 5 {
-					push = true
-				}
-			}
 
-			//不符合订阅条件
-			if !push {
-				continue
-			}
+				//不符合订阅条件
+				if !push {
+					continue
+				}
 
-			//检查地址 是否和交易 相关
-			if !ws.checkTx(blockChain, msg, addressList, lock) {
-				continue
-			}
+				//检查地址 是否和交易 相关
+				if v, ok := ws.monitorAddress[blockChain]; ok {
+					if tokenAddress, ok := v[token]; ok {
+						if !ws.checkTx(blockChain, msg, tokenAddress.List, lock) {
+							continue
+						}
+					} else {
+						continue
+					}
+				} else {
+					continue
+				}
 
-			//parse tx
-			tx, err := service.ParseTx(blockChain, msg)
-			if err != nil {
-				ws.log.Warnf("ParseTx|blockchain:%v,kafka.msg:%v,err:%v", blockChain, string(msg.Value), err)
-				continue
-			}
-
-			//push
-			if push {
-				wpm := service.WsPushMessage{Code: code, BlockChain: blockChain, Data: tx}
-				bs, _ := json.Marshal(wpm)
-				err = ws.connMap[token].WriteMessage(websocket.TextMessage, bs)
+				//parse tx
+				tx, err := service.ParseTx(blockChain, msg)
 				if err != nil {
-					ws.log.Errorf("sendMessage|error=%v", err.Error())
+					ws.log.Warnf("ParseTx|blockchain:%v,kafka.msg:%v,err:%v", blockChain, string(msg.Value), err)
+					continue
 				}
-			}
 
-			//save to kafka
-			if SubKafkaConfig != nil {
-				r, _ := json.Marshal(tx)
-				m := &kafka.Message{Topic: SubKafkaConfig.Topic, Key: []byte(uuid.New().String()), Value: r}
-				sender <- []*kafka.Message{m}
+				//push
+				if push {
+					wpm := service.WsPushMessage{Code: code, BlockChain: blockChain, Data: tx}
+					bs, _ := json.Marshal(wpm)
+					err = ws.connMap[token].WriteMessage(websocket.TextMessage, bs)
+					if err != nil {
+						ws.log.Errorf("sendMessage|error=%v", err.Error())
+					}
+				}
+
+				//save to kafka
+				if SubKafkaConfig != nil {
+					r, _ := json.Marshal(tx)
+					m := &kafka.Message{Topic: SubKafkaConfig.Topic, Key: []byte(uuid.New().String()), Value: r}
+					sender <- []*kafka.Message{m}
+				}
 			}
 
 		}
@@ -385,19 +422,6 @@ func (ws *WsHandler) handlerMessage(ctx context.Context, token string, c *websoc
 		return
 	}
 
-	// 如果请求路径中 包含了 chainCode ,则 直接使用路径 chainCode,消息体中该参数忽略
-	if strings.Contains(token, "_") {
-		ls := strings.Split(token, "_")
-		code, _ := strconv.ParseInt(ls[0], 0, 64)
-		if len(ls) == 2 {
-			msg.BlockChain = []int64{code}
-		} else {
-			errMsg := &service.WsRespMessage{Id: msg.Id, Code: msg.Code, Err: "params of path is error", Params: msg.Params, Status: 1, BlockChain: msg.BlockChain, Resp: nil}
-			ws.returnMsg(errMsg, log, mt, c)
-			return
-		}
-	}
-
 	//初始化返回
 	returnMsg.Id = msg.Id
 	returnMsg.Code = msg.Code
@@ -419,19 +443,6 @@ func (ws *WsHandler) handlerMessage(ctx context.Context, token string, c *websoc
 		}
 	}
 
-	// 订阅链的配置
-	txKafkaParams := make(map[int64]*config.KafkaConfig, 2)
-	subKafkaParams := make(map[int64]*config.KafkaConfig, 2)
-	for _, b := range msg.BlockChain {
-		if c, ok := ws.cfg[b]; ok {
-			f := c.KafkaCfg["Tx"]
-			txKafkaParams[b] = f
-
-			s := c.KafkaCfg["SubTx"]
-			subKafkaParams[b] = s
-		}
-	}
-
 	if msg.Code == 1 || msg.Code == 3 || msg.Code == 5 || msg.Code == 7 || msg.Code == 9 || msg.Code == 11 || msg.Code == 13 {
 		//订阅请求
 		v, ok := ws.cmdMap[token]
@@ -450,25 +461,25 @@ func (ws *WsHandler) handlerMessage(ctx context.Context, token string, c *websoc
 				ws.cmdMap[token][msg.Code] = msg
 			}
 
-			kafkaCtx, cancel := context.WithCancel(ctx)
-			if _, ok := ws.ctxMap[token]; !ok {
-				ws.ctxMap[token] = map[int64]context.CancelFunc{msg.Code: cancel}
-			} else {
-				ws.ctxMap[token][msg.Code] = cancel
-			}
-			ws.sendMessageEx(msg.Code, token, txKafkaParams, subKafkaParams, kafkaCtx)
+			//kafkaCtx, cancel := context.WithCancel(ctx)
+			//if _, ok := ws.ctxMap[token]; !ok {
+			//	ws.ctxMap[token] = map[int64]context.CancelFunc{msg.Code: cancel}
+			//} else {
+			//	ws.ctxMap[token][msg.Code] = cancel
+			//}
+			//ws.sendMessageEx(msg.Code, token, txKafkaParams, subKafkaParams, kafkaCtx)
 		}
 	} else if msg.Code == 2 || msg.Code == 4 || msg.Code == 6 || msg.Code == 8 || msg.Code == 10 || msg.Code == 12 || msg.Code == 14 {
 		//取消订阅，回收资源
-		if fs, ok := ws.ctxMap[token]; ok {
-			if f, ok2 := fs[msg.Code-1]; ok2 {
-				f()
-			}
-		}
-
-		if v, ok := ws.ctxMap[token]; ok {
-			delete(v, msg.Code-1)
-		}
+		//if fs, ok := ws.ctxMap[token]; ok {
+		//	if f, ok2 := fs[msg.Code-1]; ok2 {
+		//		f()
+		//	}
+		//}
+		//
+		//if v, ok := ws.ctxMap[token]; ok {
+		//	delete(v, msg.Code-1)
+		//}
 
 		if v, ok := ws.cmdMap[token]; ok {
 			delete(v, msg.Code-1)

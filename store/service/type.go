@@ -250,7 +250,7 @@ type WsRespMessage struct {
 }
 
 type WsPushMessage struct {
-	Code       int64 //1:tx,2:block,3:receipt
+	Code       int64
 	BlockChain int64 `json:"blockChain"`
 	Data       any
 }

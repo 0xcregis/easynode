@@ -397,6 +397,10 @@ func div(str string, pos int) string {
 }
 
 func CheckAddress(blockChain int64, msg *kafka.Message, list []*MonitorAddress) bool {
+
+	if len(list) < 1 {
+		return false
+	}
 	if blockChain == 200 {
 		return CheckAddressForEther(msg, list)
 	} else if blockChain == 205 {
@@ -404,7 +408,6 @@ func CheckAddress(blockChain int64, msg *kafka.Message, list []*MonitorAddress) 
 	} else {
 		return false
 	}
-
 }
 
 func CheckAddressForEther(msg *kafka.Message, list []*MonitorAddress) bool {

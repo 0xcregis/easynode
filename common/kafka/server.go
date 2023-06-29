@@ -133,7 +133,7 @@ func (easy *EasyKafka) Write(c Config, ch chan []*kafka.Message, resp func([]*ka
 	for running {
 		//easy.log.Printf("kafka|Write|length=%v", len(ch))
 		ms := <-ch
-		step := 30
+		step := 20
 		for i := 0; i < len(ms); i += step {
 			n := i + step
 			if len(ms) <= n {

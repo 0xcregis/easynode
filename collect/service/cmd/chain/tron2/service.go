@@ -51,9 +51,13 @@ func (s *Service) GetTx(txHash string, task *config.TxTask, eLog *logrus.Entry) 
 	fullTx := make(map[string]interface{}, 2)
 	fullTx["tx"] = resp
 
-	receipt := s.GetReceipt(hash, nil, eLog)
-	if receipt != nil {
-		fullTx["receipt"] = receipt.Receipt
+	receipt, err := s.GetReceipt(hash, nil, eLog)
+	if err != nil {
+		eLog.Errorf("GetTx|BlockChainCode=%v,err=%v,txHash=%v", s.chain.BlockChainCode, err.Error(), txHash)
+	} else {
+		if receipt != nil {
+			fullTx["receipt"] = receipt.Receipt
+		}
 	}
 
 	//tron 交易中缺失 完整的blockHash
@@ -69,19 +73,19 @@ func (s *Service) GetTx(txHash string, task *config.TxTask, eLog *logrus.Entry) 
 	return r
 }
 
-func (s *Service) GetReceipt(txHash string, task *config.ReceiptTask, eLog *logrus.Entry) *service.ReceiptInterface {
+func (s *Service) GetReceipt(txHash string, task *config.ReceiptTask, eLog *logrus.Entry) (*service.ReceiptInterface, error) {
 
 	//调用接口
 	resp, err := s.receiptChainClient.GetTransactionReceiptByHash(int64(s.chain.BlockChainCode), txHash)
 	if err != nil {
 		eLog.Errorf("GetReceipt|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, err.Error(), txHash)
-		return nil
+		return nil, err
 	}
 
 	//处理数据
 	if resp == "" {
 		eLog.Errorf("GetReceipt|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, "receipt is empty", txHash)
-		return nil
+		return nil, errors.New("receipt is null")
 	}
 
 	hash := gjson.Parse(resp).Get("id").String()
@@ -94,13 +98,16 @@ func (s *Service) GetReceipt(txHash string, task *config.ReceiptTask, eLog *logr
 	if p != nil {
 		bs, _ := json.Marshal(receipt)
 		r := &service.ReceiptInterface{TransactionHash: hash, Receipt: string(bs), BlockNumber: receipt.BlockNumber, BlockTimeStamp: receipt.BlockTimeStamp}
-		return r
+		return r, nil
 	} else {
-		return nil
+		nodeId, _ := util.GetLocalNodeId()
+		task := service.NodeTask{Id: time.Now().UnixNano(), NodeId: nodeId, BlockChain: s.chain.BlockChainCode, TxHash: receipt.Id, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
+		_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), receipt.Id, task)
+		return nil, errors.New("receipt is null")
 	}
 }
 
-func (s *Service) GetReceiptByBlock(blockHash, number string, task *config.ReceiptTask, eLog *logrus.Entry) []*service.ReceiptInterface {
+func (s *Service) GetReceiptByBlock(blockHash, number string, task *config.ReceiptTask, eLog *logrus.Entry) ([]*service.ReceiptInterface, error) {
 
 	//调用接口
 	var resp string
@@ -117,13 +124,13 @@ func (s *Service) GetReceiptByBlock(blockHash, number string, task *config.Recei
 
 	if err != nil {
 		eLog.Errorf("GetReceiptByBlock|BlockChainName=%v,err=%v,blocknumber=%v, blockHash=%v", s.chain.BlockChainName, err.Error(), number, blockHash)
-		return nil
+		return nil, err
 	}
 
 	//处理数据
 	if resp == "" {
 		eLog.Errorf("GetReceiptByBlock|BlockChainName=%v,err=%v,blocknumber=%v, blockHash=%v", s.chain.BlockChainName, "receipts is null", number, blockHash)
-		return nil
+		return nil, errors.New("receipt is null")
 	}
 
 	txs := gjson.Parse(resp).Array()
@@ -140,10 +147,14 @@ func (s *Service) GetReceiptByBlock(blockHash, number string, task *config.Recei
 			bs, _ := json.Marshal(p)
 			r := &service.ReceiptInterface{TransactionHash: hash, Receipt: string(bs)}
 			receiptList = append(receiptList, r)
+		} else {
+			nodeId, _ := util.GetLocalNodeId()
+			task := service.NodeTask{Id: time.Now().UnixNano(), NodeId: nodeId, BlockChain: s.chain.BlockChainCode, TxHash: receipt.Id, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
+			_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), receipt.Id, task)
 		}
 	}
 
-	return receiptList
+	return receiptList, nil
 }
 
 func (s *Service) GetBlockByNumber(blockNumber string, task *config.BlockTask, eLog *logrus.Entry, flag bool) (*service.BlockInterface, []*service.TxInterface) {
@@ -181,10 +192,14 @@ func (s *Service) GetBlockByNumber(blockNumber string, task *config.BlockTask, e
 
 	list := gjson.Parse(resp).Get("transactions").Array()
 	//根据区块高度，获取交易log
-	receipts := s.GetReceiptByBlock(blockID, number, nil, eLog)
-	mp := make(map[string]interface{}, len(receipts))
-	for _, v := range receipts {
-		mp[v.TransactionHash] = v.Receipt
+	mp := make(map[string]interface{}, 10)
+	receipts, err := s.GetReceiptByBlock(blockID, number, nil, eLog)
+	if err != nil {
+		eLog.Errorf("GetBlockByNumber|BlockChainCode=%v,err=%v,BlockNumber=%v", s.chain.BlockChainCode, err.Error(), number)
+	} else {
+		for _, v := range receipts {
+			mp[v.TransactionHash] = v.Receipt
+		}
 	}
 
 	txs := make([]*service.TxInterface, 0, len(list))
@@ -238,10 +253,14 @@ func (s *Service) GetBlockByHash(blockHash string, cfg *config.BlockTask, eLog *
 	}
 
 	//根据区块高度，获取交易log
-	receipts := s.GetReceiptByBlock(blockID, number, nil, eLog)
-	mp := make(map[string]interface{}, len(receipts))
-	for _, v := range receipts {
-		mp[v.TransactionHash] = v.Receipt
+	mp := make(map[string]interface{}, 10)
+	receipts, err := s.GetReceiptByBlock(blockID, number, nil, eLog)
+	if err != nil {
+		eLog.Errorf("GetBlockByHash|BlockChainCode=%v,err=%v,BlockHash=%v", s.chain.BlockChainCode, err.Error(), blockID)
+	} else {
+		for _, v := range receipts {
+			mp[v.TransactionHash] = v.Receipt
+		}
 	}
 
 	list := gjson.Parse(resp).Get("transactions").Array()
@@ -300,9 +319,9 @@ func (s *Service) buildContract(receipt *service.TronReceipt) *service.TronRecei
 	if has {
 		return receipt
 	} else {
-		nodeId, _ := util.GetLocalNodeId()
-		task := service.NodeTask{Id: time.Now().UnixNano(), NodeId: nodeId, BlockChain: s.chain.BlockChainCode, TxHash: receipt.Id, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
-		_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), receipt.Id, task)
+		//nodeId, _ := util.GetLocalNodeId()
+		//task := service.NodeTask{Id: time.Now().UnixNano(), NodeId: nodeId, BlockChain: s.chain.BlockChainCode, TxHash: receipt.Id, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
+		//_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), receipt.Id, task)
 		return nil
 	}
 }

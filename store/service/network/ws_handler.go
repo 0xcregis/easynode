@@ -316,6 +316,7 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 				continue
 			}
 
+			pushMp := make(map[string]int64, 1)
 			for token, mp := range ws.cmdMap {
 				//push := false
 				//var code int64
@@ -339,29 +340,34 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 					continue
 				}
 
-				//parse tx
-				tx, err := service.ParseTx(blockChain, msg)
+				pushMp[token] = code
+			}
+
+			//parse tx
+			var tx *service.SubTx
+			if len(pushMp) > 0 {
+				tx, err = service.ParseTx(blockChain, msg)
 				if err != nil {
 					ws.log.Warnf("ParseTx|blockchain:%v,kafka.msg:%v,err:%v", blockChain, string(msg.Value), err)
 					continue
 				}
+			}
 
-				//push
-				if push {
-					wpm := service.WsPushMessage{Code: code, BlockChain: blockChain, Data: tx}
-					bs, _ := json.Marshal(wpm)
-					err = ws.connMap[token].WriteMessage(websocket.TextMessage, bs)
-					if err != nil {
-						ws.log.Errorf("sendMessage|error=%v", err.Error())
-					}
+			//push
+			for token, code := range pushMp {
+				wpm := service.WsPushMessage{Code: code, BlockChain: blockChain, Data: tx}
+				bs, _ := json.Marshal(wpm)
+				err = ws.connMap[token].WriteMessage(websocket.TextMessage, bs)
+				if err != nil {
+					ws.log.Errorf("sendMessage|error=%v", err.Error())
 				}
+			}
 
-				//save to kafka
-				if SubKafkaConfig != nil {
-					r, _ := json.Marshal(tx)
-					m := &kafka.Message{Topic: SubKafkaConfig.Topic, Key: []byte(uuid.New().String()), Value: r}
-					sender <- []*kafka.Message{m}
-				}
+			//save to kafka
+			if len(pushMp) > 0 && SubKafkaConfig != nil {
+				r, _ := json.Marshal(tx)
+				m := &kafka.Message{Topic: SubKafkaConfig.Topic, Key: []byte(uuid.New().String()), Value: r}
+				sender <- []*kafka.Message{m}
 			}
 
 			//<-lock

@@ -410,56 +410,91 @@ func CheckAddress(blockChain int64, msg *kafka.Message, list []*MonitorAddress) 
 	}
 }
 
-func CheckAddressForEther(msg *kafka.Message, list []*MonitorAddress) bool {
-	root := gjson.ParseBytes(msg.Value)
+func getCoreAddrEth(addr string) string {
+	addr = strings.ToLower(addr)
+	if strings.HasPrefix(addr, "0x") {
+		return strings.TrimLeft(addr, "0x") //去丢0x
+	}
+	return addr
+}
+func CheckAddressEth(tx []byte, addrList []string) bool {
+
+	txAddressList := make(map[string]int64, 10)
+	root := gjson.ParseBytes(tx)
+
 	fromAddr := root.Get("from").String()
+	txAddressList[getCoreAddrEth(fromAddr)] = 1
+
 	toAddr := root.Get("to").String()
-	has := false
-	for _, v := range list {
-		//已经判断出该交易 符合要求了，不需要在检查其他地址了
-		if has {
-			break
-		}
+	txAddressList[getCoreAddrEth(toAddr)] = 1
 
-		// 普通交易且 地址包含订阅地址
-		if strings.HasPrefix(strings.ToLower(fromAddr), strings.ToLower(v.Address)) || strings.HasPrefix(strings.ToLower(toAddr), strings.ToLower(v.Address)) {
-			has = true
-			break
-		}
-
-		//合约交易
-		monitorAddr := strings.TrimLeft(v.Address, "0x") //去丢0x
-		if root.Get("receipt").Exists() {
-			receipt := root.Get("receipt").String()
-			receiptRoot := gjson.Parse(receipt)
-			list := receiptRoot.Get("logs").Array()
-			for _, v := range list {
-
-				//过滤没有合约信息的交易，出现这种情况原因：1. 合约获取失败会重试 2:非20合约
-				data := v.Get("data").String()
-				if !gjson.Parse(data).IsObject() {
-					continue
+	if root.Get("receipt").Exists() {
+		receipt := root.Get("receipt").String()
+		receiptRoot := gjson.Parse(receipt)
+		list := receiptRoot.Get("logs").Array()
+		for _, v := range list {
+			//过滤没有合约信息的交易，出现这种情况原因：1. 合约获取失败会重试 2:非20合约
+			data := v.Get("data").String()
+			if !gjson.Parse(data).IsObject() {
+				continue
+			}
+			topics := v.Get("topics").Array()
+			//Transfer()
+			if len(topics) >= 3 && topics[0].String() == service.EthTopic {
+				from, _ := util.Hex2Address(topics[1].String())
+				if len(from) > 0 {
+					txAddressList[getCoreAddrEth(from)] = 1
 				}
-
-				topics := v.Get("topics").Array()
-				//Transfer()
-				if len(topics) >= 3 && topics[0].String() == service.EthTopic {
-					if strings.HasSuffix(strings.ToLower(topics[1].String()), strings.ToLower(monitorAddr)) || strings.HasSuffix(strings.ToLower(topics[2].String()), strings.ToLower(monitorAddr)) {
-						has = true
-						break
-					}
-
+				to, _ := util.Hex2Address(topics[2].String())
+				if len(to) > 0 {
+					txAddressList[getCoreAddrEth(to)] = 1
 				}
 
 			}
 
 		}
+
+	}
+
+	has := false
+	for _, v := range addrList {
+		monitorAddr := getCoreAddrEth(v)
+		if _, ok := txAddressList[monitorAddr]; ok {
+			has = true
+			break
+		}
 	}
 	return has
 }
+func CheckAddressForEther(msg *kafka.Message, list []*MonitorAddress) bool {
 
-func CheckAddressForTron(msg *kafka.Message, list []*MonitorAddress) bool {
-	root := gjson.ParseBytes(msg.Value)
+	addrList := make([]string, 0, 10)
+	for _, v := range list {
+		addrList = append(addrList, v.Address)
+	}
+	return CheckAddressEth(msg.Value, addrList)
+}
+
+func getCoreAddrTron(addr string) string {
+	if strings.HasPrefix(addr, "0x") {
+		return strings.TrimLeft(addr, "0x") //去丢0x
+	}
+
+	if strings.HasPrefix(addr, "41") {
+		return strings.TrimLeft(addr, "41") //去丢41
+	}
+
+	if strings.HasPrefix(addr, "0x41") {
+		return strings.TrimLeft(addr, "0x41") //去丢41
+	}
+	return addr
+}
+
+func CheckAddressTron(txValue []byte, addrList []string) bool {
+
+	txAddressList := make(map[string]int64, 10)
+
+	root := gjson.ParseBytes(txValue)
 	tx := root.Get("tx").String()
 	txRoot := gjson.Parse(tx)
 	contracts := txRoot.Get("raw_data.contract").Array()
@@ -474,6 +509,7 @@ func CheckAddressForTron(msg *kafka.Message, list []*MonitorAddress) bool {
 	var internalTransactions []gjson.Result
 
 	fromAddr = r.Get("parameter.value.owner_address").String()
+	txAddressList[getCoreAddrTron(fromAddr)] = 1
 
 	//TransferContract,TransferAssetContract
 	if r.Get("parameter.value.to_address").Exists() {
@@ -495,6 +531,8 @@ func CheckAddressForTron(msg *kafka.Message, list []*MonitorAddress) bool {
 		toAddr = r.Get("parameter.value.account_address").String()
 	}
 
+	txAddressList[getCoreAddrTron(toAddr)] = 1
+
 	if txType == "TriggerSmartContract" {
 		receipt := root.Get("receipt").String()
 		receiptRoot := gjson.Parse(receipt)
@@ -503,69 +541,51 @@ func CheckAddressForTron(msg *kafka.Message, list []*MonitorAddress) bool {
 		}
 		logs = receiptRoot.Get("log").Array()
 		internalTransactions = receiptRoot.Get("internal_transactions").Array()
+
+		//合约交易 合约调用下的TRC20
+		if len(logs) > 0 {
+			for _, v := range logs {
+				topics := v.Get("topics").Array()
+				//Transfer()
+				if len(topics) >= 3 && topics[0].String() == service.TronTopic {
+					from, _ := util.Hex2Address(topics[1].String())
+					if len(from) > 0 {
+						txAddressList[getCoreAddrTron(from)] = 1
+					}
+					to, _ := util.Hex2Address(topics[2].String())
+					if len(to) > 0 {
+						txAddressList[getCoreAddrTron(to)] = 1
+					}
+				}
+			}
+		}
+
+		//合约调用下的内部交易TRX转帐和TRC10转账：
+		if len(internalTransactions) > 0 {
+			for _, v := range internalTransactions {
+				fromAddr = v.Get("caller_address").String()
+				toAddr = v.Get("transferTo_address").String()
+				txAddressList[getCoreAddrTron(fromAddr)] = 1
+				txAddressList[getCoreAddrTron(toAddr)] = 1
+			}
+		}
 	}
 
 	has := false
-	for _, v := range list {
-		//已经判断出该交易 符合要求了，不需要在检查其他地址了
-		if has {
-			break
-		}
-
-		monitorAddr := v.Address
-
-		if strings.HasPrefix(v.Address, "0x") {
-			monitorAddr = strings.TrimLeft(v.Address, "0x") //去丢0x
-		}
-
-		if strings.HasPrefix(v.Address, "41") {
-			monitorAddr = strings.TrimLeft(v.Address, "41") //去丢41
-		}
-
-		if strings.HasPrefix(v.Address, "0x41") {
-			monitorAddr = strings.TrimLeft(v.Address, "0x41") //去丢41
-		}
-
-		// 普通交易且 地址包含订阅地址
-		if strings.HasSuffix(fromAddr, monitorAddr) || strings.HasSuffix(toAddr, monitorAddr) {
+	for _, v := range addrList {
+		monitorAddr := getCoreAddrTron(v)
+		if _, ok := txAddressList[monitorAddr]; ok {
 			has = true
 			break
 		}
-
-		if txType == "TriggerSmartContract" {
-			//合约交易 合约调用下的TRC20
-			if len(logs) > 0 {
-				for _, v := range logs {
-
-					//过滤没有合约信息的交易，出现这种情况原因：1. 合约获取失败会重试 2:非20合约
-					data := v.Get("data").String()
-					if !gjson.Parse(data).IsObject() {
-						continue
-					}
-
-					topics := v.Get("topics").Array()
-					//Transfer()
-					if len(topics) >= 3 && topics[0].String() == service.TronTopic {
-						if strings.HasSuffix(topics[1].String(), monitorAddr) || strings.HasSuffix(topics[2].String(), monitorAddr) {
-							has = true
-							break
-						}
-					}
-				}
-			}
-
-			//合约调用下的内部交易TRX转帐和TRC10转账：
-			if len(internalTransactions) > 0 {
-				for _, v := range internalTransactions {
-					fromAddr = v.Get("caller_address").String()
-					toAddr = v.Get("transferTo_address").String()
-					if strings.HasSuffix(fromAddr, monitorAddr) || strings.HasSuffix(toAddr, monitorAddr) {
-						has = true
-						break
-					}
-				}
-			}
-		}
 	}
 	return has
+}
+
+func CheckAddressForTron(msg *kafka.Message, list []*MonitorAddress) bool {
+	addrList := make([]string, 0, 10)
+	for _, v := range list {
+		addrList = append(addrList, v.Address)
+	}
+	return CheckAddressTron(msg.Value, addrList)
 }

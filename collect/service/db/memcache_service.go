@@ -19,16 +19,27 @@ import (
 )
 
 var (
-	ContractKey = "contract_%v"
-	ErrTxKey    = "errTx_%v"
-	NodeTaskKey = "nodeTask_%v"
-	MonitorKey  = "monitorAddress_%v"
+	ContractKey    = "contract_%v"
+	ErrTxKey       = "errTx_%v"
+	NodeTaskKey    = "nodeTask_%v"
+	MonitorKey     = "monitorAddress_%v"
+	LatestBlockKey = "latestBlock"
 )
 
 type Service struct {
 	log         *xlog.XLog
 	lock        *sync.RWMutex
 	cacheClient *redis.Client
+}
+
+func (s *Service) StoreLatestBlock(blockchain int64, key string, data any) error {
+	bs, _ := json.Marshal(data)
+	err := s.cacheClient.HSet(context.Background(), LatestBlockKey, fmt.Sprintf("%v-%v", blockchain, key), string(bs)).Err()
+	if err != nil {
+		s.log.Warnf("StoreLatestBlock|err=%v", err.Error())
+		return err
+	}
+	return nil
 }
 
 func (s *Service) GetMonitorAddress(blockChain int64) ([]string, error) {

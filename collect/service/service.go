@@ -32,13 +32,15 @@ type StoreTaskInterface interface {
 	GetAllKeyForErrTx(blockchain int64) ([]string, error)
 
 	GetMonitorAddress(blockChain int64) ([]string, error)
+
+	StoreLatestBlock(blockchain int64, key string, data any) error
 }
 
 // BlockChainInterface 公链接口
 type BlockChainInterface interface {
 	GetTx(txHash string, task *config.TxTask, log *logrus.Entry) *TxInterface
-	GetReceipt(txHash string, task *config.ReceiptTask, log *logrus.Entry) (*ReceiptInterface,error)
-	GetReceiptByBlock(blockHash, number string, task *config.ReceiptTask, log *logrus.Entry) ([]*ReceiptInterface,error)
+	GetReceipt(txHash string, task *config.ReceiptTask, log *logrus.Entry) (*ReceiptInterface, error)
+	GetReceiptByBlock(blockHash, number string, task *config.ReceiptTask, log *logrus.Entry) ([]*ReceiptInterface, error)
 	GetBlockByNumber(blockNumber string, task *config.BlockTask, log *logrus.Entry, flag bool) (*BlockInterface, []*TxInterface)
 	GetBlockByHash(blockHash string, cfg *config.BlockTask, log *logrus.Entry, flag bool) (*BlockInterface, []*TxInterface)
 	BalanceCluster(key string, clusterList []*config.FromCluster) (*config.FromCluster, error)

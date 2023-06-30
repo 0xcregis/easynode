@@ -268,7 +268,7 @@ func ParseTxForTron(body []byte) (*SubTx, error) {
 	} else if r.TxType == 1 { //合约调用
 		r.Value = "0"
 	} else { //其他
-		r.Value = v.String()
+		r.Value = "-1"
 	}
 
 	if !root.Get("receipt").Exists() { //收据不存在的交易，则放弃

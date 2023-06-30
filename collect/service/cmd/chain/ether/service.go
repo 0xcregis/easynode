@@ -221,15 +221,16 @@ func (s *Service) GetReceiptByBlock(blockHash, number string, task *config.Recei
 
 	rs := make([]*service.ReceiptInterface, 0, len(receiptList))
 	for _, v := range receiptList {
+		txHash:=v.TransactionHash
 		v = s.buildContract(v)
 		if v != nil {
-			r := &service.ReceiptInterface{TransactionHash: v.TransactionHash, Receipt: v}
+			r := &service.ReceiptInterface{TransactionHash: txHash, Receipt: v}
 			rs = append(rs, r)
 		} else {
 			//收据数据异常，则加入重试机制
 			nodeId, _ := util.GetLocalNodeId()
-			task := service.NodeTask{Id: time.Now().UnixNano(), BlockChain: s.chain.BlockChainCode, NodeId: nodeId, TxHash: v.TransactionHash, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
-			_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), v.TransactionHash, task)
+			task := service.NodeTask{Id: time.Now().UnixNano(), BlockChain: s.chain.BlockChainCode, NodeId: nodeId, TxHash: txHash, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
+			_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), txHash, task)
 		}
 	}
 	return rs, nil
@@ -260,8 +261,8 @@ func (s *Service) GetReceipt(txHash string, task *config.ReceiptTask, eLog *logr
 		return &service.ReceiptInterface{TransactionHash: receipt.TransactionHash, Receipt: receipt}, nil
 	} else {
 		nodeId, _ := util.GetLocalNodeId()
-		task := service.NodeTask{Id: time.Now().UnixNano(), BlockChain: s.chain.BlockChainCode, NodeId: nodeId, TxHash: receipt.TransactionHash, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
-		_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), receipt.TransactionHash, task)
+		task := service.NodeTask{Id: time.Now().UnixNano(), BlockChain: s.chain.BlockChainCode, NodeId: nodeId, TxHash: txHash, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
+		_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), txHash, task)
 		return nil, errors.New("receipt is null")
 	}
 }

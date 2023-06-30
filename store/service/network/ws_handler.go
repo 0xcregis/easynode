@@ -270,14 +270,15 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 				mp := make(map[string]*TokenAddress, 10)
 				for token, _ := range ws.connMap {
 					//path中包含serialId请求方式
+					newToken := token
 					if strings.Contains(token, "_") {
 						ls := strings.Split(token, "_")
 						if len(ls) == 2 {
-							token = ls[1]
+							newToken = ls[1]
 						}
 					}
 
-					l, _ := ws.db.GetAddressByToken(blockChain, token)
+					l, _ := ws.db.GetAddressByToken(blockChain, newToken)
 
 					mp[token] = &TokenAddress{
 						Token: token,

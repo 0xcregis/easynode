@@ -111,7 +111,7 @@ func (c *Cmd) Start() {
 	//任务节点
 	broker2 := fmt.Sprintf("%v:%v", c.chain.TaskKafka.Host, c.chain.TaskKafka.Port)
 
-	c.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker, broker2}}, c.kafkaCh, c.HandlerKafkaRespMessage, 10)
+	c.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker, broker2}}, c.kafkaCh, c.HandlerKafkaRespMessage, context.Background(), 10)
 }
 
 func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan *service.NodeTask, txCh chan *service.NodeTask, receiptChan chan *service.NodeTask) {

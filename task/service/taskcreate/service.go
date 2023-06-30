@@ -44,7 +44,7 @@ func (s *Service) Start(ctx context.Context) {
 				interrupt = false
 				break
 			default:
-				time.Sleep(20 * time.Second)
+				time.Sleep(13 * time.Second)
 				continue
 			}
 		}

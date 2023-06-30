@@ -84,16 +84,16 @@ func (easy *EasyKafka) Read(c *Config, ch chan *kafka.Message, ctx context.Conte
 	time.Sleep(2 * time.Second)
 }
 
-func (easy *EasyKafka) WriteBatch(c *Config, ch chan []*kafka.Message, resp func([]*kafka.Message), count int) {
+func (easy *EasyKafka) WriteBatch(c *Config, ch chan []*kafka.Message, resp func([]*kafka.Message), parent context.Context, count int) {
 	query := make(chan int, count)
 	for true {
 		query <- 1
-		go func(c *Config, ch chan []*kafka.Message, resp func([]*kafka.Message)) {
-			ctx, cancel := context.WithCancel(context.Background())
+		go func(c *Config, ch chan []*kafka.Message, resp func([]*kafka.Message), parent context.Context) {
+			ctx, cancel := context.WithCancel(parent)
 			defer cancel()
 			easy.Write(*c, ch, resp, ctx)
 			<-query
-		}(c, ch, resp)
+		}(c, ch, resp, parent)
 	}
 }
 
@@ -152,11 +152,10 @@ func (easy *EasyKafka) Write(c Config, ch chan []*kafka.Message, resp func([]*ka
 
 func (easy *EasyKafka) sendToKafka(w *kafka.Writer, ms []*kafka.Message, resp func([]*kafka.Message)) error {
 
-	start := time.Now()
-
-	defer func() {
-		easy.log.Printf("sendToKafka.durtion:%v, len(ms):%v", time.Now().Sub(start), len(ms))
-	}()
+	//start := time.Now()
+	//defer func() {
+	//	easy.log.Printf("sendToKafka.durtion:%v, len(ms):%v", time.Now().Sub(start), len(ms))
+	//}()
 
 	temp := make([]kafka.Message, 0, len(ms))
 	for _, v := range ms {

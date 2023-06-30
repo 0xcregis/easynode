@@ -58,3 +58,9 @@ func TestService_UpdateNodeTaskStatus(t *testing.T) {
 	s := Init()
 	s.UpdateNodeTaskStatus("205_blockId_00000000020b63ef30ebe0507220f0d256cf09b3b76aa1db7d70bf73c7c1251e", 1)
 }
+
+func TestService_StoreLatestBlock(t *testing.T) {
+	s := Init()
+	str := "{\\\"id\\\":1687945592603474952}"
+	s.StoreLatestBlock(200, "LatestBlock", str)
+}

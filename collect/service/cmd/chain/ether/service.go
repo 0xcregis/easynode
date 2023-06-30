@@ -36,7 +36,7 @@ func (s *Service) BalanceCluster(key string, clusterList []*config.FromCluster) 
 func (s *Service) GetBlockByHash(blockHash string, cfg *config.BlockTask, eLog *logrus.Entry, flag bool) (*service.BlockInterface, []*service.TxInterface) {
 	start := time.Now()
 	defer func() {
-		eLog.Printf("GetBlockByHash.Duration =%v", time.Now().Sub(start))
+		eLog.Printf("GetBlockByHash.Duration =%v,blockHash:%v", time.Now().Sub(start), blockHash)
 	}()
 	//调用接口
 	resp, err := s.blockChainClient.GetBlockByHash(int64(s.chain.BlockChainCode), blockHash, flag)
@@ -91,7 +91,7 @@ func (s *Service) GetBlockByNumber(blockNumber string, task *config.BlockTask, e
 
 	start := time.Now()
 	defer func() {
-		eLog.Printf("GetBlockByNumber.Duration =%v", time.Now().Sub(start))
+		eLog.Printf("GetBlockByNumber.Duration =%v,blockNumber:%v", time.Now().Sub(start), blockNumber)
 	}()
 
 	if !strings.HasPrefix(blockNumber, "0x") {
@@ -221,7 +221,7 @@ func (s *Service) GetReceiptByBlock(blockHash, number string, task *config.Recei
 
 	rs := make([]*service.ReceiptInterface, 0, len(receiptList))
 	for _, v := range receiptList {
-		txHash:=v.TransactionHash
+		txHash := v.TransactionHash
 		v = s.buildContract(v)
 		if v != nil {
 			r := &service.ReceiptInterface{TransactionHash: txHash, Receipt: v}
@@ -332,42 +332,53 @@ func (s *Service) getToken(blockChain int64, from string, contract string) (stri
 	return "", errors.New("wait for response")
 }
 
+func getCoreAddr(addr string) string {
+	addr = strings.ToLower(addr)
+	if strings.HasPrefix(addr, "0x") {
+		return strings.TrimLeft(addr, "0x") //去丢0x
+	}
+	return addr
+}
 func (s *Service) CheckAddress(tx []byte, addrList []string) bool {
+
+	txAddressList := make(map[string]int64, 10)
 	root := gjson.ParseBytes(tx)
+
 	fromAddr := root.Get("from").String()
+	txAddressList[getCoreAddr(fromAddr)] = 1
+
 	toAddr := root.Get("to").String()
-	has := false
-	for _, v := range addrList {
-		//已经判断出该交易 符合要求了，不需要在检查其他地址了
-		if has {
-			break
-		}
+	txAddressList[getCoreAddr(toAddr)] = 1
 
-		// 普通交易且 地址包含订阅地址
-		if strings.HasPrefix(strings.ToLower(fromAddr), strings.ToLower(v)) || strings.HasPrefix(strings.ToLower(toAddr), strings.ToLower(v)) {
-			has = true
-			break
-		}
-
-		//合约交易
-		monitorAddr := strings.TrimLeft(v, "0x") //去丢0x
-		if root.Get("receipt").Exists() {
-			receipt := root.Get("receipt").String()
-			receiptRoot := gjson.Parse(receipt)
-			list := receiptRoot.Get("logs").Array()
-			for _, v := range list {
-				topics := v.Get("topics").Array()
-				//Transfer()
-				if len(topics) >= 3 && topics[0].String() == service.EthTopic {
-					if strings.HasSuffix(strings.ToLower(topics[1].String()), strings.ToLower(monitorAddr)) || strings.HasSuffix(strings.ToLower(topics[2].String()), strings.ToLower(monitorAddr)) {
-						has = true
-						break
-					}
-
+	if root.Get("receipt").Exists() {
+		receipt := root.Get("receipt").String()
+		receiptRoot := gjson.Parse(receipt)
+		list := receiptRoot.Get("logs").Array()
+		for _, v := range list {
+			topics := v.Get("topics").Array()
+			//Transfer()
+			if len(topics) >= 3 && topics[0].String() == service.EthTopic {
+				from, _ := util.Hex2Address(topics[1].String())
+				if len(from) > 0 {
+					txAddressList[getCoreAddr(from)] = 1
+				}
+				to, _ := util.Hex2Address(topics[2].String())
+				if len(to) > 0 {
+					txAddressList[getCoreAddr(to)] = 1
 				}
 
 			}
 
+		}
+
+	}
+
+	has := false
+	for _, v := range addrList {
+		monitorAddr := getCoreAddr(v)
+		if _, ok := txAddressList[monitorAddr]; ok {
+			has = true
+			break
 		}
 	}
 	return has

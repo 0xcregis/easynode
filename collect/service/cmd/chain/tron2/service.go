@@ -354,7 +354,25 @@ func (s *Service) BalanceCluster(key string, clusterList []*config.FromCluster) 
 	return nil, nil
 }
 
+func getCoreAddr(addr string) string {
+	if strings.HasPrefix(addr, "0x") {
+		return strings.TrimLeft(addr, "0x") //去丢0x
+	}
+
+	if strings.HasPrefix(addr, "41") {
+		return strings.TrimLeft(addr, "41") //去丢41
+	}
+
+	if strings.HasPrefix(addr, "0x41") {
+		return strings.TrimLeft(addr, "0x41") //去丢41
+	}
+	return addr
+}
+
 func (s *Service) CheckAddress(txValue []byte, addrList []string) bool {
+
+	txAddressList := make(map[string]int64, 10)
+
 	root := gjson.ParseBytes(txValue)
 	tx := root.Get("tx").String()
 	txRoot := gjson.Parse(tx)
@@ -370,6 +388,7 @@ func (s *Service) CheckAddress(txValue []byte, addrList []string) bool {
 	var internalTransactions []gjson.Result
 
 	fromAddr = r.Get("parameter.value.owner_address").String()
+	txAddressList[getCoreAddr(fromAddr)] = 1
 
 	//TransferContract,TransferAssetContract
 	if r.Get("parameter.value.to_address").Exists() {
@@ -391,6 +410,8 @@ func (s *Service) CheckAddress(txValue []byte, addrList []string) bool {
 		toAddr = r.Get("parameter.value.account_address").String()
 	}
 
+	txAddressList[getCoreAddr(toAddr)] = 1
+
 	if txType == "TriggerSmartContract" {
 		receipt := root.Get("receipt").String()
 		receiptRoot := gjson.Parse(receipt)
@@ -399,60 +420,42 @@ func (s *Service) CheckAddress(txValue []byte, addrList []string) bool {
 		}
 		logs = receiptRoot.Get("log").Array()
 		internalTransactions = receiptRoot.Get("internal_transactions").Array()
+
+		//合约交易 合约调用下的TRC20
+		if len(logs) > 0 {
+			for _, v := range logs {
+				topics := v.Get("topics").Array()
+				//Transfer()
+				if len(topics) >= 3 && topics[0].String() == service.TronTopic {
+					from, _ := util.Hex2Address(topics[1].String())
+					if len(from) > 0 {
+						txAddressList[getCoreAddr(from)] = 1
+					}
+					to, _ := util.Hex2Address(topics[2].String())
+					if len(to) > 0 {
+						txAddressList[getCoreAddr(to)] = 1
+					}
+				}
+			}
+		}
+
+		//合约调用下的内部交易TRX转帐和TRC10转账：
+		if len(internalTransactions) > 0 {
+			for _, v := range internalTransactions {
+				fromAddr = v.Get("caller_address").String()
+				toAddr = v.Get("transferTo_address").String()
+				txAddressList[getCoreAddr(fromAddr)] = 1
+				txAddressList[getCoreAddr(toAddr)] = 1
+			}
+		}
 	}
 
 	has := false
 	for _, v := range addrList {
-		//已经判断出该交易 符合要求了，不需要在检查其他地址了
-		if has {
-			break
-		}
-		monitorAddr := v
-
-		if strings.HasPrefix(v, "0x") {
-			monitorAddr = strings.TrimLeft(v, "0x") //去丢0x
-		}
-
-		if strings.HasPrefix(v, "41") {
-			monitorAddr = strings.TrimLeft(v, "41") //去丢41
-		}
-
-		if strings.HasPrefix(v, "0x41") {
-			monitorAddr = strings.TrimLeft(v, "0x41") //去丢41
-		}
-
-		// 普通交易且 地址包含订阅地址
-		if strings.HasSuffix(fromAddr, monitorAddr) || strings.HasSuffix(toAddr, monitorAddr) {
+		monitorAddr := getCoreAddr(v)
+		if _, ok := txAddressList[monitorAddr]; ok {
 			has = true
 			break
-		}
-
-		if txType == "TriggerSmartContract" {
-			//合约交易 合约调用下的TRC20
-			if len(logs) > 0 {
-				for _, v := range logs {
-					topics := v.Get("topics").Array()
-					//Transfer()
-					if len(topics) >= 3 && topics[0].String() == service.TronTopic {
-						if strings.HasSuffix(topics[1].String(), monitorAddr) || strings.HasSuffix(topics[2].String(), monitorAddr) {
-							has = true
-							break
-						}
-					}
-				}
-			}
-
-			//合约调用下的内部交易TRX转帐和TRC10转账：
-			if len(internalTransactions) > 0 {
-				for _, v := range internalTransactions {
-					fromAddr = v.Get("caller_address").String()
-					toAddr = v.Get("transferTo_address").String()
-					if strings.HasSuffix(fromAddr, monitorAddr) || strings.HasSuffix(toAddr, monitorAddr) {
-						has = true
-						break
-					}
-				}
-			}
 		}
 	}
 	return has

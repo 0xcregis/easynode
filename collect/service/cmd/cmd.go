@@ -421,7 +421,7 @@ func (c *Cmd) execMultiTx(taskTx *service.NodeTask, log *logrus.Entry) []*kafka.
 
 	start := time.Now()
 	defer func() {
-		log.Printf("execMultiTx,Duration=%v", time.Now().Sub(start))
+		log.Printf("execMultiTx,Duration=%v,task:%+v", time.Now().Sub(start), taskTx)
 	}()
 
 	key := fmt.Sprintf(KeyTx, taskTx.BlockChain, taskTx.BlockHash+taskTx.BlockNumber)
@@ -509,7 +509,7 @@ func (c *Cmd) execSingleTx(taskTx *service.NodeTask, log *logrus.Entry) []*kafka
 
 	start := time.Now()
 	defer func() {
-		log.Printf("execSingleTx,Duration=%v", time.Now().Sub(start))
+		log.Printf("execSingleTx,Duration=%v,task:%+v", time.Now().Sub(start), taskTx)
 	}()
 
 	key := fmt.Sprintf(KeyTx, taskTx.BlockChain, taskTx.TxHash)
@@ -571,7 +571,7 @@ func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Mes
 			start := time.Now()
 			defer func() {
 				<-buffCh
-				log.Printf("ExecBlockTask,Duration=%v", time.Now().Sub(start))
+				log.Printf("ExecBlockTask,Duration=%v,task:%+v", time.Now().Sub(start), taskBlock)
 			}()
 
 			var key string

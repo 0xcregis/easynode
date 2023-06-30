@@ -6,14 +6,16 @@ import (
 )
 
 func TestHex(t *testing.T) {
+	//0x0000000000000000000000006b75d8af000000e20b7a7ddf000ba900b4009a80
+	//bs, err := FromHex("0x0000000000000000000000006b75d8af000000e20b7a7ddf000ba900b4009a80")
+	//
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//log.Println(BytesToHexString(bs[12:]))
 
-	bs, err := FromHex("0000000000000000000000003926f326e328be2616f7b05f00bcecac652c8f15")
-
-	if err != nil {
-		panic(err)
-	}
-
-	log.Println(BytesToHexString(bs[12:]))
+	log.Println(Hex2Address("000000000000000000000000e96051e8da2f0cc02c372252dfacfdb129b5d4d6"))
 
 }
 

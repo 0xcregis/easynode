@@ -70,4 +70,5 @@ type LogConfig struct {
 type Config struct {
 	Chains    []*Chain   `json:"Chains"`
 	LogConfig *LogConfig `json:"Log"`
+	KeyPath   string     `json:"KeyPath"`
 }

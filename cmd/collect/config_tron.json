@@ -3,12 +3,13 @@
     "Path": "./log/collect",
     "Delay": 2
   },
+  "KeyPath": "./data/temp/3",
   "Chains": [
     {
       "TaskKafka": {
         "Host": "192.168.2.9",
         "Port": 9092,
-        "Group": "29",
+        "Group": "30",
         "StartOffset": -1,
         "Partition": 0,
         "WritePartitions": [

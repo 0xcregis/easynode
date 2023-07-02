@@ -5,9 +5,11 @@ import (
 	"github.com/gofrs/uuid"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 const (
+	Key             = "key"
 	NodePath        = "./data"
 	NodeFile        = "./data/key"
 	LatestBlockPath = "./data"
@@ -29,27 +31,28 @@ func PathExists(path string) (bool, error) {
 	return false, err
 }
 
-func GetLocalNodeId() (string, error) {
+func GetLocalNodeId(path string) (string, error) {
 
-	if ok, _ := PathExists(NodeFile); ok {
+	file := filepath.Join(path, Key)
+	if ok, _ := PathExists(file); ok {
 		//存在
-		bs, err := os.ReadFile(NodeFile)
+		bs, err := os.ReadFile(file)
 		if err != nil {
 			return "", err
 		}
 		return string(bs), nil
 	} else {
 		//不存在
-		err := os.MkdirAll(NodePath, os.ModePerm)
+		err := os.MkdirAll(path, os.ModePerm)
 		if err != nil {
 			log.Println(err.Error())
 			return "", err
 		}
-		err = os.Chmod(NodePath, 0777)
+		err = os.Chmod(path, 0777)
 		if err != nil {
 			return "", err
 		}
-		f, err := os.Create(NodeFile)
+		f, err := os.Create(file)
 		if err != nil {
 			return "", err
 		}

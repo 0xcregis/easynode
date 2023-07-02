@@ -6,6 +6,7 @@ type Config struct {
 	BlockChain   []int64                 `json:"BlockChain"`
 	ClickhouseDb map[int64]*ClickhouseDb `json:"ClickhouseDb"`
 	TaskKafka    *Kafka                  `json:"TaskKafka"`
+	Redis        *Redis                  `json:"Redis"`
 }
 
 type Kafka struct {
@@ -13,6 +14,12 @@ type Kafka struct {
 	Port      int    `json:"Port"`
 	Topic     string `json:"Topic"`
 	Partition int    `json:"Partition"`
+}
+
+type Redis struct {
+	Addr string `json:"Addr"`
+	Port int64  `json:"Port"`
+	DB   int    `json:"DB"`
 }
 
 type TaskDb struct {

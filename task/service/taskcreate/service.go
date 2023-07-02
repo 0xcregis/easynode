@@ -8,12 +8,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 	kafkaClient "github.com/uduncloud/easynode/common/kafka"
-	"github.com/uduncloud/easynode/common/util"
 	"github.com/uduncloud/easynode/task/config"
 	"github.com/uduncloud/easynode/task/service"
 	"github.com/uduncloud/easynode/task/service/taskcreate/db"
 	"github.com/uduncloud/easynode/task/service/taskcreate/ether"
 	"github.com/uduncloud/easynode/task/service/taskcreate/tron"
+	"math/rand"
 	"time"
 )
 
@@ -21,7 +21,6 @@ type Service struct {
 	config      *config.Config
 	store       service.StoreTaskInterface
 	log         *xlog.XLog
-	nodeId      string
 	kafkaClient *kafkaClient.EasyKafka
 	sendCh      chan []*kafka.Message
 	//receiverCh  chan []*kafka.Message
@@ -159,11 +158,18 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 
 	UsedMaxNumber++
 
-	for UsedMaxNumber <= v.BlockMax {
-		//ns := &service.NodeSource{BlockChain: v.BlockChainCode, BlockNumber: fmt.Sprintf("%v", UsedMaxNumber), SourceType: 2}
+	nodeIdList, err := s.store.GetNodeId(v.BlockChainCode)
+	if err != nil {
+		log.Errorf("GetNodeId|err=%v", err)
+		return err
+	}
 
+	l := len(nodeIdList)
+
+	for UsedMaxNumber <= v.BlockMax {
+		index := rand.Intn(l)
 		task := &service.NodeTask{
-			NodeId:      s.nodeId,
+			NodeId:      nodeIdList[index],
 			BlockNumber: fmt.Sprintf("%v", UsedMaxNumber),
 			BlockChain:  v.BlockChainCode,
 			TaskType:    2,
@@ -203,15 +209,10 @@ func NewService(config *config.Config) *Service {
 	sendCh := make(chan []*kafka.Message, 5)
 	//receiverCh := make(chan []*kafka.Message, 5)
 	store := db.NewFileTaskCreateService(config, xg)
-	nodeId, err := util.GetLocalNodeId()
-	if err != nil {
-		panic(err)
-	}
 	return &Service{
 		config:      config,
 		log:         xg,
 		store:       store,
-		nodeId:      nodeId,
 		kafkaClient: kf,
 		sendCh:      sendCh,
 		//receiverCh:  receiverCh,

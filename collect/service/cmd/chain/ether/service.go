@@ -20,6 +20,7 @@ import (
 type Service struct {
 	log                *xlog.XLog
 	chain              *config.Chain
+	nodeId             string
 	store              service.StoreTaskInterface
 	txChainClient      chainService.API
 	blockChainClient   chainService.API
@@ -228,8 +229,8 @@ func (s *Service) GetReceiptByBlock(blockHash, number string, task *config.Recei
 			rs = append(rs, r)
 		} else {
 			//收据数据异常，则加入重试机制
-			nodeId, _ := util.GetLocalNodeId()
-			task := service.NodeTask{Id: time.Now().UnixNano(), BlockChain: s.chain.BlockChainCode, NodeId: nodeId, TxHash: txHash, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
+			//nodeId, _ := util.GetLocalNodeId()
+			task := service.NodeTask{Id: time.Now().UnixNano(), BlockChain: s.chain.BlockChainCode, NodeId: s.nodeId, TxHash: txHash, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
 			_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), txHash, task)
 		}
 	}
@@ -260,8 +261,8 @@ func (s *Service) GetReceipt(txHash string, task *config.ReceiptTask, eLog *logr
 	if receipt != nil {
 		return &service.ReceiptInterface{TransactionHash: receipt.TransactionHash, Receipt: receipt}, nil
 	} else {
-		nodeId, _ := util.GetLocalNodeId()
-		task := service.NodeTask{Id: time.Now().UnixNano(), BlockChain: s.chain.BlockChainCode, NodeId: nodeId, TxHash: txHash, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
+		//nodeId, _ := util.GetLocalNodeId()
+		task := service.NodeTask{Id: time.Now().UnixNano(), BlockChain: s.chain.BlockChainCode, NodeId: s.nodeId, TxHash: txHash, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
 		_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), txHash, task)
 		return nil, errors.New("receipt is null")
 	}
@@ -384,7 +385,7 @@ func (s *Service) CheckAddress(tx []byte, addrList []string) bool {
 	return has
 }
 
-func NewService(c *config.Chain, x *xlog.XLog, store service.StoreTaskInterface) service.BlockChainInterface {
+func NewService(c *config.Chain, x *xlog.XLog, store service.StoreTaskInterface, nodeId string) service.BlockChainInterface {
 
 	var blockClient chainService.API
 	if c.BlockTask != nil {
@@ -436,5 +437,6 @@ func NewService(c *config.Chain, x *xlog.XLog, store service.StoreTaskInterface)
 		txChainClient:      txClient,
 		blockChainClient:   blockClient,
 		receiptChainClient: receiptClient,
+		nodeId:             nodeId,
 	}
 }

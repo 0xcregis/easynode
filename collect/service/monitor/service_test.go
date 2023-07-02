@@ -6,13 +6,15 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service"
+	"github.com/uduncloud/easynode/common/util"
 	"testing"
 	"time"
 )
 
 func Init() *Service {
 	cfg := config.LoadConfig("./../../../cmd/collect/config_tron.json")
-	return NewService(&cfg)
+	nodeId, _ := util.GetLocalNodeId(cfg.KeyPath)
+	return NewService(&cfg, nodeId)
 }
 
 func TestService_Start(t *testing.T) {

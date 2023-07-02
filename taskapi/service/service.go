@@ -1,35 +1,56 @@
 package service
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
-	"github.com/uduncloud/easynode/common/util"
 	"github.com/uduncloud/easynode/taskapi/config"
 	"io/ioutil"
+	"math/rand"
 )
 
 type Server struct {
 	log        *xlog.XLog
 	blockChain []int64
-	nodeId     string
-	cfg     *config.Config
-	handler TaskApiInterface
+	cfg        *config.Config
+	handler    TaskApiInterface
+	client     *redis.Client
 }
 
 func NewServer(cfg *config.Config, blockChain []int64, log *xlog.XLog) *Server {
 	h := NewTaskHandler(cfg, log)
-	nodeId, err := util.GetLocalNodeId()
+	client := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%v:%v", cfg.Redis.Addr, cfg.Redis.Port),
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+	err := client.Ping(context.Background()).Err()
 	if err != nil {
-		panic(err)
+		panic(err.Error())
 	}
 	return &Server{
 		handler:    h,
 		cfg:        cfg,
-		nodeId:     nodeId,
 		log:        log,
+		client:     client,
 		blockChain: blockChain,
+	}
+}
+
+func (s *Server) getNodeId(blockChainCode int64) (string, error) {
+	NodeKey := "nodeKey_%v"
+	list, err := s.client.HKeys(context.Background(), fmt.Sprintf(NodeKey, blockChainCode)).Result()
+	if err != nil {
+		return "", err
+	}
+	if l := len(list); l > 0 {
+		return list[rand.Intn(l)], nil
+	} else {
+		return "", errors.New("no record")
 	}
 }
 
@@ -62,8 +83,13 @@ func (s *Server) PushBlockTask(c *gin.Context) {
 		s.Error(c, c.Request.URL.Path, errors.New("blockHash or blockNumber is wrong").Error())
 		return
 	}
+	nodeId, err := s.getNodeId(blockChain)
+	if err != nil {
+		s.Error(c, c.Request.URL.Path, errors.New("blockchain is wrong").Error())
+		return
+	}
 
-	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 2, TaskStatus: 0, NodeId: s.nodeId}
+	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 2, TaskStatus: 0, NodeId: nodeId}
 	err = s.handler.SendNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -101,8 +127,13 @@ func (s *Server) PushTxTask(c *gin.Context) {
 		s.Error(c, c.Request.URL.Path, errors.New("txHash is wrong").Error())
 		return
 	}
+	nodeId, err := s.getNodeId(blockChain)
+	if err != nil {
+		s.Error(c, c.Request.URL.Path, errors.New("blockchain is wrong").Error())
+		return
+	}
 
-	task := &NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 1, TaskStatus: 0, NodeId: s.nodeId}
+	task := &NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 1, TaskStatus: 0, NodeId: nodeId}
 	err = s.handler.SendNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -141,8 +172,13 @@ func (s *Server) PushTxsTask(c *gin.Context) {
 		s.Error(c, c.Request.URL.Path, errors.New("blockHash or blockNumber is wrong").Error())
 		return
 	}
+	nodeId, err := s.getNodeId(blockChain)
+	if err != nil {
+		s.Error(c, c.Request.URL.Path, errors.New("blockchain is wrong").Error())
+		return
+	}
 
-	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 4, TaskStatus: 0, NodeId: s.nodeId}
+	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 4, TaskStatus: 0, NodeId: nodeId}
 	err = s.handler.SendNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -181,7 +217,13 @@ func (s *Server) PushReceiptTask(c *gin.Context) {
 		return
 	}
 
-	task := &NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 3, TaskStatus: 0, NodeId: s.nodeId}
+	nodeId, err := s.getNodeId(blockChain)
+	if err != nil {
+		s.Error(c, c.Request.URL.Path, errors.New("blockchain is wrong").Error())
+		return
+	}
+
+	task := &NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 3, TaskStatus: 0, NodeId: nodeId}
 	err = s.handler.SendNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -221,7 +263,13 @@ func (s *Server) PushReceiptsTask(c *gin.Context) {
 		return
 	}
 
-	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 5, TaskStatus: 0, NodeId: s.nodeId}
+	nodeId, err := s.getNodeId(blockChain)
+	if err != nil {
+		s.Error(c, c.Request.URL.Path, errors.New("blockchain is wrong").Error())
+		return
+	}
+
+	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 5, TaskStatus: 0, NodeId: nodeId}
 	err = s.handler.SendNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())

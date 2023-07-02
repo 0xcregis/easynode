@@ -21,6 +21,7 @@ import (
 type Service struct {
 	cfg         config.Config
 	log         *logrus.Entry
+	nodeId      string
 	taskStore   map[int64]service.StoreTaskInterface
 	kafka       *kafkaClient.EasyKafka
 	apis        map[int64]chainService.API
@@ -36,6 +37,15 @@ func (s *Service) Start() {
 			s.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker}}, s.kafkaSender[int64(v.BlockChainCode)], nil, context.Background(), 1)
 		}
 	}()
+
+	go func(nodeId string) {
+		for true {
+			for b, s := range s.taskStore {
+				_ = s.StoreNodeId(b, nodeId, 1)
+			}
+			<-time.After(5 * time.Second)
+		}
+	}(s.nodeId)
 
 	//清理日志
 	s.clearLog()
@@ -84,6 +94,7 @@ func (s *Service) CheckNodeTask() {
 					}
 					task.Id = time.Now().UnixNano()
 					task.TaskStatus = 0
+					task.NodeId = s.nodeId
 					bs, _ := json.Marshal(task)
 					msg := &kafka.Message{Topic: fmt.Sprintf("task_%v", blockchain), Partition: 0, Key: []byte(task.NodeId), Value: bs}
 					tempList = append(tempList, msg)
@@ -166,6 +177,7 @@ func (s *Service) CheckErrTx() {
 
 					v.CreateTime = time.Now()
 					v.LogTime = time.Now()
+					v.NodeId = s.nodeId
 					if v.BlockChain < 1 {
 						v.BlockChain = int(blockchain)
 					}
@@ -240,7 +252,7 @@ func (s *Service) getToken(blockChain int64, from string, contract string) {
 	}
 }
 
-func NewService(config *config.Config) *Service {
+func NewService(config *config.Config, nodeId string) *Service {
 	log := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/monitor", config.LogConfig.Path), 24*time.Hour)
 	mp := make(map[int64]service.StoreTaskInterface, 2)
 	sender := make(map[int64]chan []*kafka.Message, 2)
@@ -276,6 +288,7 @@ func NewService(config *config.Config) *Service {
 		taskStore:   mp,
 		kafkaSender: sender,
 		apis:        apis,
+		nodeId:      nodeId,
 		log:         log.WithField("model", "monitor"),
 	}
 }

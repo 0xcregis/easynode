@@ -24,12 +24,36 @@ var (
 	NodeTaskKey    = "nodeTask_%v"
 	MonitorKey     = "monitorAddress_%v"
 	LatestBlockKey = "latestBlock"
+	NodeKey        = "nodeKey_%v"
 )
 
 type Service struct {
 	log         *xlog.XLog
 	lock        *sync.RWMutex
 	cacheClient *redis.Client
+}
+
+func (s *Service) GetAllNodeId(blockchain int64) ([]string, error) {
+	list, err := s.cacheClient.HKeys(context.Background(), fmt.Sprintf(NodeKey, blockchain)).Result()
+	if err != nil {
+		s.log.Warnf("StoreNodeId|err=%v", err.Error())
+		return nil, err
+	}
+	if len(list) < 1 {
+		return nil, errors.New("no record")
+	}
+
+	return list, nil
+}
+
+func (s *Service) StoreNodeId(blockchain int64, key string, data any) error {
+	bs, _ := json.Marshal(data)
+	err := s.cacheClient.HSet(context.Background(), fmt.Sprintf(NodeKey, blockchain), key, string(bs)).Err()
+	if err != nil {
+		s.log.Warnf("StoreNodeId|err=%v", err.Error())
+		return err
+	}
+	return nil
 }
 
 func (s *Service) StoreLatestBlock(blockchain int64, key string, data any) error {

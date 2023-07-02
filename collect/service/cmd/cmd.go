@@ -12,7 +12,6 @@ import (
 	"github.com/uduncloud/easynode/collect/service/cmd/chain"
 	"github.com/uduncloud/easynode/collect/service/db"
 	kafkaClient "github.com/uduncloud/easynode/common/kafka"
-	"github.com/uduncloud/easynode/common/util"
 	"time"
 )
 
@@ -34,11 +33,11 @@ type Cmd struct {
 	txChan      chan *service.NodeTask
 	blockChan   chan *service.NodeTask
 	receiptChan chan *service.NodeTask
-
-	kafkaCh chan []*kafka.Message
+	nodeId      string
+	kafkaCh     chan []*kafka.Message
 }
 
-func NewService(cfg *config.Chain, logConfig *config.LogConfig) *Cmd {
+func NewService(cfg *config.Chain, logConfig *config.LogConfig, nodeId string) *Cmd {
 	log := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/cmd", logConfig.Path), 24*time.Hour)
 	txChan := make(chan *service.NodeTask, 10)
 	receiptChan := make(chan *service.NodeTask, 10)
@@ -46,7 +45,7 @@ func NewService(cfg *config.Chain, logConfig *config.LogConfig) *Cmd {
 	kafkaCh := make(chan []*kafka.Message, 100)
 	store := db.NewTaskCacheService(cfg, log)
 	kf := kafkaClient.NewEasyKafka(log)
-	chainApi := getBlockChainApi(cfg, logConfig, store)
+	chainApi := getBlockChainApi(cfg, logConfig, store, nodeId)
 
 	return &Cmd{
 		log:         log,
@@ -58,11 +57,12 @@ func NewService(cfg *config.Chain, logConfig *config.LogConfig) *Cmd {
 		receiptChan: receiptChan,
 		blockChan:   blockChan,
 		kafkaCh:     kafkaCh,
+		nodeId:      nodeId,
 	}
 }
 
-func getBlockChainApi(c *config.Chain, logConfig *config.LogConfig, store service.StoreTaskInterface) service.BlockChainInterface {
-	srv := chain.GetBlockchain(c.BlockChainCode, c, store, logConfig)
+func getBlockChainApi(c *config.Chain, logConfig *config.LogConfig, store service.StoreTaskInterface, nodeId string) service.BlockChainInterface {
+	srv := chain.GetBlockchain(c.BlockChainCode, c, store, logConfig, nodeId)
 	//第三方节点监控
 	srv.Monitor()
 	return srv
@@ -71,10 +71,10 @@ func getBlockChainApi(c *config.Chain, logConfig *config.LogConfig, store servic
 func (c *Cmd) Start() {
 	c.log.Printf("start %v service...", c.chain.BlockChainName)
 
-	nodeId, err := util.GetLocalNodeId()
-	if err != nil {
-		panic(err)
-	}
+	//nodeId, err := util.GetLocalNodeId()
+	//if err != nil {
+	//	panic(err)
+	//}
 
 	//task kafka write
 	//go func() {
@@ -82,7 +82,7 @@ func (c *Cmd) Start() {
 	//	c.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker}}, c.taskKafkaCh, nil)
 	//}()
 
-	go c.ReadNodeTaskFromKafka(nodeId, c.chain.BlockChainCode, c.blockChan, c.txChan, c.receiptChan)
+	go c.ReadNodeTaskFromKafka(c.nodeId, c.chain.BlockChainCode, c.blockChan, c.txChan, c.receiptChan)
 
 	//配置了区块执行计划
 	if c.chain.BlockTask != nil {
@@ -93,7 +93,7 @@ func (c *Cmd) Start() {
 	//配置了 交易执行计划
 	if c.chain.TxTask != nil {
 		//执行交易
-		go c.ExecTxTask(nodeId, c.txChan, c.kafkaCh)
+		go c.ExecTxTask(c.nodeId, c.txChan, c.kafkaCh)
 	}
 
 	//配置了 收据执行计划
@@ -122,6 +122,8 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	mp := make(map[string]struct{}, 1)
+
 	//taskKafka read
 	go func() {
 		group := fmt.Sprintf("gr_nodetask_%v_%v", blockChain, c.chain.TaskKafka.Group)
@@ -129,9 +131,31 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 		c.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: topic, Group: group, Partition: c.chain.TaskKafka.Partition, StartOffset: c.chain.TaskKafka.StartOffset}, receiver, ctx)
 	}()
 
+	go func() {
+		for true {
+			if len(mp) > 0 {
+				mp = make(map[string]struct{}, 1)
+			}
+			nodeIds, err := c.taskStore.GetAllNodeId(int64(blockChain))
+			if err != nil {
+				time.Sleep(3 * time.Second)
+				continue
+			}
+
+			for _, id := range nodeIds {
+				mp[id] = struct{}{}
+			}
+			<-time.After(1 * time.Minute)
+		}
+	}()
+
 	log := c.log.WithFields(logrus.Fields{"model": "Execution", "id": time.Now().UnixMilli()})
 
 	for true {
+		if len(mp) < 1 {
+			time.Sleep(3 * time.Second)
+			continue
+		}
 		select {
 		case msg := <-receiver:
 			//log.Printf("Read NodeTask offset=%v,topic=%v,value=%v", msg.Offset, msg.Topic, string(msg.Value))
@@ -142,7 +166,8 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 				continue
 			}
 
-			if task.Id <= 0 || task.NodeId != nodeId || task.TaskStatus != 0 {
+			_, ok := mp[task.NodeId]
+			if task.Id <= 0 || (task.NodeId != nodeId && ok) || task.TaskStatus != 0 {
 				log.Warnf("Read NodeTask offset=%v,task=%+v ,but it is wrong since id<=0 or nodeId !=local NodeId or status !=0 ", msg.Offset, task)
 				continue
 			}

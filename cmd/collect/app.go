@@ -6,6 +6,7 @@ import (
 	"github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service/cmd"
 	"github.com/uduncloud/easynode/collect/service/monitor"
+	"github.com/uduncloud/easynode/common/util"
 	"log"
 	"os"
 	"os/signal"
@@ -29,12 +30,17 @@ func main() {
 
 	log.Printf("%+v\n", cfg)
 
+	nodeId, err := util.GetLocalNodeId(cfg.KeyPath)
+	if err != nil {
+		panic(err.Error())
+	}
+
 	//启动处理日志服务
-	monitor.NewService(&cfg).Start()
+	monitor.NewService(&cfg, nodeId).Start()
 
 	//启动公链服务
 	for _, v := range cfg.Chains {
-		cmd.NewService(v, cfg.LogConfig).Start()
+		cmd.NewService(v, cfg.LogConfig, nodeId).Start()
 	}
 
 	// Wait for interrupt signal to gracefully shutdown the server with

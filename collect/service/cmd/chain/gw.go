@@ -11,13 +11,13 @@ import (
 	"time"
 )
 
-func GetBlockchain(blockchain int, c *config.Chain, store service.StoreTaskInterface, logConfig *config.LogConfig) service.BlockChainInterface {
+func GetBlockchain(blockchain int, c *config.Chain, store service.StoreTaskInterface, logConfig *config.LogConfig, nodeId string) service.BlockChainInterface {
 	x := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/chain_info", logConfig.Path), 24*time.Hour)
 	var srv service.BlockChainInterface
 	if blockchain == 200 {
-		srv = ether.NewService(c, x, store)
+		srv = ether.NewService(c, x, store, nodeId)
 	} else if blockchain == 205 {
-		srv = tron2.NewService(c, x, store)
+		srv = tron2.NewService(c, x, store, nodeId)
 	}
 
 	return srv

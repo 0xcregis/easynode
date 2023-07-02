@@ -4,6 +4,13 @@ type Config struct {
 	AutoCreateBlockTask bool           `json:"AutoCreateBlockTask"`
 	BlockConfigs        []*BlockConfig `json:"Chains"`
 	TaskKafka           *Kafka         `json:"TaskKafka"`
+	Redis               *Redis         `json:"Redis"`
+}
+
+type Redis struct {
+	Addr string `json:"Addr"`
+	Port int64  `json:"Port"`
+	DB   int    `json:"DB"`
 }
 
 type Kafka struct {

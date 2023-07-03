@@ -1,15 +1,11 @@
 {
   "RootPath": "/api/chain",
   "Port": 9002,
-  "BlockChain": [200,205],
+  "BlockChain": [205],
   "Cluster": {
-    "200": [{
-      "NodeUrl": "https://api.trongrid.io",
-      "NodeToken": "244f918d-56b5-4a16-9665-9637598b1223"
-    }],
     "205": [{
-      "NodeUrl": "https://api.trongrid.io",
-      "NodeToken": "244f918d-56b5-4a16-9665-9637598b1223"
+      "NodeUrl": "http://18.196.99.16:8090",
+      "NodeToken": ""
     }]
   }
 }

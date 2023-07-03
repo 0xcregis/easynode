@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/segmentio/kafka-go"
 	"github.com/tidwall/gjson"
+	"github.com/uduncloud/easynode/collect/service"
 	"github.com/uduncloud/easynode/common/util"
 	"math/big"
 	"strconv"
@@ -20,6 +21,28 @@ func ParseTx(blockchain int64, msg *kafka.Message) (*SubTx, error) {
 		return ParseTxForTron(msg.Value)
 	}
 	return nil, nil
+}
+
+func GetTxType(blockchain int64, msg *kafka.Message) (uint64, error) {
+	if blockchain == 200 {
+		return GetTxTypeForEther(msg.Value)
+	}
+	if blockchain == 205 {
+		return GetTxTypeForTron(msg.Value)
+	}
+	return 0, nil
+}
+
+func GetTxTypeForEther(body []byte) (uint64, error) {
+	root := gjson.ParseBytes(body)
+	input := root.Get("input").String()
+	if len(input) > 5 {
+		//合约调用
+		return 1, nil
+	} else {
+		//普通资产转移
+		return 2, nil
+	}
 }
 
 func ParseTxForEther(body []byte) (*SubTx, error) {
@@ -45,15 +68,15 @@ func ParseTxForEther(body []byte) (*SubTx, error) {
 		return nil, err
 	}
 	r.Value = div(v, 18)
-	if len(input) > 5 {
-		//合约调用
-		r.TxType = 1
-	} else {
-		//普通资产转移
-		r.TxType = 2
+
+	tp, err := GetTxTypeForEther(body)
+	if err != nil {
+		return nil, err
 	}
+	r.TxType = tp
 
 	txTime := root.Get("txTime").String()
+	txTime = fmt.Sprintf("%v000", txTime)
 	r.TxTime = txTime
 
 	gasPrice := root.Get("gasPrice").String() //单位：wei
@@ -138,10 +161,45 @@ func ParseTxForEther(body []byte) (*SubTx, error) {
 	return &r, nil
 }
 
+func GetTxTypeForTron(body []byte) (uint64, error) {
+
+	root := gjson.ParseBytes(body)
+	txBody := root.Get("tx").String()
+	if len(txBody) < 5 {
+		return 0, errors.New("tx is error")
+	}
+
+	txRoot := gjson.Parse(txBody)
+
+	var tx uint64
+	txType := txRoot.Get("raw_data.contract.0.type").String()
+	if txType == "TransferContract" {
+		tx = 2
+	} else if txType == "TriggerSmartContract" {
+		tx = 1
+	} else if txType == "DelegateResourceContract" {
+		tx = 3
+	} else if txType == "UnDelegateResourceContract" {
+		tx = 4
+	} else if txType == "AccountCreateContract" {
+		tx = 5
+	} else if txType == "FreezeBalanceV2Contract" {
+		tx = 6
+	} else if txType == "UnfreezeBalanceV2Contract" {
+		tx = 7
+	} else if txType == "WithdrawExpireUnfreezeContract" {
+		tx = 8
+	} else {
+		return 0, errors.New("undefined type of tx")
+	}
+	return tx, nil
+}
+
 func ParseTxForTron(body []byte) (*SubTx, error) {
 
 	root := gjson.ParseBytes(body)
 
+	blockId := root.Get("blockId").String()
 	txBody := root.Get("tx").String()
 	if len(txBody) < 5 {
 		return nil, errors.New("tx is error")
@@ -161,32 +219,43 @@ func ParseTxForTron(body []byte) (*SubTx, error) {
 
 	hash := txRoot.Get("txID").String()
 	r.Hash = hash
-	blockHash := txRoot.Get("raw_data.ref_block_hash").String()
-	r.BlockHash = blockHash
+	//tron block_hash 比较特殊，是hash 部分，暂时不返回了
+	//blockHash := txRoot.Get("raw_data.ref_block_hash").String()
+	r.BlockHash = blockId
 	txTime := txRoot.Get("raw_data.timestamp").String()
 	r.TxTime = txTime
-	txType := txRoot.Get("raw_data.contract.0.type").String()
-	if txType == "TransferContract" {
-		r.TxType = 2
-	} else if txType == "TriggerSmartContract" {
-		r.TxType = 1
+
+	tp, err := GetTxTypeForTron(body)
+	if err != nil {
+		return nil, err
 	}
+	r.TxType = tp
+
 	v := txRoot.Get("raw_data.contract.0.parameter.value")
 	from := v.Get("owner_address").String()
-	r.From = from
+	r.From = util.HexToAddress(from).Base58()
 	var to string
+	//DelegateResourceContract
 	if v.Get("receiver_address").Exists() {
 		to = v.Get("receiver_address").String()
 	}
 
+	//TransferContract 转帐
 	if v.Get("to_address").Exists() {
 		to = v.Get("to_address").String()
 	}
 
+	//TriggerSmartContract
 	if v.Get("contract_address").Exists() {
 		to = v.Get("contract_address").String()
 	}
-	r.To = to
+
+	//AccountCreateContract
+	if v.Get("account_address").Exists() {
+		to = v.Get("account_address").String()
+	}
+
+	r.To = util.HexToAddress(to).Base58()
 
 	var input string
 	if v.Get("data").Exists() {
@@ -194,12 +263,12 @@ func ParseTxForTron(body []byte) (*SubTx, error) {
 	}
 	r.Input = input
 
-	if txType == "TransferContract" { //普通交易
+	if r.TxType == 2 { //普通交易
 		r.Value = div(v.Get("amount").String(), 6)
-	} else if txType == "TriggerSmartContract" { //合约调用
+	} else if r.TxType == 1 { //合约调用
 		r.Value = "0"
 	} else { //其他
-		r.Value = v.String()
+		r.Value = "-1"
 	}
 
 	if !root.Get("receipt").Exists() { //收据不存在的交易，则放弃
@@ -261,10 +330,14 @@ func ParseTxForTron(body []byte) (*SubTx, error) {
 				from = tps[1].String()
 				to = tps[2].String()
 				var m ContractTx
-				m.Contract = contract
+				m.Contract = util.HexToAddress(fmt.Sprintf("41%v", contract)).Base58()
 				m.Value = data
-				m.From, _ = util.Hex2Address(from)
-				m.To, _ = util.Hex2Address(to)
+
+				from, _ := util.Hex2Address2(from)
+				m.From = util.HexToAddress(from).Base58()
+
+				to, _ := util.Hex2Address2(to)
+				m.To = util.HexToAddress(to).Base58()
 				m.Method = "Transfer"
 				contractTx = append(contractTx, &m)
 			}
@@ -321,4 +394,198 @@ func div(str string, pos int) string {
 		}
 	}
 	return result
+}
+
+func CheckAddress(blockChain int64, msg *kafka.Message, list []*MonitorAddress) bool {
+
+	if len(list) < 1 {
+		return false
+	}
+	if blockChain == 200 {
+		return CheckAddressForEther(msg, list)
+	} else if blockChain == 205 {
+		return CheckAddressForTron(msg, list)
+	} else {
+		return false
+	}
+}
+
+func getCoreAddrEth(addr string) string {
+	addr = strings.ToLower(addr)
+	if strings.HasPrefix(addr, "0x") {
+		return strings.TrimLeft(addr, "0x") //去丢0x
+	}
+	return addr
+}
+func CheckAddressEth(tx []byte, addrList []string) bool {
+
+	txAddressList := make(map[string]int64, 10)
+	root := gjson.ParseBytes(tx)
+
+	fromAddr := root.Get("from").String()
+	txAddressList[getCoreAddrEth(fromAddr)] = 1
+
+	toAddr := root.Get("to").String()
+	txAddressList[getCoreAddrEth(toAddr)] = 1
+
+	if root.Get("receipt").Exists() {
+		receipt := root.Get("receipt").String()
+		receiptRoot := gjson.Parse(receipt)
+		list := receiptRoot.Get("logs").Array()
+		for _, v := range list {
+			//过滤没有合约信息的交易，出现这种情况原因：1. 合约获取失败会重试 2:非20合约
+			data := v.Get("data").String()
+			if !gjson.Parse(data).IsObject() {
+				continue
+			}
+			topics := v.Get("topics").Array()
+			//Transfer()
+			if len(topics) >= 3 && topics[0].String() == service.EthTopic {
+				from, _ := util.Hex2Address(topics[1].String())
+				if len(from) > 0 {
+					txAddressList[getCoreAddrEth(from)] = 1
+				}
+				to, _ := util.Hex2Address(topics[2].String())
+				if len(to) > 0 {
+					txAddressList[getCoreAddrEth(to)] = 1
+				}
+
+			}
+
+		}
+
+	}
+
+	has := false
+	for _, v := range addrList {
+		monitorAddr := getCoreAddrEth(v)
+		if _, ok := txAddressList[monitorAddr]; ok {
+			has = true
+			break
+		}
+	}
+	return has
+}
+func CheckAddressForEther(msg *kafka.Message, list []*MonitorAddress) bool {
+
+	addrList := make([]string, 0, 10)
+	for _, v := range list {
+		addrList = append(addrList, v.Address)
+	}
+	return CheckAddressEth(msg.Value, addrList)
+}
+
+func getCoreAddrTron(addr string) string {
+	if strings.HasPrefix(addr, "0x") {
+		return strings.TrimLeft(addr, "0x") //去丢0x
+	}
+
+	if strings.HasPrefix(addr, "41") {
+		return strings.TrimLeft(addr, "41") //去丢41
+	}
+
+	if strings.HasPrefix(addr, "0x41") {
+		return strings.TrimLeft(addr, "0x41") //去丢41
+	}
+	return addr
+}
+
+func CheckAddressTron(txValue []byte, addrList []string) bool {
+
+	txAddressList := make(map[string]int64, 10)
+
+	root := gjson.ParseBytes(txValue)
+	tx := root.Get("tx").String()
+	txRoot := gjson.Parse(tx)
+	contracts := txRoot.Get("raw_data.contract").Array()
+	if len(contracts) < 1 {
+		return false
+	}
+	r := contracts[0]
+	txType := r.Get("type").String()
+
+	var fromAddr, toAddr string
+	var logs []gjson.Result
+	var internalTransactions []gjson.Result
+
+	fromAddr = r.Get("parameter.value.owner_address").String()
+	txAddressList[getCoreAddrTron(fromAddr)] = 1
+
+	//TransferContract,TransferAssetContract
+	if r.Get("parameter.value.to_address").Exists() {
+		toAddr = r.Get("parameter.value.to_address").String()
+	}
+
+	//DelegateResourceContract,UnDelegateResourceContract
+	if r.Get("parameter.value.receiver_address").Exists() {
+		toAddr = r.Get("parameter.value.receiver_address").String()
+	}
+
+	//TriggerSmartContract
+	if r.Get("parameter.value.contract_address").Exists() {
+		toAddr = r.Get("parameter.value.contract_address").String()
+	}
+
+	//AccountCreateContract
+	if r.Get("parameter.value.account_address").Exists() {
+		toAddr = r.Get("parameter.value.account_address").String()
+	}
+
+	txAddressList[getCoreAddrTron(toAddr)] = 1
+
+	if txType == "TriggerSmartContract" {
+		receipt := root.Get("receipt").String()
+		receiptRoot := gjson.Parse(receipt)
+		if receiptRoot.Get("receipt.result").String() != "SUCCESS" {
+			return false
+		}
+		logs = receiptRoot.Get("log").Array()
+		internalTransactions = receiptRoot.Get("internal_transactions").Array()
+
+		//合约交易 合约调用下的TRC20
+		if len(logs) > 0 {
+			for _, v := range logs {
+				topics := v.Get("topics").Array()
+				//Transfer()
+				if len(topics) >= 3 && topics[0].String() == service.TronTopic {
+					from, _ := util.Hex2Address(topics[1].String())
+					if len(from) > 0 {
+						txAddressList[getCoreAddrTron(from)] = 1
+					}
+					to, _ := util.Hex2Address(topics[2].String())
+					if len(to) > 0 {
+						txAddressList[getCoreAddrTron(to)] = 1
+					}
+				}
+			}
+		}
+
+		//合约调用下的内部交易TRX转帐和TRC10转账：
+		if len(internalTransactions) > 0 {
+			for _, v := range internalTransactions {
+				fromAddr = v.Get("caller_address").String()
+				toAddr = v.Get("transferTo_address").String()
+				txAddressList[getCoreAddrTron(fromAddr)] = 1
+				txAddressList[getCoreAddrTron(toAddr)] = 1
+			}
+		}
+	}
+
+	has := false
+	for _, v := range addrList {
+		monitorAddr := getCoreAddrTron(v)
+		if _, ok := txAddressList[monitorAddr]; ok {
+			has = true
+			break
+		}
+	}
+	return has
+}
+
+func CheckAddressForTron(msg *kafka.Message, list []*MonitorAddress) bool {
+	addrList := make([]string, 0, 10)
+	for _, v := range list {
+		addrList = append(addrList, v.Address)
+	}
+	return CheckAddressTron(msg.Value, addrList)
 }

@@ -22,6 +22,7 @@ import (
 type Service struct {
 	log                *xlog.XLog
 	chain              *config.Chain
+	nodeId             string
 	store              service.StoreTaskInterface
 	txChainClient      chainService.API
 	blockChainClient   chainService.API
@@ -46,32 +47,46 @@ func (s *Service) GetTx(txHash string, task *config.TxTask, eLog *logrus.Entry) 
 		return nil
 	}
 
+	hash := gjson.Parse(resp).Get("txID").String()
+
 	fullTx := make(map[string]interface{}, 2)
 	fullTx["tx"] = resp
 
-	hash := gjson.Parse(resp).Get("txID").String()
-	receipt := s.GetReceipt(hash, nil, eLog)
+	receipt, err := s.GetReceipt(hash, nil, eLog)
+	if err != nil {
+		eLog.Errorf("GetTx|BlockChainCode=%v,err=%v,txHash=%v", s.chain.BlockChainCode, err.Error(), txHash)
+	} else {
+		if receipt != nil {
+			fullTx["receipt"] = receipt.Receipt
+		}
+	}
+
+	//tron 交易中缺失 完整的blockHash
 	if receipt != nil {
-		fullTx["receipt"] = receipt.Receipt
+		block, _ := s.blockChainClient.GetBlockByNumber(int64(s.chain.BlockChainCode), fmt.Sprintf("%v", receipt.BlockNumber), false)
+		if len(block) > 0 {
+			blockId := gjson.Parse(block).Get("blockID").String()
+			fullTx["blockId"] = blockId
+		}
 	}
 
 	r := &service.TxInterface{TxHash: hash, Tx: fullTx}
 	return r
 }
 
-func (s *Service) GetReceipt(txHash string, task *config.ReceiptTask, eLog *logrus.Entry) *service.ReceiptInterface {
+func (s *Service) GetReceipt(txHash string, task *config.ReceiptTask, eLog *logrus.Entry) (*service.ReceiptInterface, error) {
 
 	//调用接口
 	resp, err := s.receiptChainClient.GetTransactionReceiptByHash(int64(s.chain.BlockChainCode), txHash)
 	if err != nil {
 		eLog.Errorf("GetReceipt|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, err.Error(), txHash)
-		return nil
+		return nil, err
 	}
 
 	//处理数据
 	if resp == "" {
 		eLog.Errorf("GetReceipt|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, "receipt is empty", txHash)
-		return nil
+		return nil, errors.New("receipt is null")
 	}
 
 	hash := gjson.Parse(resp).Get("id").String()
@@ -83,14 +98,17 @@ func (s *Service) GetReceipt(txHash string, task *config.ReceiptTask, eLog *logr
 
 	if p != nil {
 		bs, _ := json.Marshal(receipt)
-		r := &service.ReceiptInterface{TransactionHash: hash, Receipt: string(bs)}
-		return r
+		r := &service.ReceiptInterface{TransactionHash: hash, Receipt: string(bs), BlockNumber: receipt.BlockNumber, BlockTimeStamp: receipt.BlockTimeStamp}
+		return r, nil
 	} else {
-		return nil
+		//nodeId, _ := util.GetLocalNodeId()
+		task := service.NodeTask{Id: time.Now().UnixNano(), NodeId: s.nodeId, BlockChain: s.chain.BlockChainCode, TxHash: receipt.Id, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
+		_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), receipt.Id, task)
+		return nil, errors.New("receipt is null")
 	}
 }
 
-func (s *Service) GetReceiptByBlock(blockHash, number string, task *config.ReceiptTask, eLog *logrus.Entry) []*service.ReceiptInterface {
+func (s *Service) GetReceiptByBlock(blockHash, number string, task *config.ReceiptTask, eLog *logrus.Entry) ([]*service.ReceiptInterface, error) {
 
 	//调用接口
 	var resp string
@@ -107,13 +125,13 @@ func (s *Service) GetReceiptByBlock(blockHash, number string, task *config.Recei
 
 	if err != nil {
 		eLog.Errorf("GetReceiptByBlock|BlockChainName=%v,err=%v,blocknumber=%v, blockHash=%v", s.chain.BlockChainName, err.Error(), number, blockHash)
-		return nil
+		return nil, err
 	}
 
 	//处理数据
 	if resp == "" {
 		eLog.Errorf("GetReceiptByBlock|BlockChainName=%v,err=%v,blocknumber=%v, blockHash=%v", s.chain.BlockChainName, "receipts is null", number, blockHash)
-		return nil
+		return nil, errors.New("receipt is null")
 	}
 
 	txs := gjson.Parse(resp).Array()
@@ -130,10 +148,14 @@ func (s *Service) GetReceiptByBlock(blockHash, number string, task *config.Recei
 			bs, _ := json.Marshal(p)
 			r := &service.ReceiptInterface{TransactionHash: hash, Receipt: string(bs)}
 			receiptList = append(receiptList, r)
+		} else {
+			//nodeId, _ := util.GetLocalNodeId()
+			task := service.NodeTask{Id: time.Now().UnixNano(), NodeId: s.nodeId, BlockChain: s.chain.BlockChainCode, TxHash: receipt.Id, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
+			_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), receipt.Id, task)
 		}
 	}
 
-	return receiptList
+	return receiptList, nil
 }
 
 func (s *Service) GetBlockByNumber(blockNumber string, task *config.BlockTask, eLog *logrus.Entry, flag bool) (*service.BlockInterface, []*service.TxInterface) {
@@ -171,23 +193,33 @@ func (s *Service) GetBlockByNumber(blockNumber string, task *config.BlockTask, e
 
 	list := gjson.Parse(resp).Get("transactions").Array()
 	//根据区块高度，获取交易log
-	receipts := s.GetReceiptByBlock(blockID, number, nil, eLog)
-	mp := make(map[string]interface{}, len(receipts))
-	for _, v := range receipts {
-		mp[v.TransactionHash] = v.Receipt
+	mp := make(map[string]interface{}, 10)
+	receipts, err := s.GetReceiptByBlock(blockID, number, nil, eLog)
+	if err != nil {
+		eLog.Errorf("GetBlockByNumber|BlockChainCode=%v,err=%v,BlockNumber=%v", s.chain.BlockChainCode, err.Error(), number)
+	} else {
+		for _, v := range receipts {
+			mp[v.TransactionHash] = v.Receipt
+		}
 	}
 
 	txs := make([]*service.TxInterface, 0, len(list))
+	addressList, _ := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
 	for _, tx := range list {
 		// 补充字段
 		hash := tx.Get("txID").String()
 		fullTx := make(map[string]interface{}, 2)
 		fullTx["tx"] = tx.String()
+		fullTx["blockId"] = blockID
 		if v, ok := mp[hash]; ok {
 			fullTx["receipt"] = v
 		}
-		t := &service.TxInterface{TxHash: hash, Tx: fullTx}
-		txs = append(txs, t)
+
+		bs, _ := json.Marshal(fullTx)
+		if s.CheckAddress(bs, addressList) {
+			t := &service.TxInterface{TxHash: hash, Tx: fullTx}
+			txs = append(txs, t)
+		}
 	}
 	//r := &service.BlockInterface{BlockHash: blockID, BlockNumber: number, Block: resp}
 	return r, txs
@@ -222,73 +254,75 @@ func (s *Service) GetBlockByHash(blockHash string, cfg *config.BlockTask, eLog *
 	}
 
 	//根据区块高度，获取交易log
-	receipts := s.GetReceiptByBlock(blockID, number, nil, eLog)
-	mp := make(map[string]interface{}, len(receipts))
-	for _, v := range receipts {
-		mp[v.TransactionHash] = v.Receipt
+	mp := make(map[string]interface{}, 10)
+	receipts, err := s.GetReceiptByBlock(blockID, number, nil, eLog)
+	if err != nil {
+		eLog.Errorf("GetBlockByHash|BlockChainCode=%v,err=%v,BlockHash=%v", s.chain.BlockChainCode, err.Error(), blockID)
+	} else {
+		for _, v := range receipts {
+			mp[v.TransactionHash] = v.Receipt
+		}
 	}
 
 	list := gjson.Parse(resp).Get("transactions").Array()
+	addressList, _ := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
 	txs := make([]*service.TxInterface, 0, len(list))
 	for _, tx := range list {
 		// 补充字段
 		hash := tx.Get("txID").String()
 		fullTx := make(map[string]interface{}, 2)
 		fullTx["tx"] = tx.String()
+		fullTx["blockId"] = blockID
 		if v, ok := mp[hash]; ok {
 			fullTx["receipt"] = v
 		}
-		t := &service.TxInterface{TxHash: hash, Tx: fullTx}
-		txs = append(txs, t)
+
+		bs, _ := json.Marshal(fullTx)
+		if s.CheckAddress(bs, addressList) {
+			t := &service.TxInterface{TxHash: hash, Tx: fullTx}
+			txs = append(txs, t)
+		}
 	}
 	//r := &service.BlockInterface{BlockHash: blockID, BlockNumber: number, Block: resp}
 	return r, txs
 }
 
 func (s *Service) buildContract(receipt *service.TronReceipt) *service.TronReceipt {
+
 	has := true
 
 	//仅合约交易 有log
 	for _, g := range receipt.Log {
 
-		//忽略非资产转移事件
-		if len(g.Topics) < 3 || g.Topics[0] != service.TronTopic {
-			continue
-		}
-
-		//忽略 721协议
-		if len(g.Topics) == 4 && g.Topics[0] == service.TronTopic {
-			if len(g.Data) == 0 {
-				continue
+		//trc20合约
+		if len(g.Topics) == 3 && g.Topics[0] == service.TronTopic {
+			mp := make(map[string]interface{}, 2)
+			contractAddr := fmt.Sprintf("41%v", g.Address)
+			token, err := s.getToken(int64(s.chain.BlockChainCode), contractAddr, contractAddr)
+			if err != nil {
+				has = false
+				break
 			}
-		}
+			m := gjson.Parse(token).Map()
+			if v, ok := m["decimals"]; ok {
+				mp["contractDecimals"] = v.String()
+			} else {
+				has = false
+				break
+			}
 
-		mp := make(map[string]interface{}, 2)
-		contractAddr := fmt.Sprintf("41%v", g.Address)
-		token, err := s.getToken(int64(s.chain.BlockChainCode), contractAddr, contractAddr)
-		if err != nil {
-			has = false
-			break
+			mp["data"] = g.Data
+			bs, _ := json.Marshal(mp)
+			g.Data = string(bs)
 		}
-		m := gjson.Parse(token).Map()
-		if v, ok := m["decimals"]; ok {
-			mp["contractDecimals"] = v.String()
-		} else {
-			has = false
-			break
-		}
-
-		mp["data"] = g.Data
-		bs, _ := json.Marshal(mp)
-		g.Data = string(bs)
 	}
 
 	if has {
 		return receipt
 	} else {
-		nodeId, _ := util.GetLocalNodeId()
-		task := service.NodeTask{Id: time.Now().UnixNano(), NodeId: nodeId, BlockChain: s.chain.BlockChainCode, TxHash: receipt.Id, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
-		_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), receipt.Id, task)
+		//nodeId, _ := util.GetLocalNodeId()
+		//task := service.NodeTask{Id: time.Now().UnixNano(), NodeId: nodeId, BlockChain: s.chain.BlockChainCode, TxHash: receipt.Id, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
+		//_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), receipt.Id, task)
 		return nil
 	}
 }
@@ -321,7 +355,114 @@ func (s *Service) BalanceCluster(key string, clusterList []*config.FromCluster) 
 	return nil, nil
 }
 
-func NewService(c *config.Chain, x *xlog.XLog, store service.StoreTaskInterface) service.BlockChainInterface {
+func getCoreAddr(addr string) string {
+	if strings.HasPrefix(addr, "0x") {
+		return strings.TrimLeft(addr, "0x") //去丢0x
+	}
+
+	if strings.HasPrefix(addr, "41") {
+		return strings.TrimLeft(addr, "41") //去丢41
+	}
+
+	if strings.HasPrefix(addr, "0x41") {
+		return strings.TrimLeft(addr, "0x41") //去丢41
+	}
+	return addr
+}
+
+func (s *Service) CheckAddress(txValue []byte, addrList []string) bool {
+
+	txAddressList := make(map[string]int64, 10)
+
+	root := gjson.ParseBytes(txValue)
+	tx := root.Get("tx").String()
+	txRoot := gjson.Parse(tx)
+	contracts := txRoot.Get("raw_data.contract").Array()
+	if len(contracts) < 1 {
+		return false
+	}
+	r := contracts[0]
+	txType := r.Get("type").String()
+
+	var fromAddr, toAddr string
+	var logs []gjson.Result
+	var internalTransactions []gjson.Result
+
+	fromAddr = r.Get("parameter.value.owner_address").String()
+	txAddressList[getCoreAddr(fromAddr)] = 1
+
+	//TransferContract,TransferAssetContract
+	if r.Get("parameter.value.to_address").Exists() {
+		toAddr = r.Get("parameter.value.to_address").String()
+	}
+
+	//DelegateResourceContract,UnDelegateResourceContract
+	if r.Get("parameter.value.receiver_address").Exists() {
+		toAddr = r.Get("parameter.value.receiver_address").String()
+	}
+
+	//TriggerSmartContract
+	if r.Get("parameter.value.contract_address").Exists() {
+		toAddr = r.Get("parameter.value.contract_address").String()
+	}
+
+	//AccountCreateContract
+	if r.Get("parameter.value.account_address").Exists() {
+		toAddr = r.Get("parameter.value.account_address").String()
+	}
+
+	txAddressList[getCoreAddr(toAddr)] = 1
+
+	if txType == "TriggerSmartContract" {
+		receipt := root.Get("receipt").String()
+		receiptRoot := gjson.Parse(receipt)
+		if receiptRoot.Get("receipt.result").String() != "SUCCESS" {
+			return false
+		}
+		logs = receiptRoot.Get("log").Array()
+		internalTransactions = receiptRoot.Get("internal_transactions").Array()
+
+		//合约交易 合约调用下的TRC20
+		if len(logs) > 0 {
+			for _, v := range logs {
+				topics := v.Get("topics").Array()
+				//Transfer()
+				if len(topics) >= 3 && topics[0].String() == service.TronTopic {
+					from, _ := util.Hex2Address(topics[1].String())
+					if len(from) > 0 {
+						txAddressList[getCoreAddr(from)] = 1
+					}
+					to, _ := util.Hex2Address(topics[2].String())
+					if len(to) > 0 {
+						txAddressList[getCoreAddr(to)] = 1
+					}
+				}
+			}
+		}
+
+		//合约调用下的内部交易TRX转帐和TRC10转账：
+		if len(internalTransactions) > 0 {
+			for _, v := range internalTransactions {
+				fromAddr = v.Get("caller_address").String()
+				toAddr = v.Get("transferTo_address").String()
+				txAddressList[getCoreAddr(fromAddr)] = 1
+				txAddressList[getCoreAddr(toAddr)] = 1
+			}
+		}
+	}
+
+	has := false
+	for _, v := range addrList {
+		monitorAddr := getCoreAddr(v)
+		if _, ok := txAddressList[monitorAddr]; ok {
+			has = true
+			break
+		}
+	}
+	return has
+}
+
+func NewService(c *config.Chain, x *xlog.XLog, store service.StoreTaskInterface, nodeId string) service.BlockChainInterface {
 
 	var blockClient chainService.API
 	if c.BlockTask != nil {
@@ -372,5 +513,6 @@ func NewService(c *config.Chain, x *xlog.XLog, store service.StoreTaskInterface)
 		txChainClient:      txClient,
 		blockChainClient:   blockClient,
 		receiptChainClient: receiptClient,
+		nodeId:             nodeId,
 	}
 }

@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/segmentio/kafka-go"
@@ -20,6 +21,7 @@ import (
 type Service struct {
 	cfg         config.Config
 	log         *logrus.Entry
+	nodeId      string
 	taskStore   map[int64]service.StoreTaskInterface
 	kafka       *kafkaClient.EasyKafka
 	apis        map[int64]chainService.API
@@ -32,9 +34,18 @@ func (s *Service) Start() {
 	go func() {
 		for _, v := range s.cfg.Chains {
 			broker := fmt.Sprintf("%v:%v", v.TaskKafka.Host, v.TaskKafka.Port)
-			s.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker}}, s.kafkaSender[int64(v.BlockChainCode)], nil)
+			s.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker}}, s.kafkaSender[int64(v.BlockChainCode)], nil, context.Background(), 1)
 		}
 	}()
+
+	go func(nodeId string) {
+		for true {
+			for b, s := range s.taskStore {
+				_ = s.StoreNodeId(b, nodeId, 1)
+			}
+			<-time.After(5 * time.Second)
+		}
+	}(s.nodeId)
 
 	//清理日志
 	s.clearLog()
@@ -70,6 +81,12 @@ func (s *Service) CheckNodeTask() {
 						continue
 					}
 
+					//清理 已经重试成功的交易
+					if count < 5 && time.Now().Sub(task.LogTime) >= 24*time.Hour {
+						_, _, _ = store.DelNodeTask(blockchain, hash)
+						continue
+					}
+
 					task.CreateTime = time.Now()
 					task.LogTime = time.Now()
 					if task.BlockChain < 1 {
@@ -77,6 +94,7 @@ func (s *Service) CheckNodeTask() {
 					}
 					task.Id = time.Now().UnixNano()
 					task.TaskStatus = 0
+					task.NodeId = s.nodeId
 					bs, _ := json.Marshal(task)
 					msg := &kafka.Message{Topic: fmt.Sprintf("task_%v", blockchain), Partition: 0, Key: []byte(task.NodeId), Value: bs}
 					tempList = append(tempList, msg)
@@ -100,11 +118,11 @@ func (s *Service) CheckContract() {
 	go func() {
 
 		for true {
-			<-time.After(30 * time.Minute)
+			<-time.After(1 * time.Hour)
 
 			for blockchain, store := range s.taskStore {
 
-				list, err := store.GetAllKeyForContract(blockchain, "")
+				list, err := store.GetAllKeyForContract(blockchain)
 				if err != nil {
 					continue
 				}
@@ -130,11 +148,11 @@ func (s *Service) CheckErrTx() {
 	go func() {
 
 		for true {
-			<-time.After(20 * time.Minute)
+			<-time.After(3 * time.Hour)
 
 			for blockchain, store := range s.taskStore {
 
-				list, err := store.GetAllKeyForErrTx(blockchain, "")
+				list, err := store.GetAllKeyForErrTx(blockchain)
 				if err != nil {
 					continue
 				}
@@ -150,8 +168,16 @@ func (s *Service) CheckErrTx() {
 					//todo 重发交易任务
 					var v service.NodeTask
 					_ = json.Unmarshal([]byte(data), &v)
+
+					//清理 已经重试成功的交易
+					if count < 5 && time.Now().Sub(v.LogTime) >= 24*time.Hour {
+						_, _ = store.DelErrTxNodeTask(blockchain, hash)
+						continue
+					}
+
 					v.CreateTime = time.Now()
 					v.LogTime = time.Now()
+					v.NodeId = s.nodeId
 					if v.BlockChain < 1 {
 						v.BlockChain = int(blockchain)
 					}
@@ -226,7 +252,7 @@ func (s *Service) getToken(blockChain int64, from string, contract string) {
 	}
 }
 
-func NewService(config *config.Config) *Service {
+func NewService(config *config.Config, nodeId string) *Service {
 	log := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/monitor", config.LogConfig.Path), 24*time.Hour)
 	mp := make(map[int64]service.StoreTaskInterface, 2)
 	sender := make(map[int64]chan []*kafka.Message, 2)
@@ -262,6 +288,7 @@ func NewService(config *config.Config) *Service {
 		taskStore:   mp,
 		kafkaSender: sender,
 		apis:        apis,
+		nodeId:      nodeId,
 		log:         log.WithField("model", "monitor"),
 	}
 }

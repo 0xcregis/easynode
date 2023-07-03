@@ -11,6 +11,7 @@ import (
 	collectConfig "github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service/cmd"
 	collectMonitor "github.com/uduncloud/easynode/collect/service/monitor"
+	"github.com/uduncloud/easynode/common/util"
 	storeConfig "github.com/uduncloud/easynode/store/config"
 	"github.com/uduncloud/easynode/store/service/network"
 	"github.com/uduncloud/easynode/store/service/store"
@@ -101,8 +102,9 @@ func startStore(configPath string) {
 
 	//ws 协议
 	wsServer := network.NewWsHandler(&cfg, xLog)
+	wsServer.Start()
 	root.Handle("GET", "/ws/:token", func(ctx *gin.Context) {
-		wsServer.Start(ctx, ctx.Writer, ctx.Request)
+		wsServer.Sub2(ctx, ctx.Writer, ctx.Request)
 	})
 
 	err := e.Run(fmt.Sprintf(":%v", cfg.Port))
@@ -219,11 +221,16 @@ func startCollect(configPath string) {
 
 	log.Printf("%+v\n", cfg)
 
+	nodeId, err := util.GetLocalNodeId(cfg.KeyPath)
+	if err != nil {
+		panic(err.Error())
+	}
+
 	//启动监控服务
-	collectMonitor.NewService(&cfg).Start()
+	collectMonitor.NewService(&cfg, nodeId).Start()
 
 	//启动公链服务
 	for _, v := range cfg.Chains {
-		cmd.NewService(v, cfg.LogConfig).Start()
+		cmd.NewService(v, cfg.LogConfig, nodeId).Start()
 	}
 }

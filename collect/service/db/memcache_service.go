@@ -19,15 +19,90 @@ import (
 )
 
 var (
-	ContractKey = "contract_%v"
-	ErrTxKey    = "errTx_%v"
-	NodeTaskKey = "nodeTask_%v"
+	ContractKey    = "contract_%v"
+	ErrTxKey       = "errTx_%v"
+	NodeTaskKey    = "nodeTask_%v"
+	MonitorKey     = "monitorAddress_%v"
+	LatestBlockKey = "latestBlock"
+	NodeKey        = "nodeKey_%v"
 )
 
 type Service struct {
 	log         *xlog.XLog
 	lock        *sync.RWMutex
 	cacheClient *redis.Client
+}
+
+func (s *Service) GetAllNodeId(blockchain int64) ([]string, error) {
+	list, err := s.cacheClient.HKeys(context.Background(), fmt.Sprintf(NodeKey, blockchain)).Result()
+	if err != nil {
+		s.log.Warnf("StoreNodeId|err=%v", err.Error())
+		return nil, err
+	}
+	if len(list) < 1 {
+		return nil, errors.New("no record")
+	}
+
+	return list, nil
+}
+
+func (s *Service) StoreNodeId(blockchain int64, key string, data any) error {
+	bs, _ := json.Marshal(data)
+	err := s.cacheClient.HSet(context.Background(), fmt.Sprintf(NodeKey, blockchain), key, string(bs)).Err()
+	if err != nil {
+		s.log.Warnf("StoreNodeId|err=%v", err.Error())
+		return err
+	}
+	return nil
+}
+
+func (s *Service) StoreLatestBlock(blockchain int64, key string, data any, number string) error {
+	bs, _ := json.Marshal(data)
+	err := s.cacheClient.HSet(context.Background(), LatestBlockKey, fmt.Sprintf("%v-%v", blockchain, key), string(bs)).Err()
+	if err != nil {
+		s.log.Warnf("StoreLatestBlock|err=%v", err.Error())
+		return err
+	}
+
+	newNumber, err := strconv.ParseInt(number, 0, 64)
+	if err != nil {
+		return err
+	}
+	field := fmt.Sprintf("%v-%v-number", blockchain, key)
+	if ok, _ := s.cacheClient.HExists(context.Background(), LatestBlockKey, field).Result(); ok {
+		n, _ := s.cacheClient.HGet(context.Background(), LatestBlockKey, field).Int64()
+		if n < newNumber {
+			_ = s.cacheClient.HSet(context.Background(), LatestBlockKey, field, newNumber).Err()
+		}
+	} else {
+		_ = s.cacheClient.HSet(context.Background(), LatestBlockKey, field, newNumber).Err()
+	}
+
+	return nil
+}
+
+func (s *Service) GetMonitorAddress(blockChain int64) ([]string, error) {
+
+	list, err := s.cacheClient.HKeys(context.Background(), fmt.Sprintf(MonitorKey, blockChain)).Result()
+	if err != nil {
+		s.log.Warnf("GetMonitorAddress|err=%v", err.Error())
+		return nil, errors.New("no record")
+	}
+
+	if len(list) < 1 {
+		s.log.Warnf("GetMonitorAddress|err=no data")
+		return nil, errors.New("no record")
+	}
+	return list, nil
+}
+
+func (s *Service) DelNodeTask(blockchain int64, key string) (int64, *service.NodeTask, error) {
+	c, task, err := s.GetNodeTask(blockchain, key)
+	if err != nil {
+		return c, nil, err
+	}
+	_ = s.cacheClient.HDel(context.Background(), fmt.Sprintf(NodeTaskKey, task.BlockChain), key)
+	return c, task, nil
 }
 
 func (s *Service) DelErrTxNodeTask(blockchain int64, key string) (string, error) {
@@ -59,7 +134,7 @@ func (s *Service) GetAllKeyForNodeTask(blockchain int64) ([]string, error) {
 	return list, nil
 }
 
-func (s *Service) GetAllKeyForContract(blockchain int64, key string) ([]string, error) {
+func (s *Service) GetAllKeyForContract(blockchain int64) ([]string, error) {
 	list, err := s.cacheClient.HKeys(context.Background(), fmt.Sprintf(ContractKey, blockchain)).Result()
 	if err != nil {
 		s.log.Warnf("GetAllKeyForContract|err=%v", err.Error())
@@ -74,7 +149,7 @@ func (s *Service) GetAllKeyForContract(blockchain int64, key string) ([]string, 
 	return list, nil
 }
 
-func (s *Service) GetAllKeyForErrTx(blockchain int64, key string) ([]string, error) {
+func (s *Service) GetAllKeyForErrTx(blockchain int64) ([]string, error) {
 	list, err := s.cacheClient.HKeys(context.Background(), fmt.Sprintf(ErrTxKey, blockchain)).Result()
 	if err != nil {
 		s.log.Warnf("GetAllKeyForErrTx|err=%v", err.Error())
@@ -202,7 +277,7 @@ func (s *Service) GetNodeTask(blockchain int64, key string) (int64, *service.Nod
 	return count, &t, nil
 }
 
-// StoreExecTask key which tx:tx_txHash,receipt:receipt_txHash, block: block_number_blockHash
+// StoreNodeTask StoreExecTask key which tx:tx_txHash,receipt:receipt_txHash, block: block_number_blockHash
 func (s *Service) StoreNodeTask(key string, task *service.NodeTask) {
 
 	c, d, err := s.GetNodeTask(int64(task.BlockChain), key)
@@ -278,31 +353,11 @@ func (s *Service) UpdateNodeTaskStatusWithBatch(keys []string, status int) error
 }
 
 func NewTaskCacheService(cfg *config.Chain, x *xlog.XLog) service.StoreTaskInterface {
-	//opt := func(o *store.Options) {
-	//	o.Expiration = 1 * time.Hour
-	//}
-	//
-	//var store store.StoreInterface
-
 	client := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%v:%v", cfg.Redis.Addr, cfg.Redis.Port),
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
-
-	//if cfg.Redis == nil {
-	//	c, _ := bigcache.New(context.Background(), bigcache.DefaultConfig(30*time.Minute))
-	//	store = bigcacheStore.NewBigcache(c, opt)
-	//} else {
-	//	store = redisStore.NewRedis(redis.NewClient(&redis.Options{
-	//		Addr:         fmt.Sprintf("%v:%v", cfg.Redis.Addr, cfg.Redis.Port),
-	//		DB:           cfg.Redis.DB,
-	//		DialTimeout:  time.Second,
-	//		ReadTimeout:  time.Second,
-	//		WriteTimeout: time.Second}), opt)
-	//}
-
-	//cacheClient := cache.New[string](store)
 	return &Service{
 		log:         x,
 		cacheClient: client,

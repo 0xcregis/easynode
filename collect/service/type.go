@@ -169,6 +169,8 @@ type Receipt struct {
 
 type ReceiptInterface struct {
 	TransactionHash string      `json:"transactionHash" gorm:"column:transaction_hash"`
+	BlockNumber     int64       `json:"blockNumber"`
+	BlockTimeStamp  int64       `json:"blockTimeStamp"`
 	Receipt         interface{} `json:"receipt"`
 }
 

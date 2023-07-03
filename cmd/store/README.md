@@ -141,6 +141,16 @@ type WsReqMessage struct {
 	Params     map[string]string //非必需
 }
 
+//WsReqMessage.Code 说明
+	1:订阅资产转移交易，     2:取消订阅：资产转移交易 
+	3:质押资产             4:取消订阅：质押资产 
+	5:解锁资产             6:取消订阅：解锁资产 
+	7:提取                8:取消订阅：提取 
+	9:代理资源             10:取消订阅：代理资源
+	11:回收资源（取消代理）  12:取消订阅： 回收资源（取消代理） 
+	13:激活账号            14:取消订阅：激活账号
+
+
 //返回数据结构：
 type WsRespMessage struct {
 	Id         int64 //请求的序列号，和请求保持一致
@@ -153,16 +163,86 @@ type WsRespMessage struct {
 }
 //推送数据结构
 type WsPushMessage struct {
-	Code       int64 //1:tx,2:block,3:receipt //推送数据业务码
+	Code       int64  //推送数据业务码
 	BlockChain int64 `json:"blockChain"` //公链代码
 	Data       interface{} //推送的数据
 }
 
 ``````
+- 提交订阅并接受返回
+
+``````
+   url: 
+   
+   ws://localhost:9003/api/store/ws/{token} 
+   
+   ws://localhost:9003/api/store/ws/{token}?serialId={serialId}
+  
+   入参：
+           {
+             "id":1001,
+             "code":1,
+             "blockChain":[200],
+             "Params":{}
+            }
+   
+   订阅返回：
+   
+            {
+              "Id": 1001,
+              "Code": 1,
+              "blockChain": [200],
+              "Status": 0,
+              "Err": "",
+              "Params": {
+              },
+              "Resp": null
+            }
+            
+   push 返回：
+   
+   {
+      "Code": 1, //消息类型，1:交易消息
+      "blockChain": 200, //公链代码
+      "Data": { //交易数据
+        "id": 1685094437357929000,
+        "blockHash": "0x067fbc694c5ca3540ee965b25c286e55d40f3e5e5fd336d1f398868dfc18feec", //区块hash
+        "blockNumber": "17284552", //区块高度
+        "chainCode": 200,
+        "contractTx": [ //合约交易时EVM 事件
+          {
+            "contract": "0xdac17f958d2ee523a2206206994597c13d831ec7", //合约地址
+            "from": "0x54b50187becd0bbcfd52ec5d538433dab044d2a8", //from 地址
+            "method": "Transfer", //合约方法
+            "to": "0x408be4b8a862c1a372976521401fd77f9a0178d7", //to 地址
+            "value": "59.327379" //交易内容
+          }
+        ],
+        "fee": "0.002053016771146819",//交易费
+        "from": "0x54b50187becd0bbcfd52ec5d538433dab044d2a8", //from 地址
+        "hash": "0x323c08a889ed99d8bfc6c72b1580432f7a13ca7c992fd1bac523e46bfe7ab98f", //交易hash
+        "status": "1", //交易状态 1:成功, 0:交易失败
+        "to": "0xdac17f958d2ee523a2206206994597c13d831ec7", //to地址
+        "txTime": "1684390019", //交易时间
+        "txType": 1, //交易类型 1:合约调用，2:普通资产转移
+        "value": "0" //交易额 
+      }
+  }         
+    
+       
+    
+                     
+``````
+- 交易类型说明：
+
+    1:合约调用，2:普通资产转移 3:资源代理 4:资源回收 5:激活 6:质押 7:解质押 8:解质押提现
+
 
 - notes
 
-    - 同一token ，同一时刻仅能有一个 订阅命令，需要订阅其他命令，需要先取消已订阅的命令
     - 同一token ，多次连接时，会自动关闭上一个连接
     - 客户端 必需 实现 ping ,pong命令，长时间未收到客户端发出ping ，则会自动关闭连接
     - 服务端 定时的发送ping 命令，客户端收到时，需要及时返回 pong命令
+    - ws://localhost:9003/api/store/ws/{token}?serialId={serialId} 这种请求时最终token=token_serialId
+
+

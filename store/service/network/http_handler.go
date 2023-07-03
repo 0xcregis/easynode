@@ -8,10 +8,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
+	"github.com/uduncloud/easynode/common/util"
 	"github.com/uduncloud/easynode/store/config"
 	"github.com/uduncloud/easynode/store/service"
 	db2 "github.com/uduncloud/easynode/store/service/db"
 	"io/ioutil"
+	"strings"
 	"time"
 )
 
@@ -130,9 +132,24 @@ func (s *Server) MonitorAddress(c *gin.Context) {
 
 	addr := r.Get("address").String()
 	token := r.Get("token").String()
-	txType := r.Get("txType").Int()
+	//txType := r.Get("txType").Int()
 
-	addressTask := &service.MonitorAddress{BlockChain: blockChain, Address: addr, Token: token, TxType: fmt.Sprintf("%v", txType), Id: time.Now().UnixNano()}
+	if len(addr) < 1 || len(token) < 1 {
+		s.Error(c, c.Request.URL.Path, "params is not null")
+	}
+
+	//tron base58进制的地址处理
+	if !strings.HasPrefix(addr, "0x") && !strings.HasPrefix(addr, "41") && !strings.HasPrefix(addr, "0x41") {
+		base58Addr, err := util.Base58ToAddress(addr)
+		if err != nil {
+			s.Error(c, c.Request.URL.Path, err.Error())
+			return
+		}
+		addr = base58Addr.Hex()
+	}
+
+	//address:hex string
+	addressTask := &service.MonitorAddress{BlockChain: blockChain, Address: addr, Token: token, TxType: fmt.Sprintf("%v", 0), Id: time.Now().UnixNano()}
 	err = s.db.AddMonitorAddress(blockChain, addressTask)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())

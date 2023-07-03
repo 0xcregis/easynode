@@ -14,7 +14,12 @@ func Init2() API {
 
 func TestTron_GetBlockByNumber(t *testing.T) {
 	c := Init2()
-	log.Println(c.GetBlockByNumber(205, "49477110", true))
+	log.Println(c.GetBlockByNumber(205, "49477110", false))
+}
+
+func TestTron_GetBlockByHash(t *testing.T) {
+	c := Init2()
+	log.Println(c.GetBlockByHash(205, "0000000002f2f5f62d94d85ec1abf2c0dfc26d72da4f5e5d5a2624d51e231425", false))
 }
 
 func TestTron_GetBlockReceiptByBlockNumber(t *testing.T) {

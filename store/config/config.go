@@ -15,6 +15,13 @@ type Chain struct {
 	SubStore     bool                    `json:"SubStore"`
 	KafkaCfg     map[string]*KafkaConfig `json:"Kafka"`
 	ClickhouseDb *ClickhouseChainDb      `json:"ChainDb"`
+	Redis        *Redis                  `json:"Redis"`
+}
+
+type Redis struct {
+	Addr string `json:"Addr"`
+	Port int64  `json:"Port"`
+	DB   int    `json:"DB"`
 }
 
 type ClickhouseChainDb struct {

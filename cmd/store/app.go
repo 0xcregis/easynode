@@ -40,8 +40,9 @@ func main() {
 
 	//ws 协议
 	wsServer := network.NewWsHandler(&cfg, xLog)
+	wsServer.Start()
 	root.Handle("GET", "/ws/:token", func(ctx *gin.Context) {
-		wsServer.Start(ctx, ctx.Writer, ctx.Request)
+		wsServer.Sub2(ctx, ctx.Writer, ctx.Request)
 	})
 
 	err := e.Run(fmt.Sprintf(":%v", cfg.Port))

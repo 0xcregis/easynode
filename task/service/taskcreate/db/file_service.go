@@ -1,9 +1,11 @@
 package db
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/redis/go-redis/v9"
 	"github.com/segmentio/kafka-go"
 	"github.com/sunjiangjun/xlog"
 	"github.com/uduncloud/easynode/common/util"
@@ -12,18 +14,43 @@ import (
 	"time"
 )
 
+var (
+	NodeKey = "nodeKey_%v"
+)
+
 type TaskCreateFile struct {
 	config *config.Config
 	log    *xlog.XLog
+	client *redis.Client
 	//sendCh chan []*kafka.Message
 }
 
 func NewFileTaskCreateService(config *config.Config, xg *xlog.XLog) service.StoreTaskInterface {
+
+	client := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%v:%v", config.Redis.Addr, config.Redis.Port),
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
 	return &TaskCreateFile{
 		config: config,
 		log:    xg,
+		client: client,
 		//sendCh: sendCh,
 	}
+}
+
+func (t *TaskCreateFile) GetNodeId(blockChainCode int64) ([]string, error) {
+	list, err := t.client.HKeys(context.Background(), fmt.Sprintf(NodeKey, blockChainCode)).Result()
+	if err != nil {
+		return nil, err
+	}
+	if len(list) < 1 {
+		return nil, errors.New("no record")
+	}
+	_ = t.client.Del(context.Background(), fmt.Sprintf(NodeKey, blockChainCode)).Err()
+	return list, nil
 }
 
 func (t *TaskCreateFile) AddNodeTask(list []*service.NodeTask) ([]*kafka.Message, error) {

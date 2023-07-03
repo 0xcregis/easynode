@@ -170,6 +170,20 @@ func Hex2Address(hex string) (string, error) {
 	return BytesToHexString(bs[12:]), nil
 }
 
+func Hex2Address2(hex string) (string, error) {
+	bs, err := FromHex(hex)
+	if err != nil {
+		return "", err
+	}
+
+	//a := Address(bs)
+	addr := BytesToHexString(bs[12:])
+	if strings.HasPrefix(addr, "0x") {
+		addr = strings.Replace(addr, "0x", "41", 1)
+	}
+	return addr, nil
+}
+
 func HexToInt(hex string) (string, error) {
 	if len(hex) < 1 {
 		return hex, errors.New("params is null when HexToInt is called")

@@ -47,6 +47,9 @@ func (s *Service) Start() {
 		}
 	}(s.nodeId)
 
+	//公链节点健康检查
+	s.CheckClusterHealth()
+
 	//清理日志
 	s.clearLog()
 
@@ -58,6 +61,32 @@ func (s *Service) Start() {
 
 	//构建合约数据
 	s.CheckContract()
+}
+
+func (s *Service) CheckClusterHealth() {
+	go func() {
+		for true {
+			<-time.After(1 * time.Minute)
+			for blockchain, t := range s.taskStore {
+				mp := make(map[string]int64, 2)
+				s.rebuildCluster(t, blockchain, "tx", mp)
+				s.rebuildCluster(t, blockchain, "block", mp)
+				s.rebuildCluster(t, blockchain, "receipt", mp)
+				_ = t.StoreClusterHealthStatus(blockchain, mp)
+			}
+		}
+	}()
+}
+
+func (s *Service) rebuildCluster(t service.StoreTaskInterface, blockChain int64, prefix string, r map[string]int64) {
+	m1, _ := t.GetClusterNode(blockChain, prefix)
+	for k, v := range m1 {
+		if o, ok := r[k]; ok {
+			r[k] = v + o
+		} else {
+			r[k] = v
+		}
+	}
 }
 
 func (s *Service) CheckNodeTask() {

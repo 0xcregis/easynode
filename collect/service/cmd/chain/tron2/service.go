@@ -30,6 +30,26 @@ type Service struct {
 }
 
 func (s *Service) Monitor() {
+	go func() {
+		for {
+			<-time.After(30 * time.Second)
+			if s.txChainClient != nil {
+				txCluster := s.txChainClient.MonitorCluster()
+				_ = s.store.StoreClusterNode(int64(s.chain.BlockChainCode), "tx", txCluster)
+			}
+
+			if s.blockChainClient != nil {
+				blockCluster := s.blockChainClient.MonitorCluster()
+				_ = s.store.StoreClusterNode(int64(s.chain.BlockChainCode), "block", blockCluster)
+			}
+
+			if s.receiptChainClient != nil {
+				receiptCluster := s.receiptChainClient.MonitorCluster()
+				_ = s.store.StoreClusterNode(int64(s.chain.BlockChainCode), "receipt", receiptCluster)
+			}
+
+		}
+	}()
 }
 
 func (s *Service) GetTx(txHash string, task *config.TxTask, eLog *logrus.Entry) *service.TxInterface {

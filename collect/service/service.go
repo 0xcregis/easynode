@@ -37,6 +37,10 @@ type StoreTaskInterface interface {
 
 	StoreNodeId(blockchain int64, key string, data any) error
 	GetAllNodeId(blockchain int64) ([]string, error)
+
+	StoreClusterNode(blockChain int64, prefix string, data any) error
+	GetClusterNode(blockChain int64, prefix string) (map[string]int64, error)
+	StoreClusterHealthStatus(blockChain int64, data map[string]int64) error
 }
 
 // BlockChainInterface 公链接口

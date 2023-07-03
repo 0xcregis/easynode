@@ -219,12 +219,35 @@ func (e *Ether) SendJsonRpc(chainCode int64, req string) (string, error) {
 
 func NewEth(cluster []*config.NodeCluster, xlog *xlog.XLog) API {
 	blockChainClient := ether.NewChainClient()
-	return &Ether{
+
+	e := &Ether{
 		log:              xlog,
 		nodeCluster:      cluster,
 		blockChainClient: blockChainClient,
 	}
+	e.startWDT()
+	return e
 }
+
+func (e *Ether) startWDT() {
+	go func() {
+		t := time.NewTicker(10 * time.Minute)
+		for {
+			select {
+			case <-t.C:
+				for _, v := range e.nodeCluster {
+					v.ErrorCount = 0
+				}
+
+			}
+		}
+	}()
+}
+
+func (e *Ether) MonitorCluster() any {
+	return e.nodeCluster
+}
+
 func (e *Ether) Balance(chainCode int64, address string, tag string) (string, error) {
 	start := time.Now()
 	defer func() {
@@ -425,7 +448,11 @@ func (e *Ether) SendEthReq(blockChain int64, reqBody string) (string, error) {
 	}
 
 	if blockChain == 200 {
-		return e.blockChainClient.SendRequestToChain(cluster.NodeUrl, cluster.NodeToken, reqBody)
+		resp, err := e.blockChainClient.SendRequestToChain(cluster.NodeUrl, cluster.NodeToken, reqBody)
+		if err != nil {
+			cluster.ErrorCount += 1
+		}
+		return resp, err
 	}
 
 	return "", errors.New("blockChainCode is error")

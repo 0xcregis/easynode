@@ -1,6 +1,9 @@
 package service
 
 import (
+	"context"
+	"fmt"
+	"github.com/redis/go-redis/v9"
 	"log"
 	"testing"
 )
@@ -127,4 +130,25 @@ func TestGetReceiptFromJson(t *testing.T) {
 `
 	r := GetReceiptFromJson(js)
 	log.Printf("%+v", r)
+}
+
+func TestRedis(t *testing.T) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%v:%v", "localhost", "6379"),
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
+	var newNumber int64 = 123456
+	var LatestBlockKey = "latestBlock"
+	field := fmt.Sprintf("%v-%v-number", "200", "block")
+	if ok, _ := client.HExists(context.Background(), LatestBlockKey, field).Result(); ok {
+		n, _ := client.HGet(context.Background(), LatestBlockKey, field).Int64()
+		if n < newNumber {
+			_ = client.HSet(context.Background(), LatestBlockKey, field, newNumber).Err()
+		}
+	} else {
+		_ = client.HSet(context.Background(), LatestBlockKey, field, newNumber).Err()
+	}
+
 }

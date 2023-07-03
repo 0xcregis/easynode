@@ -62,5 +62,5 @@ func TestService_UpdateNodeTaskStatus(t *testing.T) {
 func TestService_StoreLatestBlock(t *testing.T) {
 	s := Init()
 	str := "{\\\"id\\\":1687945592603474952}"
-	s.StoreLatestBlock(200, "LatestBlock", str)
+	s.StoreLatestBlock(200, "LatestBlock", str, "15605643")
 }

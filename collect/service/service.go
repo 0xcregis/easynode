@@ -33,7 +33,7 @@ type StoreTaskInterface interface {
 
 	GetMonitorAddress(blockChain int64) ([]string, error)
 
-	StoreLatestBlock(blockchain int64, key string, data any) error
+	StoreLatestBlock(blockchain int64, key string, data any, number string) error
 
 	StoreNodeId(blockchain int64, key string, data any) error
 	GetAllNodeId(blockchain int64) ([]string, error)

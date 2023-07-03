@@ -183,7 +183,7 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 
 				if task.TaskType == 4 { //区块所有交易
 					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyTx, task.BlockChain, task.BlockHash+task.BlockNumber), &task)
-					_ = c.taskStore.StoreLatestBlock(int64(blockChain), "LatestTx", task)
+					_ = c.taskStore.StoreLatestBlock(int64(blockChain), "LatestTx", task, task.BlockNumber)
 					log.Printf("Tx:blockchain:%v,blockNumber:%v,blockHash:%v", task.BlockChain, task.BlockNumber, task.BlockHash)
 					txCh <- &task
 				}
@@ -197,7 +197,7 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 				} else if len(task.BlockHash) > 0 {
 					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockHash), &task)
 				}
-				_ = c.taskStore.StoreLatestBlock(int64(blockChain), "LatestBlock", task)
+				_ = c.taskStore.StoreLatestBlock(int64(blockChain), "LatestBlock", task, task.BlockNumber)
 				log.Printf("Block:blockchain:%v,blockNumber:%v,blockHash:%v", task.BlockChain, task.BlockNumber, task.BlockHash)
 				blockCh <- &task
 			}

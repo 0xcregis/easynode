@@ -56,13 +56,28 @@ func (s *Service) StoreNodeId(blockchain int64, key string, data any) error {
 	return nil
 }
 
-func (s *Service) StoreLatestBlock(blockchain int64, key string, data any) error {
+func (s *Service) StoreLatestBlock(blockchain int64, key string, data any, number string) error {
 	bs, _ := json.Marshal(data)
 	err := s.cacheClient.HSet(context.Background(), LatestBlockKey, fmt.Sprintf("%v-%v", blockchain, key), string(bs)).Err()
 	if err != nil {
 		s.log.Warnf("StoreLatestBlock|err=%v", err.Error())
 		return err
 	}
+
+	newNumber, err := strconv.ParseInt(number, 0, 64)
+	if err != nil {
+		return err
+	}
+	field := fmt.Sprintf("%v-%v-number", blockchain, key)
+	if ok, _ := s.cacheClient.HExists(context.Background(), LatestBlockKey, field).Result(); ok {
+		n, _ := s.cacheClient.HGet(context.Background(), LatestBlockKey, field).Int64()
+		if n < newNumber {
+			_ = s.cacheClient.HSet(context.Background(), LatestBlockKey, field, newNumber).Err()
+		}
+	} else {
+		_ = s.cacheClient.HSet(context.Background(), LatestBlockKey, field, newNumber).Err()
+	}
+
 	return nil
 }
 

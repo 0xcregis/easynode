@@ -78,7 +78,7 @@ func (s *Service) StoreClusterNode(blockChain int64, prefix string, data any) er
 		url := root.Get("NodeUrl").String()
 		token := root.Get("NodeToken").String()
 		url = fmt.Sprintf("%v_%v", url, token)
-		err := s.cacheClient.HSet(context.Background(), fmt.Sprintf(ClusterKey, blockChain, prefix), url, string(bs)).Err()
+		err := s.cacheClient.HSet(context.Background(), fmt.Sprintf(ClusterKey, blockChain, prefix), url, root.String()).Err()
 		if err != nil {
 			s.log.Warnf("StoreClusterNode|err=%v", err.Error())
 			//return err

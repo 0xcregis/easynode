@@ -321,7 +321,7 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 			for token, mp := range ws.cmdMap {
 				//push := false
 				//var code int64
-				code, push := ws.CheckCode(mp, tp)
+				code, push := ws.CheckCode(mp, tp, blockChain)
 
 				//不符合订阅条件
 				if !push {
@@ -377,10 +377,23 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 	}
 }
 
-func (ws *WsHandler) CheckCode(mp map[int64]service.WsReqMessage, tp uint64) (int64, bool) {
+func (ws *WsHandler) CheckCode(mp map[int64]service.WsReqMessage, tp uint64, blockChain int64) (int64, bool) {
 	push := false
 	var code int64
-	for c, _ := range mp {
+	for c, q := range mp {
+
+		has := false
+		for _, v := range q.BlockChain {
+			if v == blockChain {
+				has = true
+				break
+			}
+		}
+
+		if !has {
+			continue
+		}
+
 		switch c {
 		case 1: //资产交易
 			if tp == 1 || tp == 2 {

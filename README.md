@@ -232,32 +232,34 @@ notes:
    url: ws://localhost:9003/api/store/ws/{token}
    
    入参：
-           {
+            {
              "id":1001,
              "code":1,
-             "blockChain":[200],
-             "Params":{}
+             "blockChain":[200,205],
+             "params":{}
             }
    
    订阅返回：
    
             {
-              "Id": 1001,
-              "Code": 1,
-              "blockChain": [200],
-              "Status": 0,
-              "Err": "",
-              "Params": {
-              },
-              "Resp": null
+              "id": 1001,
+              "code": 2,
+              "blockChain": [
+                200,
+                205
+              ],
+              "status": 0,
+              "err": "",
+              "params": {},
+              "resp": null
             }
             
    push 返回：
    
    {
-      "Code": 1, //消息类型，1:交易消息
+      "code": 1, //消息类型，1:交易消息
       "blockChain": 200, //公链代码
-      "Data": { //交易数据
+      "data": { //交易数据
         "id": 1685094437357929000,
         "blockHash": "0x067fbc694c5ca3540ee965b25c286e55d40f3e5e5fd336d1f398868dfc18feec", //区块hash
         "blockNumber": "17284552", //区块高度

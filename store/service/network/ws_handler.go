@@ -62,6 +62,8 @@ func NewWsHandler(cfg *config.Config, log *xlog.XLog) *WsHandler {
 }
 
 func (ws *WsHandler) Start() {
+
+	//更新监控地址池
 	go func() {
 		for {
 			for _, w := range ws.cfg {
@@ -237,6 +239,8 @@ func (ws *WsHandler) sendMessageEx(kafkaConfig map[int64]*config.KafkaConfig, su
 func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig *config.KafkaConfig, blockChain int64, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
 	sender := make(chan []*kafka.Message, 10)
+
+	bufferMessage := make([]*kafka.Message, 0, 10)
 	//addressList := make([]*service.MonitorAddress, 0, 10)
 	//控制消息处理速度
 	//lock := make(chan int64)
@@ -290,6 +294,25 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 
 			<-time.After(3 * time.Second)
 		}
+	}(blockChain, ctx)
+
+	go func(blockChain int64, ctx context.Context) {
+		tk := time.NewTicker(5 * time.Second)
+		interrupt := true
+		for interrupt {
+			select {
+			case <-ctx.Done():
+				interrupt = false
+				tk.Stop()
+				break
+			case <-tk.C:
+				bf := bufferMessage[:]
+				bufferMessage = bufferMessage[len(bufferMessage):]
+				sender <- bf
+			}
+
+		}
+
 	}(blockChain, ctx)
 
 	for {
@@ -356,7 +379,7 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 
 			//push
 			for token, code := range pushMp {
-				wpm := service.WsPushMessage{Code: code, BlockChain: blockChain, Data: tx}
+				wpm := service.WsPushMessage{Code: code, BlockChain: blockChain, Data: tx, Token: token}
 				bs, _ := json.Marshal(wpm)
 				err = ws.connMap[token].WriteMessage(websocket.TextMessage, bs)
 				if err != nil {
@@ -368,7 +391,13 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 			if len(pushMp) > 0 && SubKafkaConfig != nil {
 				r, _ := json.Marshal(tx)
 				m := &kafka.Message{Topic: SubKafkaConfig.Topic, Key: []byte(uuid.New().String()), Value: r}
-				sender <- []*kafka.Message{m}
+				bufferMessage = append(bufferMessage, m)
+
+				//if len(bufferMessage) > 10 {
+				//	bf := bufferMessage[:]
+				//	bufferMessage = bufferMessage[len(bufferMessage):]
+				//	sender <- bf
+				//}
 			}
 
 			//<-lock

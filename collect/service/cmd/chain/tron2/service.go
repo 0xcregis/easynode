@@ -225,6 +225,7 @@ func (s *Service) GetBlockByNumber(blockNumber string, task *config.BlockTask, e
 
 	txs := make([]*service.TxInterface, 0, len(list))
 	addressList, _ := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
+	addressMp := rebuildAddr(addressList)
 	for _, tx := range list {
 		// 补充字段
 		hash := tx.Get("txID").String()
@@ -236,7 +237,7 @@ func (s *Service) GetBlockByNumber(blockNumber string, task *config.BlockTask, e
 		}
 
 		bs, _ := json.Marshal(fullTx)
-		if s.CheckAddress(bs, addressList) {
+		if s.CheckAddress(bs, addressMp) {
 			t := &service.TxInterface{TxHash: hash, Tx: fullTx}
 			txs = append(txs, t)
 		}
@@ -286,6 +287,7 @@ func (s *Service) GetBlockByHash(blockHash string, cfg *config.BlockTask, eLog *
 
 	list := gjson.Parse(resp).Get("transactions").Array()
 	addressList, _ := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
+	addressMp := rebuildAddr(addressList)
 	txs := make([]*service.TxInterface, 0, len(list))
 	for _, tx := range list {
 		// 补充字段
@@ -298,7 +300,7 @@ func (s *Service) GetBlockByHash(blockHash string, cfg *config.BlockTask, eLog *
 		}
 
 		bs, _ := json.Marshal(fullTx)
-		if s.CheckAddress(bs, addressList) {
+		if s.CheckAddress(bs, addressMp) {
 			t := &service.TxInterface{TxHash: hash, Tx: fullTx}
 			txs = append(txs, t)
 		}
@@ -390,7 +392,16 @@ func getCoreAddr(addr string) string {
 	return addr
 }
 
-func (s *Service) CheckAddress(txValue []byte, addrList []string) bool {
+func rebuildAddr(addrList []string) map[string]int64 {
+	mp := make(map[string]int64, len(addrList))
+	for _, v := range addrList {
+		addr := getCoreAddr(v)
+		mp[addr] = 1
+	}
+	return mp
+}
+
+func (s *Service) CheckAddress(txValue []byte, addrList map[string]int64) bool {
 	if len(addrList) < 1 || len(txValue) < 1 {
 		return false
 	}
@@ -473,16 +484,16 @@ func (s *Service) CheckAddress(txValue []byte, addrList []string) bool {
 		}
 	}
 
-	mp := make(map[string]int64, len(addrList))
-	for _, v := range addrList {
-		addr := getCoreAddr(v)
-		mp[addr] = 1
-	}
+	//mp := make(map[string]int64, len(addrList))
+	//for _, v := range addrList {
+	//	addr := getCoreAddr(v)
+	//	mp[addr] = 1
+	//}
 
 	has := false
 	for k, _ := range txAddressList {
 		//monitorAddr := getCoreAddr(v)
-		if _, ok := mp[k]; ok {
+		if _, ok := addrList[k]; ok {
 			has = true
 			break
 		}

@@ -8,14 +8,13 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/segmentio/kafka-go"
 	"github.com/sunjiangjun/xlog"
-	"github.com/uduncloud/easynode/common/util"
 	"github.com/uduncloud/easynode/task/config"
 	"github.com/uduncloud/easynode/task/service"
-	"time"
 )
 
 var (
-	NodeKey = "nodeKey_%v"
+	NodeKey    = "nodeKey_%v"
+	BlockChain = "blockChain"
 )
 
 type TaskCreateFile struct {
@@ -66,72 +65,104 @@ func (t *TaskCreateFile) AddNodeTask(list []*service.NodeTask) ([]*kafka.Message
 
 func (t *TaskCreateFile) UpdateLastNumber(blockChainCode int64, latestNumber int64) error {
 
-	mp := make(map[int64]*service.BlockNumber, 2)
-
-	bs, err := util.ReadLatestBlock()
-	if err != nil {
-		bn := service.BlockNumber{LatestNumber: latestNumber, ChainCode: blockChainCode, LogTime: time.Now()}
-		mp[blockChainCode] = &bn
-		//return err
-	} else {
-		_ = json.Unmarshal(bs, &mp)
-		if _, ok := mp[blockChainCode]; ok {
-			mp[blockChainCode].LatestNumber = latestNumber
-			mp[blockChainCode].LogTime = time.Now()
-		} else {
-			bn := service.BlockNumber{LatestNumber: latestNumber, ChainCode: blockChainCode, LogTime: time.Now()}
-			mp[blockChainCode] = &bn
-		}
-	}
-
-	bs, _ = json.Marshal(mp)
-	err = util.WriteLatestBlock(string(bs))
+	err := t.client.HSet(context.Background(), BlockChain, fmt.Sprintf("latestNumber_%v", blockChainCode), latestNumber).Err()
 	if err != nil {
 		return err
 	}
 	return nil
+
+	//mp := make(map[int64]*service.BlockNumber, 2)
+	//
+	//bs, err := util.ReadLatestBlock()
+	//if err != nil {
+	//	bn := service.BlockNumber{LatestNumber: latestNumber, ChainCode: blockChainCode, LogTime: time.Now()}
+	//	mp[blockChainCode] = &bn
+	//	t.log.Errorf("UpdateLastNumber|ReadLatestBlock err=%v", err)
+	//	//return err
+	//} else {
+	//	_ = json.Unmarshal(bs, &mp)
+	//	if _, ok := mp[blockChainCode]; ok {
+	//		mp[blockChainCode].LatestNumber = latestNumber
+	//		mp[blockChainCode].LogTime = time.Now()
+	//	} else {
+	//		bn := service.BlockNumber{LatestNumber: latestNumber, ChainCode: blockChainCode, LogTime: time.Now()}
+	//		mp[blockChainCode] = &bn
+	//	}
+	//}
+	//
+	//bs, _ = json.Marshal(mp)
+	//err = util.WriteLatestBlock(string(bs))
+	//if err != nil {
+	//	t.log.Errorf("UpdateLastNumber|WriteLatestBlock err=%v", err)
+	//	return err
+	//}
+	//return nil
 }
 
 func (t *TaskCreateFile) UpdateRecentNumber(blockChainCode int64, recentNumber int64) error {
-	mp := make(map[int64]*service.BlockNumber, 2)
-	bs, err := util.ReadLatestBlock()
-	if err != nil {
-		bn := service.BlockNumber{RecentNumber: recentNumber, ChainCode: blockChainCode, LogTime: time.Now()}
-		mp[blockChainCode] = &bn
-	} else {
-		_ = json.Unmarshal(bs, &mp)
-		if _, ok := mp[blockChainCode]; ok {
-			mp[blockChainCode].RecentNumber = recentNumber
-			mp[blockChainCode].LogTime = time.Now()
-		} else {
-			bn := service.BlockNumber{RecentNumber: recentNumber, ChainCode: blockChainCode, LogTime: time.Now()}
-			mp[blockChainCode] = &bn
-		}
-	}
 
-	bs, _ = json.Marshal(mp)
-	err = util.WriteLatestBlock(string(bs))
+	err := t.client.HSet(context.Background(), BlockChain, fmt.Sprintf("recentNumber_%v", blockChainCode), recentNumber).Err()
 	if err != nil {
 		return err
 	}
 
 	return nil
+	//
+	//mp := make(map[int64]*service.BlockNumber, 2)
+	//bs, err := util.ReadLatestBlock()
+	//if err != nil {
+	//	bn := service.BlockNumber{RecentNumber: recentNumber, ChainCode: blockChainCode, LogTime: time.Now()}
+	//	mp[blockChainCode] = &bn
+	//	t.log.Errorf("UpdateRecentNumber|ReadLatestBlock err=%v", err)
+	//} else {
+	//	_ = json.Unmarshal(bs, &mp)
+	//	if _, ok := mp[blockChainCode]; ok {
+	//		mp[blockChainCode].RecentNumber = recentNumber
+	//		mp[blockChainCode].LogTime = time.Now()
+	//	} else {
+	//		bn := service.BlockNumber{RecentNumber: recentNumber, ChainCode: blockChainCode, LogTime: time.Now()}
+	//		mp[blockChainCode] = &bn
+	//	}
+	//}
+	//
+	//bs, _ = json.Marshal(mp)
+	//err = util.WriteLatestBlock(string(bs))
+	//if err != nil {
+	//	t.log.Errorf("UpdateRecentNumber|WriteLatestBlock err=%v", err)
+	//	return err
+	//}
+	//
+	//return nil
 }
 
 func (t *TaskCreateFile) GetRecentNumber(blockCode int64) (int64, int64, error) {
 
-	bs, err := util.ReadLatestBlock()
+	//var recentNumber,LatestNumber int64
+
+	recentNumber, err := t.client.HGet(context.Background(), BlockChain, fmt.Sprintf("recentNumber_%v", blockCode)).Int64()
 	if err != nil {
-		return 0, 0, err
+		t.log.Warnf("GetRecentNumber,err=%v",err.Error())
 	}
 
-	mp := make(map[int64]*service.BlockNumber, 2)
-	_ = json.Unmarshal(bs, &mp)
-
-	if v, ok := mp[blockCode]; ok {
-		return v.RecentNumber, v.LatestNumber, nil
-	} else {
-		return 0, 0, errors.New("no record")
+	latestNumber, err := t.client.HGet(context.Background(), BlockChain, fmt.Sprintf("latestNumber_%v", blockCode)).Int64()
+	if err != nil {
+		t.log.Warnf("GetRecentNumber,err=%v",err.Error())
 	}
+
+	return recentNumber, latestNumber, nil
+
+	//bs, err := util.ReadLatestBlock()
+	//if err != nil {
+	//	return 0, 0, err
+	//}
+	//
+	//mp := make(map[int64]*service.BlockNumber, 2)
+	//_ = json.Unmarshal(bs, &mp)
+	//
+	//if v, ok := mp[blockCode]; ok {
+	//	return v.RecentNumber, v.LatestNumber, nil
+	//} else {
+	//	return 0, 0, errors.New("no record")
+	//}
 
 }

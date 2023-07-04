@@ -52,5 +52,5 @@ type BlockChainInterface interface {
 	GetBlockByHash(blockHash string, cfg *config.BlockTask, log *logrus.Entry, flag bool) (*BlockInterface, []*TxInterface)
 	BalanceCluster(key string, clusterList []*config.FromCluster) (*config.FromCluster, error)
 	Monitor()
-	CheckAddress(tx []byte, addrList []string) bool
+	CheckAddress(tx []byte, addrList map[string]int64) bool
 }

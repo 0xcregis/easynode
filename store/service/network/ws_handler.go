@@ -31,6 +31,7 @@ type WsHandler struct {
 	cmdMap  map[string]map[int64]service.WsReqMessage //token:code-wsReq
 	//ctxMap         map[string]map[int64]context.CancelFunc
 	monitorAddress map[int64]map[string]*TokenAddress //blockchain:token-tokenAddress
+	writer         chan *service.WsPushMessage
 }
 
 type TokenAddress struct {
@@ -58,6 +59,7 @@ func NewWsHandler(cfg *config.Config, log *xlog.XLog) *WsHandler {
 		cmdMap:  make(map[string]map[int64]service.WsReqMessage, 5),
 		//ctxMap:         make(map[string]map[int64]context.CancelFunc, 5),
 		monitorAddress: mp2,
+		writer:         make(chan *service.WsPushMessage),
 	}
 }
 
@@ -77,6 +79,26 @@ func (ws *WsHandler) Start(kafkaCtx context.Context) {
 			<-time.After(30 * time.Second)
 		}
 	}()
+
+	go func(ctx context.Context, writer chan *service.WsPushMessage) {
+		interrupt := true
+		for interrupt {
+			select {
+			case <-ctx.Done():
+				interrupt = false
+				break
+			case ms := <-writer:
+				if _, ok := ws.connMap[ms.Token]; ok {
+					bs, _ := json.Marshal(ms)
+					err := ws.connMap[ms.Token].WriteMessage(websocket.TextMessage, bs)
+					if err != nil {
+						ws.log.Errorf("sendMessage|error=%v", err.Error())
+					}
+				}
+			}
+			time.Sleep(300 * time.Millisecond)
+		}
+	}(kafkaCtx, ws.writer)
 
 	//go func() {
 	// 订阅链的配置
@@ -239,11 +261,7 @@ func (ws *WsHandler) sendMessageEx(kafkaConfig map[int64]*config.KafkaConfig, su
 func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig *config.KafkaConfig, blockChain int64, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
 	sender := make(chan []*kafka.Message, 10)
-
 	bufferMessage := make([]*kafka.Message, 0, 10)
-	//addressList := make([]*service.MonitorAddress, 0, 10)
-	//控制消息处理速度
-	//lock := make(chan int64)
 
 	go func(ctx context.Context) {
 		broker := fmt.Sprintf("%v:%v", kafkaConfig.Host, kafkaConfig.Port)
@@ -381,12 +399,8 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 
 			//push
 			for token, code := range pushMp {
-				wpm := service.WsPushMessage{Code: code, BlockChain: blockChain, Data: tx, Token: token}
-				bs, _ := json.Marshal(wpm)
-				err = ws.connMap[token].WriteMessage(websocket.TextMessage, bs)
-				if err != nil {
-					ws.log.Errorf("sendMessage|error=%v", err.Error())
-				}
+				wpm := &service.WsPushMessage{Code: code, BlockChain: blockChain, Data: tx, Token: token}
+				ws.writer <- wpm
 			}
 
 			//save to kafka
@@ -394,12 +408,6 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 				r, _ := json.Marshal(tx)
 				m := &kafka.Message{Topic: SubKafkaConfig.Topic, Key: []byte(uuid.New().String()), Value: r}
 				bufferMessage = append(bufferMessage, m)
-
-				//if len(bufferMessage) > 10 {
-				//	bf := bufferMessage[:]
-				//	bufferMessage = bufferMessage[len(bufferMessage):]
-				//	sender <- bf
-				//}
 			}
 
 			//<-lock

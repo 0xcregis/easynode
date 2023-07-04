@@ -19,18 +19,73 @@ import (
 )
 
 var (
-	ContractKey    = "contract_%v"
-	ErrTxKey       = "errTx_%v"
-	NodeTaskKey    = "nodeTask_%v"
-	MonitorKey     = "monitorAddress_%v"
-	LatestBlockKey = "latestBlock"
-	NodeKey        = "nodeKey_%v"
+	ContractKey      = "contract_%v"
+	ErrTxKey         = "errTx_%v"
+	NodeTaskKey      = "nodeTask_%v"
+	MonitorKey       = "monitorAddress_%v"
+	LatestBlockKey   = "latestBlock"
+	NodeKey          = "nodeKey_%v"
+	ClusterKey       = "cluster_%v_%v"
+	ClusterHealthKey = "clusterHealth_%v"
 )
 
 type Service struct {
 	log         *xlog.XLog
 	lock        *sync.RWMutex
 	cacheClient *redis.Client
+}
+
+func (s *Service) StoreClusterHealthStatus(blockChain int64, data map[string]int64) error {
+	for k, v := range data {
+		err := s.cacheClient.HSet(context.Background(), fmt.Sprintf(ClusterHealthKey, blockChain), k, v).Err()
+		if err != nil {
+			s.log.Warnf("StoreClusterNode|err=%v", err.Error())
+			//return err
+		}
+	}
+	return nil
+}
+
+func (s *Service) GetClusterNode(blockChain int64, prefix string) (map[string]int64, error) {
+	mp, err := s.cacheClient.HGetAll(context.Background(), fmt.Sprintf(ClusterKey, blockChain, prefix)).Result()
+	if err != nil {
+		s.log.Warnf("StoreClusterNode|err=%v", err.Error())
+		return nil, err
+	}
+
+	m := make(map[string]int64, len(mp))
+	for k, v := range mp {
+		ErrorCount := gjson.Parse(v).Get("ErrorCount").Int()
+		m[k] = ErrorCount
+	}
+	return m, nil
+}
+
+func (s *Service) StoreClusterNode(blockChain int64, prefix string, data any) error {
+	bs, _ := json.Marshal(data)
+	array := gjson.ParseBytes(bs).Array()
+	/**
+	type NodeCluster struct {
+		NodeUrl    string `json:"NodeUrl"`
+		NodeToken  string `json:"NodeToken"`
+		Weight     int64  `json:"Weight"`
+		ErrorCount int64  `json:"ErrorCount"`
+	}
+
+	*/
+
+	for _, root := range array {
+		url := root.Get("NodeUrl").String()
+		token := root.Get("NodeToken").String()
+		url = fmt.Sprintf("%v_%v", url, token)
+		err := s.cacheClient.HSet(context.Background(), fmt.Sprintf(ClusterKey, blockChain, prefix), url, root.String()).Err()
+		if err != nil {
+			s.log.Warnf("StoreClusterNode|err=%v", err.Error())
+			//return err
+		}
+	}
+
+	return nil
 }
 
 func (s *Service) GetAllNodeId(blockchain int64) ([]string, error) {

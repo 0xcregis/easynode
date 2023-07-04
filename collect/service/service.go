@@ -37,6 +37,10 @@ type StoreTaskInterface interface {
 
 	StoreNodeId(blockchain int64, key string, data any) error
 	GetAllNodeId(blockchain int64) ([]string, error)
+
+	StoreClusterNode(blockChain int64, prefix string, data any) error
+	GetClusterNode(blockChain int64, prefix string) (map[string]int64, error)
+	StoreClusterHealthStatus(blockChain int64, data map[string]int64) error
 }
 
 // BlockChainInterface 公链接口
@@ -48,5 +52,5 @@ type BlockChainInterface interface {
 	GetBlockByHash(blockHash string, cfg *config.BlockTask, log *logrus.Entry, flag bool) (*BlockInterface, []*TxInterface)
 	BalanceCluster(key string, clusterList []*config.FromCluster) (*config.FromCluster, error)
 	Monitor()
-	CheckAddress(tx []byte, addrList []string) bool
+	CheckAddress(tx []byte, addrList map[string]int64) bool
 }

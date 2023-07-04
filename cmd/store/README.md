@@ -135,10 +135,10 @@ curl --location --request POST 'localhost:9003/api/store/monitor/address/delete'
 
 //入参数据结构：
 type WsReqMessage struct {
-	Id         int64 //客户端请求序列号
-	Code       int64 //1:订阅资产转移交易，2:取消订阅资产转移交易
+	Id         int64  `json:"id"` //客户端请求序列号
+	Code       int64  `json:"code"`//1:订阅资产转移交易，2:取消订阅资产转移交易
 	BlockChain []int64 `json:"blockChain"` //订阅公链的代码
-	Params     map[string]string //非必需
+	Params     map[string]string `json:"params"` //非必需
 }
 
 //WsReqMessage.Code 说明
@@ -153,19 +153,19 @@ type WsReqMessage struct {
 
 //返回数据结构：
 type WsRespMessage struct {
-	Id         int64 //请求的序列号，和请求保持一致
-	Code       int64 //命名code，和请求保持一致
+	Id         int64  `json:"id"` //请求的序列号，和请求保持一致
+	Code       int64  `json:"code"` //命名code，和请求保持一致
 	BlockChain []int64 `json:"blockChain"` //订阅公链的代码
-	Status     int   //0:成功 1：失败
-	Err        string //错误原因
-	Params     map[string]string //请求参数，和请求保持一致
-	Resp       interface{} //返回的数据
+	Status     int   `json:"status"` //0:成功 1：失败
+	Err        string `json:"err"` //错误原因
+	Params     map[string]string `json:"params"` //请求参数，和请求保持一致
+	Resp       interface{} `json:"resp"` //返回的数据
 }
 //推送数据结构
 type WsPushMessage struct {
-	Code       int64  //推送数据业务码
+	Code       int64  `json:"code"`//推送数据业务码
 	BlockChain int64 `json:"blockChain"` //公链代码
-	Data       interface{} //推送的数据
+	Data       interface{} `json:"data"`//推送的数据
 }
 
 ``````
@@ -179,32 +179,34 @@ type WsPushMessage struct {
    ws://localhost:9003/api/store/ws/{token}?serialId={serialId}
   
    入参：
-           {
+            {
              "id":1001,
              "code":1,
-             "blockChain":[200],
-             "Params":{}
+             "blockChain":[200,205],
+             "params":{}
             }
    
    订阅返回：
    
-            {
-              "Id": 1001,
-              "Code": 1,
-              "blockChain": [200],
-              "Status": 0,
-              "Err": "",
-              "Params": {
-              },
-              "Resp": null
-            }
+           {
+            "id": 1001,
+            "code": 2,
+            "blockChain": [
+              200,
+              205
+            ],
+            "status": 0,
+            "err": "",
+            "params": {},
+            "resp": null
+          }
             
    push 返回：
    
    {
-      "Code": 1, //消息类型，1:交易消息
+      "code": 1, //消息类型，1:交易消息
       "blockChain": 200, //公链代码
-      "Data": { //交易数据
+      "data": { //交易数据
         "id": 1685094437357929000,
         "blockHash": "0x067fbc694c5ca3540ee965b25c286e55d40f3e5e5fd336d1f398868dfc18feec", //区块hash
         "blockNumber": "17284552", //区块高度

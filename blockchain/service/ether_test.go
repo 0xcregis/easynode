@@ -5,6 +5,7 @@ import (
 	"github.com/uduncloud/easynode/blockchain/config"
 	"log"
 	"testing"
+	"time"
 )
 
 func Init3() API {
@@ -20,4 +21,6 @@ func TestEther_GetBlockByNumber(t *testing.T) {
 func TestEther_GetBlockByHash(t *testing.T) {
 	s := Init3()
 	log.Println(s.GetBlockByHash(200, "0xb49d607f5b80890531e3e1d57798a7573cf8e18048ec0df34e3c81d48115078f", false))
+
+	time.Sleep(10 * time.Second)
 }

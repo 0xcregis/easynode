@@ -391,7 +391,9 @@ func getCoreAddr(addr string) string {
 }
 
 func (s *Service) CheckAddress(txValue []byte, addrList []string) bool {
-
+	if len(addrList) < 1 || len(txValue) < 1 {
+		return false
+	}
 	txAddressList := make(map[string]int64, 10)
 
 	root := gjson.ParseBytes(txValue)
@@ -471,10 +473,16 @@ func (s *Service) CheckAddress(txValue []byte, addrList []string) bool {
 		}
 	}
 
-	has := false
+	mp := make(map[string]int64, len(addrList))
 	for _, v := range addrList {
-		monitorAddr := getCoreAddr(v)
-		if _, ok := txAddressList[monitorAddr]; ok {
+		addr := getCoreAddr(v)
+		mp[addr] = 1
+	}
+
+	has := false
+	for k, _ := range txAddressList {
+		//monitorAddr := getCoreAddr(v)
+		if _, ok := mp[k]; ok {
 			has = true
 			break
 		}

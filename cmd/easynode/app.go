@@ -100,9 +100,11 @@ func startStore(configPath string) {
 	root.POST("/monitor/address/get", srv.GetMonitorAddress)
 	root.POST("/monitor/address/delete", srv.DelMonitorAddress)
 
+	kafkaCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	//ws 协议
 	wsServer := network.NewWsHandler(&cfg, xLog)
-	wsServer.Start()
+	wsServer.Start(kafkaCtx)
 	root.Handle("GET", "/ws/:token", func(ctx *gin.Context) {
 		wsServer.Sub2(ctx, ctx.Writer, ctx.Request)
 	})

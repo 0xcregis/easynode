@@ -61,7 +61,7 @@ func NewWsHandler(cfg *config.Config, log *xlog.XLog) *WsHandler {
 	}
 }
 
-func (ws *WsHandler) Start() {
+func (ws *WsHandler) Start(kafkaCtx context.Context) {
 
 	//更新监控地址池
 	go func() {
@@ -82,7 +82,7 @@ func (ws *WsHandler) Start() {
 	// 订阅链的配置
 	txKafkaParams := make(map[int64]*config.KafkaConfig, 2)
 	subKafkaParams := make(map[int64]*config.KafkaConfig, 2)
-	kafkaCtx, _ := context.WithCancel(context.Background())
+	//c1, _ := context.WithCancel(context.Background())
 	//defer cancel()
 	for b, c := range ws.cfg {
 		f := c.KafkaCfg["Tx"]
@@ -272,7 +272,7 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 				break
 			default:
 				mp := make(map[string]*TokenAddress, 10)
-				for token, _ := range ws.connMap {
+				for token := range ws.connMap {
 					//path中包含serialId请求方式
 					newToken := token
 					if strings.Contains(token, "_") {
@@ -306,9 +306,11 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 				tk.Stop()
 				break
 			case <-tk.C:
-				bf := bufferMessage[:]
-				bufferMessage = bufferMessage[len(bufferMessage):]
-				sender <- bf
+				if len(bufferMessage) > 0 {
+					bf := bufferMessage[:]
+					bufferMessage = bufferMessage[len(bufferMessage):]
+					sender <- bf
+				}
 			}
 
 		}

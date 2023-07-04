@@ -62,6 +62,8 @@ func NewWsHandler(cfg *config.Config, log *xlog.XLog) *WsHandler {
 }
 
 func (ws *WsHandler) Start() {
+
+	//更新监控地址池
 	go func() {
 		for {
 			for _, w := range ws.cfg {
@@ -237,6 +239,8 @@ func (ws *WsHandler) sendMessageEx(kafkaConfig map[int64]*config.KafkaConfig, su
 func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig *config.KafkaConfig, blockChain int64, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
 	sender := make(chan []*kafka.Message, 10)
+
+	bufferMessage := make([]*kafka.Message, 0, 10)
 	//addressList := make([]*service.MonitorAddress, 0, 10)
 	//控制消息处理速度
 	//lock := make(chan int64)
@@ -292,6 +296,25 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 		}
 	}(blockChain, ctx)
 
+	go func(blockChain int64, ctx context.Context) {
+		tk := time.NewTicker(5 * time.Second)
+		interrupt := true
+		for interrupt {
+			select {
+			case <-ctx.Done():
+				interrupt = false
+				tk.Stop()
+				break
+			case <-tk.C:
+				bf := bufferMessage[:]
+				bufferMessage = bufferMessage[len(bufferMessage):]
+				sender <- bf
+			}
+
+		}
+
+	}(blockChain, ctx)
+
 	for {
 		select {
 		case msg := <-receiver:
@@ -321,7 +344,7 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 			for token, mp := range ws.cmdMap {
 				//push := false
 				//var code int64
-				code, push := ws.CheckCode(mp, tp)
+				code, push := ws.CheckCode(mp, tp, blockChain)
 
 				//不符合订阅条件
 				if !push {
@@ -356,7 +379,7 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 
 			//push
 			for token, code := range pushMp {
-				wpm := service.WsPushMessage{Code: code, BlockChain: blockChain, Data: tx}
+				wpm := service.WsPushMessage{Code: code, BlockChain: blockChain, Data: tx, Token: token}
 				bs, _ := json.Marshal(wpm)
 				err = ws.connMap[token].WriteMessage(websocket.TextMessage, bs)
 				if err != nil {
@@ -368,7 +391,13 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 			if len(pushMp) > 0 && SubKafkaConfig != nil {
 				r, _ := json.Marshal(tx)
 				m := &kafka.Message{Topic: SubKafkaConfig.Topic, Key: []byte(uuid.New().String()), Value: r}
-				sender <- []*kafka.Message{m}
+				bufferMessage = append(bufferMessage, m)
+
+				//if len(bufferMessage) > 10 {
+				//	bf := bufferMessage[:]
+				//	bufferMessage = bufferMessage[len(bufferMessage):]
+				//	sender <- bf
+				//}
 			}
 
 			//<-lock
@@ -377,10 +406,23 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 	}
 }
 
-func (ws *WsHandler) CheckCode(mp map[int64]service.WsReqMessage, tp uint64) (int64, bool) {
+func (ws *WsHandler) CheckCode(mp map[int64]service.WsReqMessage, tp uint64, blockChain int64) (int64, bool) {
 	push := false
 	var code int64
-	for c, _ := range mp {
+	for c, q := range mp {
+
+		has := false
+		for _, v := range q.BlockChain {
+			if v == blockChain {
+				has = true
+				break
+			}
+		}
+
+		if !has {
+			continue
+		}
+
 		switch c {
 		case 1: //资产交易
 			if tp == 1 || tp == 2 {

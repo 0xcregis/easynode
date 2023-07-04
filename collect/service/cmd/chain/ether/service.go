@@ -28,6 +28,26 @@ type Service struct {
 }
 
 func (s *Service) Monitor() {
+	go func() {
+		for {
+			<-time.After(30 * time.Second)
+			if s.txChainClient != nil {
+				txCluster := s.txChainClient.MonitorCluster()
+				_ = s.store.StoreClusterNode(int64(s.chain.BlockChainCode), "tx", txCluster)
+			}
+
+			if s.blockChainClient != nil {
+				blockCluster := s.blockChainClient.MonitorCluster()
+				_ = s.store.StoreClusterNode(int64(s.chain.BlockChainCode), "block", blockCluster)
+			}
+
+			if s.receiptChainClient != nil {
+				receiptCluster := s.receiptChainClient.MonitorCluster()
+				_ = s.store.StoreClusterNode(int64(s.chain.BlockChainCode), "receipt", receiptCluster)
+			}
+
+		}
+	}()
 }
 
 func (s *Service) BalanceCluster(key string, clusterList []*config.FromCluster) (*config.FromCluster, error) {
@@ -76,10 +96,11 @@ func (s *Service) GetBlockByHash(blockHash string, cfg *config.BlockTask, eLog *
 	}
 
 	addressList, _ := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
+	addressMp := rebuildAddress(addressList)
 	txs := make([]*service.TxInterface, 0, len(txList))
 	for _, tx := range txList {
 		bs, _ := json.Marshal(tx)
-		if s.CheckAddress(bs, addressList) {
+		if s.CheckAddress(bs, addressMp) {
 			t := &service.TxInterface{TxHash: tx.TxHash, Tx: tx}
 			txs = append(txs, t)
 		}
@@ -137,10 +158,11 @@ func (s *Service) GetBlockByNumber(blockNumber string, task *config.BlockTask, e
 	}
 
 	addressList, _ := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
+	addressMp := rebuildAddress(addressList)
 	txs := make([]*service.TxInterface, 0, len(txList))
 	for _, tx := range txList {
 		bs, _ := json.Marshal(tx)
-		if s.CheckAddress(bs, addressList) {
+		if s.CheckAddress(bs, addressMp) {
 			t := &service.TxInterface{TxHash: tx.TxHash, Tx: tx}
 			txs = append(txs, t)
 		}
@@ -340,7 +362,21 @@ func getCoreAddr(addr string) string {
 	}
 	return addr
 }
-func (s *Service) CheckAddress(tx []byte, addrList []string) bool {
+
+func rebuildAddress(addrList []string) map[string]int64 {
+	mp := make(map[string]int64, len(addrList))
+	for _, v := range addrList {
+		addr := getCoreAddr(v)
+		mp[addr] = 1
+	}
+	return mp
+}
+
+func (s *Service) CheckAddress(tx []byte, addrList map[string]int64) bool {
+
+	if len(addrList) < 1 || len(tx) < 1 {
+		return false
+	}
 
 	txAddressList := make(map[string]int64, 10)
 	root := gjson.ParseBytes(tx)
@@ -374,10 +410,16 @@ func (s *Service) CheckAddress(tx []byte, addrList []string) bool {
 
 	}
 
+	//mp := make(map[string]int64, len(addrList))
+	//for _, v := range addrList {
+	//	addr := getCoreAddr(v)
+	//	mp[addr] = 1
+	//}
+
 	has := false
-	for _, v := range addrList {
-		monitorAddr := getCoreAddr(v)
-		if _, ok := txAddressList[monitorAddr]; ok {
+	for k, _ := range txAddressList {
+		//monitorAddr := getCoreAddr(v)
+		if _, ok := addrList[k]; ok {
 			has = true
 			break
 		}

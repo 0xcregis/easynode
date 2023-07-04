@@ -23,4 +23,7 @@ type API interface {
 	// GetAddressType 0x1：外部账户，0x2:合约地址
 	GetAddressType(chainCode int64, address string) (string, error)
 	GetCode(chainCode int64, address string) (string, error)
+
+	startWDT()
+	MonitorCluster() any
 }

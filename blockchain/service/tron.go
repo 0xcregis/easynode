@@ -20,6 +20,25 @@ type Tron struct {
 	blockChainClient chain.BlockChain
 }
 
+func (t *Tron) startWDT() {
+	go func() {
+		ticker := time.NewTicker(10 * time.Minute)
+		for {
+			select {
+			case <-ticker.C:
+				for _, v := range t.nodeCluster {
+					v.ErrorCount = 0
+				}
+
+			}
+		}
+	}()
+}
+
+func (t *Tron) MonitorCluster() any {
+	return t.nodeCluster
+}
+
 func (t *Tron) GetCode(chainCode int64, address string) (string, error) {
 	req := `{ "value": "%v", "visible": true}`
 	req = fmt.Sprintf(req, address)
@@ -93,11 +112,13 @@ func (t *Tron) GetTransactionReceiptByHash(chainCode int64, hash string) (string
 
 func NewTron(cluster []*config.NodeCluster, xlog *xlog.XLog) API {
 	blockChainClient := tron.NewChainClient()
-	return &Tron{
+	t := &Tron{
 		log:              xlog,
 		nodeCluster:      cluster,
 		blockChainClient: blockChainClient,
 	}
+	t.startWDT()
+	return t
 }
 
 func (t *Tron) GetBlockByHash(chainCode int64, hash string, flag bool) (string, error) {
@@ -251,7 +272,11 @@ func (t *Tron) SendReq(blockChain int64, reqBody string, url string) (string, er
 
 	if blockChain == 205 {
 		url = fmt.Sprintf("%v/%v", cluster.NodeUrl, url)
-		return t.blockChainClient.SendRequestToChainByHttp(url, cluster.NodeToken, reqBody)
+		resp, err := t.blockChainClient.SendRequestToChainByHttp(url, cluster.NodeToken, reqBody)
+		if err != nil {
+			cluster.ErrorCount += 1
+		}
+		return resp, err
 	}
 
 	return "", errors.New("blockChainCode is error")

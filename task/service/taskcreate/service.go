@@ -138,6 +138,8 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 		return err
 	}
 
+	log.Printf("NewBlockTask:blockchain:%v,UsedMaxNumber=%v,lastBlockNumber=%v", v.BlockChainCode, UsedMaxNumber, lastBlockNumber)
+
 	//如果从未下发该链区块任务，则 使用配置的最小区块高度
 	if UsedMaxNumber == 0 {
 		UsedMaxNumber = v.BlockMin
@@ -190,14 +192,15 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 	if err != nil {
 		return err
 	}
-	if len(msgList) > 0 {
-		s.sendCh <- msgList
-	}
 
 	//更新最新下发的区块高度
 	err = s.store.UpdateRecentNumber(v.BlockChainCode, recentNumber)
 	if err != nil {
 		return err
+	}
+
+	if len(msgList) > 0 {
+		s.sendCh <- msgList
 	}
 
 	return nil

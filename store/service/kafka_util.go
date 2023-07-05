@@ -33,6 +33,16 @@ func GetTxType(blockchain int64, msg *kafka.Message) (uint64, error) {
 	return 0, nil
 }
 
+func GetCoreAddress(blockChain int64, address string) string {
+	if blockChain == 200 {
+		return getCoreAddrEth(address)
+	} else if blockChain == 205 {
+		return getCoreAddrTron(address)
+	} else {
+		return address
+	}
+}
+
 func GetTxTypeForEther(body []byte) (uint64, error) {
 	root := gjson.ParseBytes(body)
 	input := root.Get("input").String()
@@ -396,15 +406,14 @@ func div(str string, pos int) string {
 	return result
 }
 
-func CheckAddress(blockChain int64, msg *kafka.Message, list []*MonitorAddress) bool {
-
+func CheckAddress(blockChain int64, msg *kafka.Message, list map[string]*MonitorAddress) bool {
 	if len(list) < 1 {
 		return false
 	}
 	if blockChain == 200 {
-		return CheckAddressForEther(msg, list)
+		return CheckAddressEth(msg.Value, list)
 	} else if blockChain == 205 {
-		return CheckAddressForTron(msg, list)
+		return CheckAddressTron(msg.Value, list)
 	} else {
 		return false
 	}
@@ -417,7 +426,7 @@ func getCoreAddrEth(addr string) string {
 	}
 	return addr
 }
-func CheckAddressEth(tx []byte, addrList map[string]int64) bool {
+func CheckAddressEth(tx []byte, addrList map[string]*MonitorAddress) bool {
 
 	if len(addrList) < 1 || len(tx) < 1 {
 		return false
@@ -460,7 +469,7 @@ func CheckAddressEth(tx []byte, addrList map[string]int64) bool {
 	}
 
 	has := false
-	for k, _ := range txAddressList {
+	for k := range txAddressList {
 		//monitorAddr := getCoreAddrEth(v)
 		if _, ok := addrList[k]; ok {
 			has = true
@@ -468,19 +477,6 @@ func CheckAddressEth(tx []byte, addrList map[string]int64) bool {
 		}
 	}
 	return has
-}
-func CheckAddressForEther(msg *kafka.Message, list []*MonitorAddress) bool {
-
-	if len(list) < 1 || len(msg.Value) < 1 {
-		return false
-	}
-
-	addrList := make(map[string]int64, len(list))
-	for _, v := range list {
-		addrList[getCoreAddrEth(v.Address)] = 1
-		//addrList = append(addrList, v.Address)
-	}
-	return CheckAddressEth(msg.Value, addrList)
 }
 
 func getCoreAddrTron(addr string) string {
@@ -497,8 +493,7 @@ func getCoreAddrTron(addr string) string {
 	}
 	return addr
 }
-
-func CheckAddressTron(txValue []byte, addrList map[string]int64) bool {
+func CheckAddressTron(txValue []byte, addrList map[string]*MonitorAddress) bool {
 	if len(addrList) < 1 || len(txValue) < 1 {
 		return false
 	}
@@ -582,7 +577,7 @@ func CheckAddressTron(txValue []byte, addrList map[string]int64) bool {
 	}
 
 	has := false
-	for k, _ := range txAddressList {
+	for k:= range txAddressList {
 		//monitorAddr := getCoreAddrEth(v)
 		if _, ok := addrList[k]; ok {
 			has = true
@@ -590,16 +585,4 @@ func CheckAddressTron(txValue []byte, addrList map[string]int64) bool {
 		}
 	}
 	return has
-}
-
-func CheckAddressForTron(msg *kafka.Message, list []*MonitorAddress) bool {
-	if len(list) < 1 || len(msg.Value) < 1 {
-		return false
-	}
-	addrList := make(map[string]int64, len(list))
-	for _, v := range list {
-		addrList[getCoreAddrTron(v.Address)] = 1
-		//addrList = append(addrList, v.Address)
-	}
-	return CheckAddressTron(msg.Value, addrList)
 }

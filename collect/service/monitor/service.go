@@ -29,7 +29,7 @@ type Service struct {
 }
 
 // 监控服务
-func (s *Service) Start() {
+func (s *Service) Start(ctx context.Context) {
 
 	go func() {
 		for _, v := range s.cfg.Chains {

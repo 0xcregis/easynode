@@ -68,21 +68,10 @@ func getBlockChainApi(c *config.Chain, logConfig *config.LogConfig, store servic
 	return srv
 }
 
-func (c *Cmd) Start() {
+func (c *Cmd) Start(ctx context.Context) {
 	c.log.Printf("start %v service...", c.chain.BlockChainName)
 
-	//nodeId, err := util.GetLocalNodeId()
-	//if err != nil {
-	//	panic(err)
-	//}
-
-	//task kafka write
-	//go func() {
-	//	broker := fmt.Sprintf("%v:%v", c.chain.TaskKafka.Host, c.chain.TaskKafka.Port)
-	//	c.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker}}, c.taskKafkaCh, nil)
-	//}()
-
-	go c.ReadNodeTaskFromKafka(c.nodeId, c.chain.BlockChainCode, c.blockChan, c.txChan, c.receiptChan)
+	go c.ReadNodeTaskFromKafka(c.nodeId, c.chain.BlockChainCode, c.blockChan, c.txChan, c.receiptChan, ctx)
 
 	//配置了区块执行计划
 	if c.chain.BlockTask != nil {
@@ -102,24 +91,21 @@ func (c *Cmd) Start() {
 		go c.ExecReceiptTask(c.receiptChan, c.kafkaCh)
 	}
 
-	//kafka 消息回调
-	//go c.HandlerKafkaRespMessage(c.kafkaRespCh)
-
 	//发送Kafka
 	//tx,block,receipt 节点
 	broker := fmt.Sprintf("%v:%v", c.chain.Kafka.Host, c.chain.Kafka.Port)
 	//任务节点
 	broker2 := fmt.Sprintf("%v:%v", c.chain.TaskKafka.Host, c.chain.TaskKafka.Port)
 
-	c.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker, broker2}}, c.kafkaCh, c.HandlerKafkaRespMessage, context.Background(), 10)
+	c.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker, broker2}}, c.kafkaCh, c.HandlerKafkaRespMessage, ctx, 10)
 }
 
-func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan *service.NodeTask, txCh chan *service.NodeTask, receiptChan chan *service.NodeTask) {
+func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan *service.NodeTask, txCh chan *service.NodeTask, receiptChan chan *service.NodeTask, ctx context.Context) {
 
 	receiver := make(chan *kafka.Message)
 	broker := fmt.Sprintf("%v:%v", c.chain.TaskKafka.Host, c.chain.TaskKafka.Port)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx2, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	mp := make(map[string]struct{}, 1)
@@ -128,7 +114,7 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 	go func() {
 		group := fmt.Sprintf("gr_nodetask_%v_%v", blockChain, c.chain.TaskKafka.Group)
 		topic := fmt.Sprintf("task_%v", blockChain)
-		c.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: topic, Group: group, Partition: c.chain.TaskKafka.Partition, StartOffset: c.chain.TaskKafka.StartOffset}, receiver, ctx)
+		c.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: topic, Group: group, Partition: c.chain.TaskKafka.Partition, StartOffset: c.chain.TaskKafka.StartOffset}, receiver, ctx2)
 	}()
 
 	go func() {
@@ -219,17 +205,6 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 	}
 
 }
-
-//func (c *Cmd) HandlerKafkaRespMessageEx(kafkaRespCh chan []*kafka.Message) {
-//	buff := make(chan int64, 10)
-//	for true {
-//		buff <- 1
-//		go func(kafkaRespCh chan []*kafka.Message) {
-//			c.HandlerKafkaRespMessage(kafkaRespCh)
-//			<-buff
-//		}(kafkaRespCh)
-//	}
-//}
 
 func (c *Cmd) HandlerKafkaRespMessage(msList []*kafka.Message) {
 

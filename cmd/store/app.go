@@ -26,8 +26,11 @@ func main() {
 
 	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/store/store", 24*time.Hour)
 
+	kafkaCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	//是否存盘
-	store.NewStoreService(&cfg, xLog).Start()
+	store.NewStoreService(&cfg, xLog).Start(kafkaCtx)
 
 	//http 协议
 	e := gin.Default()
@@ -39,8 +42,6 @@ func main() {
 	root.POST("/monitor/address/get", srv.GetMonitorAddress)
 	root.POST("/monitor/address/delete", srv.DelMonitorAddress)
 
-	kafkaCtx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	//ws 协议
 	wsServer := network.NewWsHandler(&cfg, xLog)
 	wsServer.Start(kafkaCtx)

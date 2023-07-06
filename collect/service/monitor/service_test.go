@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/segmentio/kafka-go"
@@ -19,7 +20,7 @@ func Init() *Service {
 
 func TestService_Start(t *testing.T) {
 	s := Init()
-	s.Start()
+	s.Start(context.Background())
 }
 
 func TestService_CheckErrTx(t *testing.T) {

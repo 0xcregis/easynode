@@ -34,36 +34,36 @@ func NewStoreService(config *config.Config, log *xlog.XLog) *Service {
 	}
 }
 
-func (s *Service) Start() {
+func (s *Service) Start(ctx context.Context) {
 	for _, v := range s.config.Chains {
 		if v.TxStore {
-			go s.readTxFromKafka(v.BlockChain, v.KafkaCfg)
+			go s.readTxFromKafka(v.BlockChain, v.KafkaCfg, ctx)
 		}
 
 		if v.BlockStore {
-			go s.readBlockFromKafka(v.BlockChain, v.KafkaCfg)
+			go s.readBlockFromKafka(v.BlockChain, v.KafkaCfg, ctx)
 		}
 
 		if v.ReceiptStore {
-			go s.readReceiptFromKafka(v.BlockChain, v.KafkaCfg)
+			go s.readReceiptFromKafka(v.BlockChain, v.KafkaCfg, ctx)
 		}
 
 		if v.SubStore {
-			go s.readSubTxFromKafka(v.BlockChain, v.KafkaCfg)
+			go s.readSubTxFromKafka(v.BlockChain, v.KafkaCfg, ctx)
 		}
 	}
 
 }
 
-func (s *Service) readSubTxFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig) {
+func (s *Service) readSubTxFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx2, cancel := context.WithCancel(ctx)
 	defer cancel()
 	go func() {
 		Kafka := kafkaCfg["SubTx"]
 		broker := fmt.Sprintf("%v:%v", Kafka.Host, Kafka.Port)
 		group := fmt.Sprintf("gr_store_subtx_%v", Kafka.Group)
-		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: Kafka.Topic, Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx)
+		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: Kafka.Topic, Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx2)
 	}()
 
 	list := make([]*service.SubTx, 0, 20)
@@ -72,6 +72,9 @@ func (s *Service) readSubTxFromKafka(blockChain int64, kafkaCfg map[string]*conf
 
 	for true {
 		select {
+		case <-ctx2.Done():
+			tk.Stop()
+			return
 		case <-tk.C:
 			lock.Lock()
 			if len(list) > 0 {
@@ -102,15 +105,15 @@ func (s *Service) readSubTxFromKafka(blockChain int64, kafkaCfg map[string]*conf
 	}
 }
 
-func (s *Service) readTxFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig) {
+func (s *Service) readTxFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx2, cancel := context.WithCancel(ctx)
 	defer cancel()
 	go func() {
 		Kafka := kafkaCfg["Tx"]
 		broker := fmt.Sprintf("%v:%v", Kafka.Host, Kafka.Port)
 		group := fmt.Sprintf("gr_store_tx_%v", Kafka.Group)
-		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: Kafka.Topic, Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx)
+		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: Kafka.Topic, Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx2)
 	}()
 
 	list := make([]*service.Tx, 0, 20)
@@ -119,6 +122,9 @@ func (s *Service) readTxFromKafka(blockChain int64, kafkaCfg map[string]*config.
 
 	for true {
 		select {
+		case <-ctx.Done():
+			tk.Stop()
+			return
 		case <-tk.C:
 			lock.Lock()
 			if len(list) > 0 {
@@ -149,15 +155,15 @@ func (s *Service) readTxFromKafka(blockChain int64, kafkaCfg map[string]*config.
 	}
 }
 
-func (s *Service) readBlockFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig) {
+func (s *Service) readBlockFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx2, cancel := context.WithCancel(ctx)
 	defer cancel()
 	go func() {
 		Kafka := kafkaCfg["Block"]
 		broker := fmt.Sprintf("%v:%v", Kafka.Host, Kafka.Port)
 		group := fmt.Sprintf("gr_store_block_%v", Kafka.Group)
-		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: Kafka.Topic, Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx)
+		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: Kafka.Topic, Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx2)
 	}()
 
 	list := make([]*service.Block, 0, 20)
@@ -165,6 +171,9 @@ func (s *Service) readBlockFromKafka(blockChain int64, kafkaCfg map[string]*conf
 	lock := sync.RWMutex{}
 	for true {
 		select {
+		case <-ctx2.Done():
+			tk.Stop()
+			return
 		case <-tk.C:
 			lock.Lock()
 			if len(list) > 0 {
@@ -193,15 +202,15 @@ func (s *Service) readBlockFromKafka(blockChain int64, kafkaCfg map[string]*conf
 	}
 }
 
-func (s *Service) readReceiptFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig) {
+func (s *Service) readReceiptFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx2, cancel := context.WithCancel(ctx)
 	defer cancel()
 	go func() {
 		Kafka := kafkaCfg["Receipt"]
 		broker := fmt.Sprintf("%v:%v", Kafka.Host, Kafka.Port)
 		group := fmt.Sprintf("gr_store_receipt_%v", Kafka.Group)
-		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: Kafka.Topic, Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx)
+		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: Kafka.Topic, Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx2)
 	}()
 
 	list := make([]*service.Receipt, 0, 20)
@@ -210,6 +219,9 @@ func (s *Service) readReceiptFromKafka(blockChain int64, kafkaCfg map[string]*co
 
 	for true {
 		select {
+		case <-ctx2.Done():
+			tk.Stop()
+			return
 		case <-tk.C:
 			lock.Lock()
 			if len(list) > 0 {

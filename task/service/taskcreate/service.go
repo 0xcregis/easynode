@@ -41,15 +41,14 @@ func (s *Service) Start(ctx context.Context) {
 	go s.startKafka(ctx)
 
 	for _, v := range blockConfigs {
-		go func(ctx context.Context, cfg *config.BlockConfig, log *logrus.Entry) {
-			s.updateLatestBlock(ctx, cfg, log)
-		}(ctx, v, log)
-	}
+		notify := make(chan struct{})
+		go func(ctx context.Context, cfg *config.BlockConfig, log *logrus.Entry, notify chan struct{}) {
+			s.updateLatestBlock(ctx, cfg, log, notify)
+		}(ctx, v, log, notify)
 
-	for _, v := range blockConfigs {
-		go func(ctx context.Context, cfg *config.BlockConfig, log *logrus.Entry) {
-			s.startCreateBlockProc(ctx, cfg, log)
-		}(ctx, v, log)
+		go func(ctx context.Context, cfg *config.BlockConfig, log *logrus.Entry, notify chan struct{}) {
+			s.startCreateBlockProc(ctx, cfg, log, notify)
+		}(ctx, v, log, notify)
 	}
 
 }
@@ -61,17 +60,21 @@ func (s *Service) startKafka(ctx context.Context) {
 	s.kafkaClient.WriteBatch(&kafkaClient.Config{Brokers: []string{broker}}, s.sendCh, nil, ctx, 2)
 }
 
-func (s *Service) updateLatestBlock(ctx context.Context, cfg *config.BlockConfig, log *logrus.Entry) {
+func (s *Service) updateLatestBlock(ctx context.Context, cfg *config.BlockConfig, log *logrus.Entry, notify chan struct{}) {
 	interrupt := true
 	for interrupt {
 		//for _, v := range blockConfigs {
 		lastNumber, err := GetLastBlockNumber(cfg.BlockChainCode, s.log, cfg)
 		if err != nil {
 			log.Errorf("GetLastBlockNumber|err=%v", err.Error())
+			time.Sleep(3 * time.Second)
 			continue
 		}
 		if lastNumber > 1 {
-			_ = s.store.UpdateLastNumber(cfg.BlockChainCode, lastNumber)
+			err = s.store.UpdateLastNumber(cfg.BlockChainCode, lastNumber)
+			if err == nil { //通知分配区块任务
+				notify <- struct{}{}
+			}
 		}
 
 		select {
@@ -84,7 +87,7 @@ func (s *Service) updateLatestBlock(ctx context.Context, cfg *config.BlockConfig
 		}
 	}
 }
-func (s *Service) startCreateBlockProc(ctx context.Context, cfg *config.BlockConfig, log *logrus.Entry) {
+func (s *Service) startCreateBlockProc(ctx context.Context, cfg *config.BlockConfig, log *logrus.Entry, notify chan struct{}) {
 	interrupt := true
 	for interrupt {
 		//处理自产生区块任务，包括：区块
@@ -97,8 +100,7 @@ func (s *Service) startCreateBlockProc(ctx context.Context, cfg *config.BlockCon
 		case <-ctx.Done():
 			interrupt = false
 			break
-		default:
-			time.Sleep(13 * time.Second)
+		case <-notify:
 			continue
 		}
 	}

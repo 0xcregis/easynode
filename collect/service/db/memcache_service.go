@@ -409,9 +409,10 @@ func (s *Service) UpdateNodeTaskStatusWithBatch(keys []string, status int) error
 
 func NewTaskCacheService(cfg *config.Chain, x *xlog.XLog) service.StoreTaskInterface {
 	client := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%v:%v", cfg.Redis.Addr, cfg.Redis.Port),
-		Password: "", // no password set
-		DB:       0,  // use default DB
+		Addr:        fmt.Sprintf("%v:%v", cfg.Redis.Addr, cfg.Redis.Port),
+		Password:    "", // no password set
+		DB:          0,  // use default DB
+		ReadTimeout: 1 * time.Minute,
 	})
 	return &Service{
 		log:         x,

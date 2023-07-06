@@ -422,7 +422,7 @@ func CheckAddress(blockChain int64, msg *kafka.Message, list map[string]*Monitor
 func getCoreAddrEth(addr string) string {
 	addr = strings.ToLower(addr)
 	if strings.HasPrefix(addr, "0x") {
-		return strings.TrimLeft(addr, "0x") //去丢0x
+		return strings.Replace(addr, "0x", "", 1) //去丢0x
 	}
 	return addr
 }
@@ -480,17 +480,18 @@ func CheckAddressEth(tx []byte, addrList map[string]*MonitorAddress) bool {
 }
 
 func getCoreAddrTron(addr string) string {
+	if strings.HasPrefix(addr, "0x41") {
+		return strings.Replace(addr, "0x41", "", 1) //去丢41
+	}
+
 	if strings.HasPrefix(addr, "0x") {
-		return strings.TrimLeft(addr, "0x") //去丢0x
+		return strings.Replace(addr, "0x", "", 1) //去丢0x
 	}
 
 	if strings.HasPrefix(addr, "41") {
-		return strings.TrimLeft(addr, "41") //去丢41
+		return strings.Replace(addr, "41", "", 1) //去丢41
 	}
 
-	if strings.HasPrefix(addr, "0x41") {
-		return strings.TrimLeft(addr, "0x41") //去丢41
-	}
 	return addr
 }
 func CheckAddressTron(txValue []byte, addrList map[string]*MonitorAddress) bool {
@@ -577,7 +578,7 @@ func CheckAddressTron(txValue []byte, addrList map[string]*MonitorAddress) bool 
 	}
 
 	has := false
-	for k:= range txAddressList {
+	for k := range txAddressList {
 		//monitorAddr := getCoreAddrEth(v)
 		if _, ok := addrList[k]; ok {
 			has = true

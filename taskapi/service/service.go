@@ -9,8 +9,12 @@ import (
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
 	"github.com/uduncloud/easynode/taskapi/config"
-	"io/ioutil"
+	"io"
 	"math/rand"
+)
+
+const (
+	NodeKey = "nodeKey_%v"
 )
 
 type Server struct {
@@ -42,7 +46,6 @@ func NewServer(cfg *config.Config, blockChain []int64, log *xlog.XLog) *Server {
 }
 
 func (s *Server) getNodeId(blockChainCode int64) (string, error) {
-	NodeKey := "nodeKey_%v"
 	list, err := s.client.HKeys(context.Background(), fmt.Sprintf(NodeKey, blockChainCode)).Result()
 	if err != nil {
 		return "", err
@@ -54,9 +57,17 @@ func (s *Server) getNodeId(blockChainCode int64) (string, error) {
 	}
 }
 
+func (s *Server) ExistNodeId(blockChainCode int64, nodeId string) bool {
+	exist, err := s.client.HExists(context.Background(), fmt.Sprintf(NodeKey, blockChainCode), nodeId).Result()
+	if err != nil {
+		return false
+	}
+	return exist
+}
+
 func (s *Server) PushBlockTask(c *gin.Context) {
 
-	bs, err := ioutil.ReadAll(c.Request.Body)
+	bs, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
@@ -83,10 +94,19 @@ func (s *Server) PushBlockTask(c *gin.Context) {
 		s.Error(c, c.Request.URL.Path, errors.New("blockHash or blockNumber is wrong").Error())
 		return
 	}
-	nodeId, err := s.getNodeId(blockChain)
-	if err != nil {
-		s.Error(c, c.Request.URL.Path, errors.New("blockchain is wrong").Error())
-		return
+
+	nodeId := r.Get("nodeId").String()
+	if len(nodeId) < 1 {
+		nodeId, err = s.getNodeId(blockChain)
+		if err != nil {
+			s.Error(c, c.Request.URL.Path, errors.New("not found nodeId").Error())
+			return
+		}
+	} else {
+		if !s.ExistNodeId(blockChain, nodeId) {
+			s.Error(c, c.Request.URL.Path, errors.New("the nodeId is unusable").Error())
+			return
+		}
 	}
 
 	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 2, TaskStatus: 0, NodeId: nodeId}
@@ -101,7 +121,7 @@ func (s *Server) PushBlockTask(c *gin.Context) {
 
 func (s *Server) PushTxTask(c *gin.Context) {
 
-	bs, err := ioutil.ReadAll(c.Request.Body)
+	bs, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
@@ -127,10 +147,18 @@ func (s *Server) PushTxTask(c *gin.Context) {
 		s.Error(c, c.Request.URL.Path, errors.New("txHash is wrong").Error())
 		return
 	}
-	nodeId, err := s.getNodeId(blockChain)
-	if err != nil {
-		s.Error(c, c.Request.URL.Path, errors.New("blockchain is wrong").Error())
-		return
+	nodeId := r.Get("nodeId").String()
+	if len(nodeId) < 1 {
+		nodeId, err = s.getNodeId(blockChain)
+		if err != nil {
+			s.Error(c, c.Request.URL.Path, errors.New("not found nodeId").Error())
+			return
+		}
+	} else {
+		if !s.ExistNodeId(blockChain, nodeId) {
+			s.Error(c, c.Request.URL.Path, errors.New("the nodeId is unusable").Error())
+			return
+		}
 	}
 
 	task := &NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 1, TaskStatus: 0, NodeId: nodeId}
@@ -145,7 +173,7 @@ func (s *Server) PushTxTask(c *gin.Context) {
 
 func (s *Server) PushTxsTask(c *gin.Context) {
 
-	bs, err := ioutil.ReadAll(c.Request.Body)
+	bs, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
@@ -172,10 +200,18 @@ func (s *Server) PushTxsTask(c *gin.Context) {
 		s.Error(c, c.Request.URL.Path, errors.New("blockHash or blockNumber is wrong").Error())
 		return
 	}
-	nodeId, err := s.getNodeId(blockChain)
-	if err != nil {
-		s.Error(c, c.Request.URL.Path, errors.New("blockchain is wrong").Error())
-		return
+	nodeId := r.Get("nodeId").String()
+	if len(nodeId) < 1 {
+		nodeId, err = s.getNodeId(blockChain)
+		if err != nil {
+			s.Error(c, c.Request.URL.Path, errors.New("not found nodeId").Error())
+			return
+		}
+	} else {
+		if !s.ExistNodeId(blockChain, nodeId) {
+			s.Error(c, c.Request.URL.Path, errors.New("the nodeId is unusable").Error())
+			return
+		}
 	}
 
 	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 4, TaskStatus: 0, NodeId: nodeId}
@@ -190,7 +226,7 @@ func (s *Server) PushTxsTask(c *gin.Context) {
 
 func (s *Server) PushReceiptTask(c *gin.Context) {
 
-	bs, err := ioutil.ReadAll(c.Request.Body)
+	bs, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
@@ -217,10 +253,18 @@ func (s *Server) PushReceiptTask(c *gin.Context) {
 		return
 	}
 
-	nodeId, err := s.getNodeId(blockChain)
-	if err != nil {
-		s.Error(c, c.Request.URL.Path, errors.New("blockchain is wrong").Error())
-		return
+	nodeId := r.Get("nodeId").String()
+	if len(nodeId) < 1 {
+		nodeId, err = s.getNodeId(blockChain)
+		if err != nil {
+			s.Error(c, c.Request.URL.Path, errors.New("not found nodeId").Error())
+			return
+		}
+	} else {
+		if !s.ExistNodeId(blockChain, nodeId) {
+			s.Error(c, c.Request.URL.Path, errors.New("the nodeId is unusable").Error())
+			return
+		}
 	}
 
 	task := &NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 3, TaskStatus: 0, NodeId: nodeId}
@@ -235,7 +279,7 @@ func (s *Server) PushReceiptTask(c *gin.Context) {
 
 func (s *Server) PushReceiptsTask(c *gin.Context) {
 
-	bs, err := ioutil.ReadAll(c.Request.Body)
+	bs, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
@@ -263,10 +307,18 @@ func (s *Server) PushReceiptsTask(c *gin.Context) {
 		return
 	}
 
-	nodeId, err := s.getNodeId(blockChain)
-	if err != nil {
-		s.Error(c, c.Request.URL.Path, errors.New("blockchain is wrong").Error())
-		return
+	nodeId := r.Get("nodeId").String()
+	if len(nodeId) < 1 {
+		nodeId, err = s.getNodeId(blockChain)
+		if err != nil {
+			s.Error(c, c.Request.URL.Path, errors.New("not found nodeId").Error())
+			return
+		}
+	} else {
+		if !s.ExistNodeId(blockChain, nodeId) {
+			s.Error(c, c.Request.URL.Path, errors.New("the nodeId is unusable").Error())
+			return
+		}
 	}
 
 	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 5, TaskStatus: 0, NodeId: nodeId}

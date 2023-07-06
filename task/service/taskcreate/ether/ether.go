@@ -13,27 +13,39 @@ import (
 )
 
 type Ether struct {
-	log *xlog.XLog
+	log        *xlog.XLog
+	api        service.API
+	blockChain int64
 }
 
-func NewEther(log *xlog.XLog) *Ether {
+func NewEther(log *xlog.XLog, v *config.BlockConfig) *Ether {
+	clusters := make([]*chainConfig.NodeCluster, 0, 2)
+
+	for _, v := range v.Cluster {
+		c := &chainConfig.NodeCluster{NodeUrl: v.NodeHost, NodeToken: v.NodeKey, Weight: v.Weight}
+		clusters = append(clusters, c)
+	}
+
+	api := service.NewEth(clusters, log)
 	return &Ether{
-		log: log,
+		blockChain: v.BlockChainCode,
+		log:        log,
+		api:        api,
 	}
 }
 
-func (e *Ether) GetLatestBlockNumber(v *config.BlockConfig) (int64, error) {
+func (e *Ether) GetLatestBlockNumber() (int64, error) {
 	log := e.log.WithFields(logrus.Fields{
-		"id":    time.Now().UnixMilli(),
-		"model": "GetLatestBlockNumber",
+		"id":         time.Now().UnixMilli(),
+		"model":      "GetLatestBlockNumber",
+		"blockChain": e.blockChain,
 	})
 
-	clusters := []*chainConfig.NodeCluster{{NodeUrl: v.NodeHost, NodeToken: v.NodeKey}}
 	/**
 	  {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0x1019b4c\"}
 	*/
 	var lastNumber int64
-	jsonResult, err := service.NewEth(clusters, e.log).LatestBlock(200)
+	jsonResult, err := e.api.LatestBlock(e.blockChain)
 	if err != nil {
 		log.Errorf("Eth_GetBlockNumber|err=%v", err)
 		return 0, err

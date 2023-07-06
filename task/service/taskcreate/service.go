@@ -11,8 +11,6 @@ import (
 	"github.com/uduncloud/easynode/task/config"
 	"github.com/uduncloud/easynode/task/service"
 	"github.com/uduncloud/easynode/task/service/taskcreate/db"
-	"github.com/uduncloud/easynode/task/service/taskcreate/ether"
-	"github.com/uduncloud/easynode/task/service/taskcreate/tron"
 	"math/rand"
 	"time"
 )
@@ -23,7 +21,7 @@ type Service struct {
 	log         *xlog.XLog
 	kafkaClient *kafkaClient.EasyKafka
 	sendCh      chan []*kafka.Message
-	//receiverCh  chan []*kafka.Message
+	api         map[int64]service.BlockChainInterface
 }
 
 func (s *Service) Start(ctx context.Context) {
@@ -63,8 +61,11 @@ func (s *Service) startKafka(ctx context.Context) {
 func (s *Service) updateLatestBlock(ctx context.Context, cfg *config.BlockConfig, log *logrus.Entry, notify chan struct{}) {
 	interrupt := true
 	for interrupt {
-		//for _, v := range blockConfigs {
-		lastNumber, err := GetLastBlockNumber(cfg.BlockChainCode, s.log, cfg)
+		var lastNumber int64
+		var err error
+		if api, ok := s.api[cfg.BlockChainCode]; ok {
+			lastNumber, err = api.GetLatestBlockNumber()
+		}
 		if err != nil {
 			log.Errorf("GetLastBlockNumber|err=%v", err.Error())
 			time.Sleep(3 * time.Second)
@@ -104,28 +105,6 @@ func (s *Service) startCreateBlockProc(ctx context.Context, cfg *config.BlockCon
 			continue
 		}
 	}
-}
-
-func (s *Service) GetLastBlockNumberForEther(v *config.BlockConfig) error {
-	lastNumber, err := ether.NewEther(s.log).GetLatestBlockNumber(v)
-	if err != nil {
-		return err
-	}
-	if lastNumber > 1 {
-		return s.store.UpdateLastNumber(v.BlockChainCode, lastNumber)
-	}
-	return nil
-}
-
-func (s *Service) GetLastBlockNumberForTron(v *config.BlockConfig) error {
-	lastNumber, err := tron.NewTron(s.log).GetLatestBlockNumber(v)
-	if err != nil {
-		return err
-	}
-	if lastNumber > 1 {
-		return s.store.UpdateLastNumber(v.BlockChainCode, lastNumber)
-	}
-	return nil
 }
 
 func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
@@ -214,12 +193,25 @@ func NewService(config *config.Config) *Service {
 	sendCh := make(chan []*kafka.Message, 5)
 	//receiverCh := make(chan []*kafka.Message, 5)
 	store := db.NewFileTaskCreateService(config, xg)
+
+	blockClient := make(map[int64]service.BlockChainInterface, 2)
+
+	for _, v := range config.BlockConfigs {
+		api := NewApi(v.BlockChainCode, xg, v)
+		if api != nil {
+			blockClient[v.BlockChainCode] = api
+		} else {
+			xg.Warnf("new api client is error by config. config=%+v", v)
+			panic("the system does not support the chain")
+		}
+	}
+
 	return &Service{
 		config:      config,
 		log:         xg,
 		store:       store,
 		kafkaClient: kf,
 		sendCh:      sendCh,
-		//receiverCh:  receiverCh,
+		api:         blockClient,
 	}
 }

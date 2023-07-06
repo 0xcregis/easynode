@@ -9,6 +9,10 @@ type Process interface {
 	Start(ctx context.Context)
 }
 
+type BlockChainInterface interface {
+	GetLatestBlockNumber() (int64, error)
+}
+
 type StoreTaskInterface interface {
 	AddNodeTask(list []*NodeTask) ([]*kafka.Message, error)
 	UpdateLastNumber(blockChainCode int64, latestNumber int64) error

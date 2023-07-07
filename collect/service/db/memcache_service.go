@@ -36,6 +36,7 @@ type Service struct {
 }
 
 func (s *Service) StoreClusterHealthStatus(blockChain int64, data map[string]int64) error {
+	_ = s.cacheClient.Del(context.Background(), fmt.Sprintf(ClusterHealthKey, blockChain)).Err()
 	for k, v := range data {
 		err := s.cacheClient.HSet(context.Background(), fmt.Sprintf(ClusterHealthKey, blockChain), k, v).Err()
 		if err != nil {
@@ -74,7 +75,7 @@ func (s *Service) StoreClusterNode(blockChain int64, prefix string, data any) er
 
 	*/
 
-	_ = s.cacheClient.HDel(context.Background(), fmt.Sprintf(ClusterKey, blockChain, prefix)).Err()
+	_ = s.cacheClient.Del(context.Background(), fmt.Sprintf(ClusterKey, blockChain, prefix)).Err()
 
 	for _, root := range array {
 		url := root.Get("NodeUrl").String()

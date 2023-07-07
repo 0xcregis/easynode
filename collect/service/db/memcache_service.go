@@ -74,10 +74,14 @@ func (s *Service) StoreClusterNode(blockChain int64, prefix string, data any) er
 
 	*/
 
+	_ = s.cacheClient.HDel(context.Background(), fmt.Sprintf(ClusterKey, blockChain, prefix)).Err()
+
 	for _, root := range array {
 		url := root.Get("NodeUrl").String()
 		token := root.Get("NodeToken").String()
-		url = fmt.Sprintf("%v_%v", url, token)
+		if len(token) > 0 {
+			url = fmt.Sprintf("%v_%v", url, token)
+		}
 		err := s.cacheClient.HSet(context.Background(), fmt.Sprintf(ClusterKey, blockChain, prefix), url, root.String()).Err()
 		if err != nil {
 			s.log.Warnf("StoreClusterNode|err=%v", err.Error())

@@ -378,17 +378,19 @@ func (s *Service) BalanceCluster(key string, clusterList []*config.FromCluster) 
 }
 
 func getCoreAddr(addr string) string {
+
+	if strings.HasPrefix(addr, "0x41") {
+		return strings.Replace(addr, "0x41", "", 1) //去丢41
+	}
+
 	if strings.HasPrefix(addr, "0x") {
-		return strings.TrimLeft(addr, "0x") //去丢0x
+		return strings.Replace(addr, "0x", "", 1) //去丢0x
 	}
 
 	if strings.HasPrefix(addr, "41") {
-		return strings.TrimLeft(addr, "41") //去丢41
+		return strings.Replace(addr, "41", "", 1) //去丢41
 	}
 
-	if strings.HasPrefix(addr, "0x41") {
-		return strings.TrimLeft(addr, "0x41") //去丢41
-	}
 	return addr
 }
 

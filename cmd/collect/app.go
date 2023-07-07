@@ -35,12 +35,15 @@ func main() {
 		panic(err.Error())
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	//启动处理日志服务
-	monitor.NewService(&cfg, nodeId).Start()
+	monitor.NewService(&cfg, nodeId).Start(ctx)
 
 	//启动公链服务
 	for _, v := range cfg.Chains {
-		cmd.NewService(v, cfg.LogConfig, nodeId).Start()
+		go cmd.NewService(v, cfg.LogConfig, nodeId).Start(ctx)
 	}
 
 	// Wait for interrupt signal to gracefully shutdown the server with

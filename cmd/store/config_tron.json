@@ -12,66 +12,9 @@
   },
   "Chains": [
     {
-      "BlockChain": 200,
-      "BlockStore": false,
-      "TxStore": false,
-      "ReceiptStore": false,
-      "SubStore": true,
-      "Kafka": {
-        "SubTx": {
-          "Host": "192.168.2.9",
-          "Port": 9092,
-          "Topic": "ether_sub_tx",
-          "Group": "1",
-          "StartOffset": 0,
-          "Partition": 0
-        },
-        "Tx": {
-          "Host": "192.168.2.9",
-          "Port": 9092,
-          "Topic": "ether_tx",
-          "Group": "26",
-          "StartOffset": -1,
-          "Partition": 0
-        },
-        "Block": {
-          "Host": "192.168.2.9",
-          "Port": 9092,
-          "Topic": "ether_block",
-          "Group": "1",
-          "StartOffset": 0,
-          "Partition": 0
-        },
-        "Receipt": {
-          "Host": "192.168.2.9",
-          "Port": 9092,
-          "Topic": "ether_receipt",
-          "Group": "1",
-          "StartOffset": 0,
-          "Partition": 0
-        }
-      },
-      "ChainDb": {
-        "Addr": "192.168.2.9",
-        "Port": 9000,
-        "User": "test",
-        "Password": "test",
-        "DbName": "ether2",
-        "TxTable": "tx",
-        "BlockTable": "block",
-        "ReceiptTable": "receipt",
-        "SubTxTable": "sub_tx"
-      },
-      "Redis": {
-        "Addr": "192.168.2.9",
-        "Port": 6379,
-        "DB": 0
-      }
-    },
-    {
       "BlockChain": 205,
       "BlockStore": false,
-      "TxStore": false,
+      "TxStore": true,
       "ReceiptStore": false,
       "SubStore": true,
       "Kafka": {
@@ -79,15 +22,15 @@
           "Host": "192.168.2.9",
           "Port": 9092,
           "Topic": "tron_sub_tx",
-          "Group": "1",
-          "StartOffset": 0,
+          "Group": "110",
+          "StartOffset": -1,
           "Partition": 0
         },
         "Tx": {
           "Host": "192.168.2.9",
           "Port": 9092,
           "Topic": "tron_tx",
-          "Group": "8",
+          "Group": "108",
           "StartOffset": -1,
           "Partition": 0
         },
@@ -95,7 +38,7 @@
           "Host": "192.168.2.9",
           "Port": 9092,
           "Topic": "tron_block",
-          "Group": "3",
+          "Group": "103",
           "StartOffset": -1,
           "Partition": 0
         },

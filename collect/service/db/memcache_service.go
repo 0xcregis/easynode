@@ -36,6 +36,7 @@ type Service struct {
 }
 
 func (s *Service) StoreClusterHealthStatus(blockChain int64, data map[string]int64) error {
+	_ = s.cacheClient.Del(context.Background(), fmt.Sprintf(ClusterHealthKey, blockChain)).Err()
 	for k, v := range data {
 		err := s.cacheClient.HSet(context.Background(), fmt.Sprintf(ClusterHealthKey, blockChain), k, v).Err()
 		if err != nil {
@@ -74,10 +75,14 @@ func (s *Service) StoreClusterNode(blockChain int64, prefix string, data any) er
 
 	*/
 
+	_ = s.cacheClient.Del(context.Background(), fmt.Sprintf(ClusterKey, blockChain, prefix)).Err()
+
 	for _, root := range array {
 		url := root.Get("NodeUrl").String()
 		token := root.Get("NodeToken").String()
-		url = fmt.Sprintf("%v_%v", url, token)
+		if len(token) > 0 {
+			url = fmt.Sprintf("%v_%v", url, token)
+		}
 		err := s.cacheClient.HSet(context.Background(), fmt.Sprintf(ClusterKey, blockChain, prefix), url, root.String()).Err()
 		if err != nil {
 			s.log.Warnf("StoreClusterNode|err=%v", err.Error())
@@ -409,9 +414,10 @@ func (s *Service) UpdateNodeTaskStatusWithBatch(keys []string, status int) error
 
 func NewTaskCacheService(cfg *config.Chain, x *xlog.XLog) service.StoreTaskInterface {
 	client := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%v:%v", cfg.Redis.Addr, cfg.Redis.Port),
-		Password: "", // no password set
-		DB:       0,  // use default DB
+		Addr:        fmt.Sprintf("%v:%v", cfg.Redis.Addr, cfg.Redis.Port),
+		Password:    "", // no password set
+		DB:          0,  // use default DB
+		ReadTimeout: 1 * time.Minute,
 	})
 	return &Service{
 		log:         x,

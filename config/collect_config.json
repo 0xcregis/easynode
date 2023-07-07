@@ -3,6 +3,7 @@
     "Path": "./log/collect",
     "Delay": 2
   },
+  "KeyPath": "./data/node/1",
   "Chains": [
     {
       "TaskKafka": {

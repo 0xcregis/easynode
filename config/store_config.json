@@ -23,7 +23,7 @@
           "Port": 9092,
           "Topic": "ether_sub_tx",
           "Group": "1",
-          "StartOffset": 0,
+          "StartOffset": -1,
           "Partition": 0
         },
         "Tx": {
@@ -31,7 +31,7 @@
           "Port": 9092,
           "Topic": "ether_tx",
           "Group": "1",
-          "StartOffset": 0,
+          "StartOffset": -1,
           "Partition": 0
         },
         "Block": {
@@ -39,7 +39,7 @@
           "Port": 9092,
           "Topic": "ether_block",
           "Group": "1",
-          "StartOffset": 0,
+          "StartOffset": -1,
           "Partition": 0
         },
         "Receipt": {
@@ -47,7 +47,7 @@
           "Port": 9092,
           "Topic": "ether_receipt",
           "Group": "1",
-          "StartOffset": 0,
+          "StartOffset": -1,
           "Partition": 0
         }
       },
@@ -61,6 +61,11 @@
         "BlockTable": "block",
         "ReceiptTable": "receipt",
         "SubTxTable": "sub_tx"
+      },
+      "Redis": {
+        "Addr": "192.168.2.9",
+        "Port": 6379,
+        "DB": 0
       }
     }
   ]

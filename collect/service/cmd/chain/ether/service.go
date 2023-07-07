@@ -358,7 +358,7 @@ func (s *Service) getToken(blockChain int64, from string, contract string) (stri
 func getCoreAddr(addr string) string {
 	addr = strings.ToLower(addr)
 	if strings.HasPrefix(addr, "0x") {
-		return strings.TrimLeft(addr, "0x") //去丢0x
+		return strings.Replace(addr, "0x", "", 1) //去丢0x
 	}
 	return addr
 }

@@ -13,26 +13,37 @@ import (
 )
 
 type Tron struct {
-	log *xlog.XLog
+	log        *xlog.XLog
+	api        service.API
+	blockChain int64
 }
 
-func NewTron(log *xlog.XLog) *Tron {
+func NewTron(log *xlog.XLog, v *config.BlockConfig) *Tron {
+
+	clusters := make([]*chainConfig.NodeCluster, 0, 2)
+	for _, v := range v.Cluster {
+		c := &chainConfig.NodeCluster{NodeUrl: v.NodeHost, NodeToken: v.NodeKey, Weight: v.Weight}
+		clusters = append(clusters, c)
+	}
+	api := service.NewTron(clusters, log)
 	return &Tron{
-		log: log,
+		log:        log,
+		api:        api,
+		blockChain: v.BlockChainCode,
 	}
 }
 
-func (e *Tron) GetLatestBlockNumber(v *config.BlockConfig) (int64, error) {
+func (e *Tron) GetLatestBlockNumber() (int64, error) {
 	log := e.log.WithFields(logrus.Fields{
-		"id":    time.Now().UnixMilli(),
-		"model": "GetLastBlockNumber",
+		"id":         time.Now().UnixMilli(),
+		"model":      "GetLastBlockNumber",
+		"blockChain": e.blockChain,
 	})
 	var lastNumber int64
-	clusters := []*chainConfig.NodeCluster{{NodeUrl: v.NodeHost, NodeToken: v.NodeKey}}
 	/**
 	  {\"blockId\":\"0000000002f52f21275a4e244b191f29dc289bfc66bce08a18c3d5051fcf7203\",\"number\":49622817}
 	*/
-	jsonResult, err := service.NewTron(clusters, e.log).LatestBlock(205)
+	jsonResult, err := e.api.LatestBlock(e.blockChain)
 	if err != nil {
 		log.Errorf("Eth_GetBlockNumber|err=%v", err)
 		return 0, err

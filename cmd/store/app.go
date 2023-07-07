@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -25,8 +26,11 @@ func main() {
 
 	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/store/store", 24*time.Hour)
 
+	kafkaCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	//是否存盘
-	store.NewStoreService(&cfg, xLog).Start()
+	store.NewStoreService(&cfg, xLog).Start(kafkaCtx)
 
 	//http 协议
 	e := gin.Default()
@@ -40,7 +44,7 @@ func main() {
 
 	//ws 协议
 	wsServer := network.NewWsHandler(&cfg, xLog)
-	wsServer.Start()
+	wsServer.Start(kafkaCtx)
 	root.Handle("GET", "/ws/:token", func(ctx *gin.Context) {
 		wsServer.Sub2(ctx, ctx.Writer, ctx.Request)
 	})

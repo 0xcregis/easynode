@@ -44,19 +44,19 @@ func main() {
 	defer cancel()
 
 	//start collect service
-	go startCollect(collectPath)
+	go startCollect(collectPath, ctx)
 
 	//start task service
 	go startTask(taskPath, ctx)
 
 	//start blockchain service
-	go startBlockchain(blockchainPath)
+	go startBlockchain(blockchainPath, ctx)
 
 	//start taskapi service
-	go startTaskApi(taskapiPath)
+	go startTaskApi(taskapiPath, ctx)
 
 	//start store service
-	go startStore(storePath)
+	go startStore(storePath, ctx)
 
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.
@@ -76,7 +76,7 @@ func main() {
 	<-t.Done()
 }
 
-func startStore(configPath string) {
+func startStore(configPath string, ctx context.Context) {
 
 	if len(configPath) < 1 {
 		panic("can not find config file")
@@ -88,7 +88,7 @@ func startStore(configPath string) {
 	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/store/store", 24*time.Hour)
 
 	//是否存盘
-	store.NewStoreService(&cfg, xLog).Start()
+	store.NewStoreService(&cfg, xLog).Start(ctx)
 
 	//http 协议
 	e := gin.Default()
@@ -102,7 +102,7 @@ func startStore(configPath string) {
 
 	//ws 协议
 	wsServer := network.NewWsHandler(&cfg, xLog)
-	wsServer.Start()
+	wsServer.Start(ctx)
 	root.Handle("GET", "/ws/:token", func(ctx *gin.Context) {
 		wsServer.Sub2(ctx, ctx.Writer, ctx.Request)
 	})
@@ -113,7 +113,7 @@ func startStore(configPath string) {
 	}
 }
 
-func startTaskApi(configPath string) {
+func startTaskApi(configPath string, ctx context.Context) {
 
 	if len(configPath) < 1 {
 		panic("can not find config file")
@@ -148,7 +148,7 @@ func startTaskApi(configPath string) {
 	}
 }
 
-func startBlockchain(configPath string) {
+func startBlockchain(configPath string, ctx context.Context) {
 
 	if len(configPath) < 1 {
 		panic("can not find config file")
@@ -207,7 +207,7 @@ func startTask(configPath string, ctx context.Context) {
 	}
 }
 
-func startCollect(configPath string) {
+func startCollect(configPath string, ctx context.Context) {
 
 	if len(configPath) < 1 {
 		panic("can not find config file")
@@ -227,10 +227,10 @@ func startCollect(configPath string) {
 	}
 
 	//启动监控服务
-	collectMonitor.NewService(&cfg, nodeId).Start()
+	collectMonitor.NewService(&cfg, nodeId).Start(ctx)
 
 	//启动公链服务
 	for _, v := range cfg.Chains {
-		cmd.NewService(v, cfg.LogConfig, nodeId).Start()
+		go cmd.NewService(v, cfg.LogConfig, nodeId).Start(ctx)
 	}
 }

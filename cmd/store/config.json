@@ -22,15 +22,15 @@
           "Host": "192.168.2.9",
           "Port": 9092,
           "Topic": "ether_sub_tx",
-          "Group": "1",
-          "StartOffset": 0,
+          "Group": "101",
+          "StartOffset": -1,
           "Partition": 0
         },
         "Tx": {
           "Host": "192.168.2.9",
           "Port": 9092,
           "Topic": "ether_tx",
-          "Group": "26",
+          "Group": "120",
           "StartOffset": -1,
           "Partition": 0
         },
@@ -38,16 +38,16 @@
           "Host": "192.168.2.9",
           "Port": 9092,
           "Topic": "ether_block",
-          "Group": "1",
-          "StartOffset": 0,
+          "Group": "110",
+          "StartOffset": -1,
           "Partition": 0
         },
         "Receipt": {
           "Host": "192.168.2.9",
           "Port": 9092,
           "Topic": "ether_receipt",
-          "Group": "1",
-          "StartOffset": 0,
+          "Group": "130",
+          "StartOffset": -1,
           "Partition": 0
         }
       },

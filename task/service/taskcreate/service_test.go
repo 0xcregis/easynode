@@ -32,6 +32,5 @@ func TestService_NewBlockTask(t *testing.T) {
 }
 
 func TestEther_GetLastBlockNumber(t *testing.T) {
-	s := Init()
-	log.Println(s.GetLastBlockNumberForTron(s.config.BlockConfigs[0]))
+
 }

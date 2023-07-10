@@ -19,4 +19,5 @@ type StoreTaskInterface interface {
 	UpdateRecentNumber(blockChainCode int64, recentNumber int64) error
 	GetRecentNumber(blockCode int64) (int64, int64, error)
 	GetNodeId(blockChainCode int64) ([]string, error)
+	GetAndDelNodeId(blockChainCode int64) ([]string, error)
 }

@@ -18,6 +18,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -30,8 +31,8 @@ type WsHandler struct {
 	connMap map[string]*websocket.Conn                //token:conn
 	cmdMap  map[string]map[int64]service.WsReqMessage //token:code-wsReq
 	//ctxMap         map[string]map[int64]context.CancelFunc
-	monitorAddress map[int64]map[string]*TokenAddress //blockchain:token-tokenAddress
-	writer         chan *service.WsPushMessage
+	//monitorAddress map[int64]map[string]*TokenAddress //blockchain:token-tokenAddress
+	writer chan *service.WsPushMessage
 }
 
 type TokenAddress struct {
@@ -43,10 +44,11 @@ func NewWsHandler(cfg *config.Config, log *xlog.XLog) *WsHandler {
 	kfk := kafkaClient.NewEasyKafka(log)
 	db := db2.NewChService(cfg, log)
 	mp := make(map[int64]*config.Chain, 2)
-	mp2 := make(map[int64]map[string]*TokenAddress, 2)
+
+	//mp2 := make(map[int64]map[string]*TokenAddress, 2)
 	for _, v := range cfg.Chains {
 		mp[v.BlockChain] = v
-		mp2[v.BlockChain] = make(map[string]*TokenAddress, 2)
+		//mp2[v.BlockChain] = make(map[string]*TokenAddress, 2)
 	}
 	cache := db2.NewCacheService(cfg.Chains, log)
 	return &WsHandler{
@@ -58,8 +60,8 @@ func NewWsHandler(cfg *config.Config, log *xlog.XLog) *WsHandler {
 		connMap: make(map[string]*websocket.Conn, 5),
 		cmdMap:  make(map[string]map[int64]service.WsReqMessage, 5),
 		//ctxMap:         make(map[string]map[int64]context.CancelFunc, 5),
-		monitorAddress: mp2,
-		writer:         make(chan *service.WsPushMessage),
+		//monitorAddress: mp2,
+		writer: make(chan *service.WsPushMessage),
 	}
 }
 
@@ -254,6 +256,8 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 	receiver := make(chan *kafka.Message)
 	sender := make(chan []*kafka.Message, 10)
 	bufferMessage := make([]*kafka.Message, 0, 10)
+	monitorAddress := make(map[string]*TokenAddress, 10)
+	lock := sync.RWMutex{}
 
 	go func(ctx context.Context) {
 		broker := fmt.Sprintf("%v:%v", kafkaConfig.Host, kafkaConfig.Port)
@@ -303,7 +307,9 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 						List:  addressMp,
 					}
 				}
-				ws.monitorAddress[blockChain] = mp
+				lock.Lock()
+				monitorAddress = mp
+				lock.Unlock()
 			}
 
 			<-time.After(3 * time.Second)
@@ -347,9 +353,12 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 			}
 
 			//无用户监控
-			if l, ok := ws.monitorAddress[blockChain]; !ok || len(l) < 1 {
+			lock.RLock()
+			if len(monitorAddress) < 1 {
+				lock.RUnlock()
 				continue
 			}
+			lock.RUnlock()
 
 			tp, err := service.GetTxType(blockChain, msg)
 			if err != nil {
@@ -368,17 +377,21 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 				}
 
 				//检查地址 是否和交易 相关
-				if tokenMp, ok := ws.monitorAddress[blockChain]; ok {
-					if tokenAddress, ok := tokenMp[token]; ok {
-						if !service.CheckAddress(blockChain, msg, tokenAddress.List) {
-							continue
-						}
-					} else {
+				lock.RLock()
+				//if tokenMp, ok := ws.monitorAddress[blockChain]; ok {
+				if tokenAddress, ok := monitorAddress[token]; ok {
+					if !service.CheckAddress(blockChain, msg, tokenAddress.List) {
+						lock.RUnlock()
 						continue
 					}
+					lock.RUnlock()
 				} else {
+					lock.RUnlock()
 					continue
 				}
+				//} else {
+				//	continue
+				//}
 
 				pushMp[token] = code
 			}

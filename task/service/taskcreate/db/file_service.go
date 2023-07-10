@@ -48,6 +48,17 @@ func (t *TaskCreateFile) GetNodeId(blockChainCode int64) ([]string, error) {
 	if len(list) < 1 {
 		return nil, errors.New("no record")
 	}
+	return list, nil
+}
+
+func (t *TaskCreateFile) GetAndDelNodeId(blockChainCode int64) ([]string, error) {
+	list, err := t.client.HKeys(context.Background(), fmt.Sprintf(NodeKey, blockChainCode)).Result()
+	if err != nil {
+		return nil, err
+	}
+	if len(list) < 1 {
+		return nil, errors.New("no record")
+	}
 	_ = t.client.Del(context.Background(), fmt.Sprintf(NodeKey, blockChainCode)).Err()
 	return list, nil
 }
@@ -141,12 +152,12 @@ func (t *TaskCreateFile) GetRecentNumber(blockCode int64) (int64, int64, error) 
 
 	recentNumber, err := t.client.HGet(context.Background(), BlockChain, fmt.Sprintf("recentNumber_%v", blockCode)).Int64()
 	if err != nil {
-		t.log.Warnf("GetRecentNumber,err=%v",err.Error())
+		t.log.Warnf("GetRecentNumber,err=%v", err.Error())
 	}
 
 	latestNumber, err := t.client.HGet(context.Background(), BlockChain, fmt.Sprintf("latestNumber_%v", blockCode)).Int64()
 	if err != nil {
-		t.log.Warnf("GetRecentNumber,err=%v",err.Error())
+		t.log.Warnf("GetRecentNumber,err=%v", err.Error())
 	}
 
 	return recentNumber, latestNumber, nil

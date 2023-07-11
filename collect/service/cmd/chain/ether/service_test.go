@@ -18,30 +18,28 @@ func Init() (service.BlockChainInterface, config.Config, *xlog.XLog) {
 }
 
 func TestService_GetBlockByNumber(t *testing.T) {
-	s, cfg, x := Init()
-	b, _ := s.GetBlockByNumber("17658423", cfg.Chains[0].BlockTask, x.WithFields(logrus.Fields{}), true)
+	s, _, x := Init()
+	b, _ := s.GetBlockByNumber("17658423", x.WithFields(logrus.Fields{}), true)
 	log.Printf("%+v", b)
 }
 
 func TestService_GetTx(t *testing.T) {
-	s, cfg, x := Init()
-	tx := s.GetTx("0xb7959ab3ed0f8b424f897ba8ec28168358079be0030a9337d20252f7d4c18cfd", cfg.Chains[0].TxTask, x.WithFields(logrus.Fields{}))
+	s, _, x := Init()
+	tx := s.GetTx("0xb7959ab3ed0f8b424f897ba8ec28168358079be0030a9337d20252f7d4c18cfd", x.WithFields(logrus.Fields{}))
 	log.Println(tx)
 }
 
 func TestService_GetReceipt(t *testing.T) {
-	//s, cfg, x := Init()
-	//r := s.GetReceipt("0xf31a17a18d5360e60a7b37c00de3286a3e0ebee43b9d9ba2009ad44f6536c323", cfg.Chains[0].ReceiptTask, x.WithFields(logrus.Fields{}))
-	//log.Printf("%+v", r)
-}
-
-func TestService_BalanceCluster(t *testing.T) {
-	s, cfg, _ := Init()
-	c, err := s.BalanceCluster("", cfg.Chains[0].BlockTask.FromCluster)
+	s, _, x := Init()
+	r, err := s.GetReceipt("0x2eadb796722102575e8a1fe75241cba96f605659c160a65b3ad9473027b74c21", x.WithFields(logrus.Fields{}))
 	if err != nil {
 		panic(err)
 	}
-	log.Println(c)
+	log.Printf("%+v", r)
+}
+
+func TestService_BalanceCluster(t *testing.T) {
+
 }
 
 func TestService_Monitor(t *testing.T) {

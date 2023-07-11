@@ -58,7 +58,16 @@
           {
             "Host": "https://ethereum.publicnode.com",
             "Key": ""
+          },
+          {
+            "Host": "https://cloudflare-eth.com",
+            "Key": ""
+          },
+          {
+            "Host": "https://nodes.mewapi.io/rpc/eth",
+            "Key": ""
           }
+
         ],
         "Kafka": {
           "Topic": "ether_receipt",

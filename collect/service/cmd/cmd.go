@@ -596,7 +596,7 @@ func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Mes
 				block, _ = c.blockChain.GetBlockByHash(taskBlock.BlockHash, log, false)
 			}
 
-			if block == nil {
+			if block == nil || len(block.BlockHash) < 1 {
 				_ = c.taskStore.UpdateNodeTaskStatus(key, 2) //失败
 				log.Errorf("GetBlockByHashOrGetBlockByNumber|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, "block is null", taskBlock.Id)
 				return

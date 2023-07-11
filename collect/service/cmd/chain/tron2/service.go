@@ -69,6 +69,11 @@ func (s *Service) GetTx(txHash string, eLog *logrus.Entry) *service.TxInterface 
 
 	hash := gjson.Parse(resp).Get("txID").String()
 
+	if len(hash) < 1 {
+		eLog.Errorf("GetTx|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, resp, txHash)
+		return nil
+	}
+
 	fullTx := make(map[string]interface{}, 2)
 	fullTx["tx"] = resp
 
@@ -110,6 +115,11 @@ func (s *Service) GetReceipt(txHash string, eLog *logrus.Entry) (*service.Receip
 	}
 
 	hash := gjson.Parse(resp).Get("id").String()
+
+	if len(hash) < 1 {
+		eLog.Errorf("GetReceipt|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, resp, txHash)
+		return nil, errors.New("receipt is null")
+	}
 
 	var receipt service.TronReceipt
 	_ = json.Unmarshal([]byte(resp), &receipt)

@@ -37,25 +37,25 @@ func NewStoreService(config *config.Config, log *xlog.XLog) *Service {
 func (s *Service) Start(ctx context.Context) {
 	for _, v := range s.config.Chains {
 		if v.TxStore {
-			go s.readTxFromKafka(v.BlockChain, v.KafkaCfg, ctx)
+			go s.ReadTxFromKafka(v.BlockChain, v.KafkaCfg, ctx)
 		}
 
 		if v.BlockStore {
-			go s.readBlockFromKafka(v.BlockChain, v.KafkaCfg, ctx)
+			go s.ReadBlockFromKafka(v.BlockChain, v.KafkaCfg, ctx)
 		}
 
 		if v.ReceiptStore {
-			go s.readReceiptFromKafka(v.BlockChain, v.KafkaCfg, ctx)
+			go s.ReadReceiptFromKafka(v.BlockChain, v.KafkaCfg, ctx)
 		}
 
 		if v.SubStore {
-			go s.readSubTxFromKafka(v.BlockChain, v.KafkaCfg, ctx)
+			go s.ReadSubTxFromKafka(v.BlockChain, v.KafkaCfg, ctx)
 		}
 	}
 
 }
 
-func (s *Service) readSubTxFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {
+func (s *Service) ReadSubTxFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
 	ctx2, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -105,7 +105,7 @@ func (s *Service) readSubTxFromKafka(blockChain int64, kafkaCfg map[string]*conf
 	}
 }
 
-func (s *Service) readTxFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {
+func (s *Service) ReadTxFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
 	ctx2, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -155,7 +155,7 @@ func (s *Service) readTxFromKafka(blockChain int64, kafkaCfg map[string]*config.
 	}
 }
 
-func (s *Service) readBlockFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {
+func (s *Service) ReadBlockFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
 	ctx2, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -202,7 +202,7 @@ func (s *Service) readBlockFromKafka(blockChain int64, kafkaCfg map[string]*conf
 	}
 }
 
-func (s *Service) readReceiptFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {
+func (s *Service) ReadReceiptFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
 	ctx2, cancel := context.WithCancel(ctx)
 	defer cancel()

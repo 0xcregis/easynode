@@ -73,6 +73,12 @@ func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool
 
 	//解析数据
 	block, txList := service.GetBlockFromJson(resp)
+
+	if len(block.BlockHash) < 1 {
+		eLog.Errorf("GetBlockByHash|BlockChainName=%v,err=%v,blockHash=%v", s.chain.BlockChainName, resp, blockHash)
+		return nil, nil
+	}
+
 	r := &service.BlockInterface{BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, Block: block}
 	if !flag { //仅区块，不涉及交易
 		return r, nil
@@ -135,6 +141,12 @@ func (s *Service) GetBlockByNumber(blockNumber string, eLog *logrus.Entry, flag 
 
 	//解析数据
 	block, txList := service.GetBlockFromJson(resp)
+
+	if len(block.BlockHash) < 1 {
+		eLog.Errorf("GetBlockByNumber|BlockChainName=%v,err=%v,blockNumber=%v", s.chain.BlockChainName, resp, blockNumber)
+		return nil, nil
+	}
+
 	r := &service.BlockInterface{BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, Block: block}
 	if !flag { //仅区块数据，不涉及交易
 		return r, nil
@@ -188,6 +200,11 @@ func (s *Service) GetTx(txHash string, eLog *logrus.Entry) *service.TxInterface 
 
 	//解析数据
 	tx := service.GetTxFromJson(resp)
+
+	if len(tx.TxHash) < 1 {
+		eLog.Errorf("GetTx|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, resp, txHash)
+		return nil
+	}
 
 	receipt, err := s.GetReceipt(tx.TxHash, eLog)
 	if err != nil {
@@ -277,6 +294,12 @@ func (s *Service) GetReceipt(txHash string, eLog *logrus.Entry) (*service.Receip
 
 	// 解析数据
 	receipt := service.GetReceiptFromJson(resp)
+
+	if receipt == nil || len(receipt.TransactionHash) < 1 {
+		eLog.Errorf("GetReceipt|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, resp, txHash)
+		return nil, errors.New("receipt is null")
+	}
+
 	receipt = s.buildContract(receipt)
 	if receipt != nil {
 		return &service.ReceiptInterface{TransactionHash: receipt.TransactionHash, Receipt: receipt}, nil

@@ -6,7 +6,7 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/uduncloud/easynode/blockchain/chain"
 	"github.com/uduncloud/easynode/common/util"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -52,7 +52,7 @@ func (t *Tron) SendRequestToChain(host string, token string, query string) (stri
 	}
 
 	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 
 	if err != nil {
 		return "", err
@@ -88,7 +88,7 @@ func (t *Tron) SendRequestToChainByHttp(host string, token string, query string)
 	}
 
 	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 
 	if err != nil {
 		return "", err

@@ -12,7 +12,7 @@ import (
 	"github.com/uduncloud/easynode/store/config"
 	"github.com/uduncloud/easynode/store/service"
 	db2 "github.com/uduncloud/easynode/store/service/db"
-	"io/ioutil"
+	"io"
 	"strings"
 	"time"
 )
@@ -38,7 +38,7 @@ func NewServer(cfg *config.Config, log *xlog.XLog) *Server {
 
 func (s *Server) NewToken(c *gin.Context) {
 
-	bs, err := ioutil.ReadAll(c.Request.Body)
+	bs, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
@@ -62,7 +62,7 @@ func (s *Server) NewToken(c *gin.Context) {
 	}
 
 	//保存token
-	err = s.db.NewToken(&service.NodeToken{Token: token.String(), Email: email, Id: int64(time.Now().UnixMicro())})
+	err = s.db.NewToken(&service.NodeToken{Token: token.String(), Email: email, Id: time.Now().UnixMicro()})
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, errors.New("create token failure").Error())
 		return
@@ -73,7 +73,7 @@ func (s *Server) NewToken(c *gin.Context) {
 
 func (s *Server) DelMonitorAddress(c *gin.Context) {
 
-	bs, err := ioutil.ReadAll(c.Request.Body)
+	bs, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
@@ -93,7 +93,7 @@ func (s *Server) DelMonitorAddress(c *gin.Context) {
 }
 
 func (s *Server) GetMonitorAddress(c *gin.Context) {
-	bs, err := ioutil.ReadAll(c.Request.Body)
+	bs, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
@@ -113,7 +113,7 @@ func (s *Server) GetMonitorAddress(c *gin.Context) {
 
 func (s *Server) MonitorAddress(c *gin.Context) {
 
-	bs, err := ioutil.ReadAll(c.Request.Body)
+	bs, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return

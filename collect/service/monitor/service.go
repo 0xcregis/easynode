@@ -28,7 +28,7 @@ type Service struct {
 	kafkaSender map[int64]chan []*kafka.Message
 }
 
-// 监控服务
+// Start 监控服务
 func (s *Service) Start(ctx context.Context) {
 
 	go func() {

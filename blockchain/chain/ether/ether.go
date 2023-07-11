@@ -9,7 +9,7 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/uduncloud/easynode/blockchain/chain"
 	"github.com/uduncloud/easynode/blockchain/chain/token"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -75,7 +75,7 @@ func (e *Ether) SendRequestToChain(host string, token string, query string) (str
 	}
 
 	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 
 	if err != nil {
 		return "", err
@@ -99,7 +99,6 @@ func (e *Ether) GetTokenBalance(host string, key string, contractAddress string,
 		return nil, err
 	}
 
-	// Golem (GNT) Address
 	tokenAddress := common.HexToAddress(contractAddress)
 	instance, err := token.NewToken(tokenAddress, client)
 	if err != nil {

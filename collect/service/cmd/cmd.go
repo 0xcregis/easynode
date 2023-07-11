@@ -82,7 +82,7 @@ func (c *Cmd) Start(ctx context.Context) {
 	//配置了 交易执行计划
 	if c.chain.TxTask != nil {
 		//执行交易
-		go c.ExecTxTask(c.nodeId, c.txChan, c.kafkaCh)
+		go c.ExecTxTask(c.txChan, c.kafkaCh)
 	}
 
 	//配置了 收据执行计划
@@ -300,7 +300,7 @@ func (c *Cmd) execMultiReceipt(taskReceipt *service.NodeTask, log *logrus.Entry)
 	_ = c.taskStore.UpdateNodeTaskStatus(key, 3)
 
 	//读取区块
-	receiptList, _ := c.blockChain.GetReceiptByBlock(taskReceipt.BlockHash, taskReceipt.BlockNumber, c.chain.ReceiptTask, log)
+	receiptList, _ := c.blockChain.GetReceiptByBlock(taskReceipt.BlockHash, taskReceipt.BlockNumber, log)
 
 	if receiptList == nil || len(receiptList) < 1 {
 		_ = c.taskStore.UpdateNodeTaskStatus(key, 2) //失败
@@ -341,7 +341,7 @@ func (c *Cmd) execSingleReceipt(taskReceipt *service.NodeTask, log *logrus.Entry
 		err := c.taskStore.UpdateNodeTaskStatus(key, 3)
 
 		//根据交易
-		receipt, _ := c.blockChain.GetReceipt(taskReceipt.TxHash, c.chain.ReceiptTask, log)
+		receipt, _ := c.blockChain.GetReceipt(taskReceipt.TxHash, log)
 		if receipt == nil {
 			_ = c.taskStore.UpdateNodeTaskStatus(key, 2) //失败
 			log.Errorf("GetReceipt|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, "receipt is null", taskReceipt.Id)
@@ -367,7 +367,7 @@ func (c *Cmd) execSingleReceipt(taskReceipt *service.NodeTask, log *logrus.Entry
 	return nil
 }
 
-func (c *Cmd) ExecTxTask(nodeId string, txCh chan *service.NodeTask, kf chan []*kafka.Message) {
+func (c *Cmd) ExecTxTask(txCh chan *service.NodeTask, kf chan []*kafka.Message) {
 	buffCh := make(chan struct{}, 20)
 	for true {
 		//控制协程数量
@@ -435,9 +435,9 @@ func (c *Cmd) execMultiTx(taskTx *service.NodeTask, log *logrus.Entry) []*kafka.
 	var block *service.BlockInterface
 	var txList []*service.TxInterface
 	if len(taskTx.BlockNumber) > 5 {
-		block, txList = c.blockChain.GetBlockByNumber(taskTx.BlockNumber, c.chain.BlockTask, log, true)
+		block, txList = c.blockChain.GetBlockByNumber(taskTx.BlockNumber, log, true)
 	} else if len(taskTx.BlockHash) > 10 {
-		block, txList = c.blockChain.GetBlockByHash(taskTx.BlockHash, c.chain.BlockTask, log, true)
+		block, txList = c.blockChain.GetBlockByHash(taskTx.BlockHash, log, true)
 	}
 	if block == nil {
 		_ = c.taskStore.UpdateNodeTaskStatus(key, 2) //失败
@@ -523,7 +523,7 @@ func (c *Cmd) execSingleTx(taskTx *service.NodeTask, log *logrus.Entry) []*kafka
 
 	var tx *service.TxInterface
 	if len(taskTx.TxHash) > 1 {
-		tx = c.blockChain.GetTx(taskTx.TxHash, c.chain.TxTask, log)
+		tx = c.blockChain.GetTx(taskTx.TxHash, log)
 	}
 	if tx == nil {
 		_ = c.taskStore.UpdateNodeTaskStatus(key, 2) //失败
@@ -591,9 +591,9 @@ func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Mes
 			var block *service.BlockInterface
 			//var txList []*service.Tx
 			if len(taskBlock.BlockNumber) > 5 {
-				block, _ = c.blockChain.GetBlockByNumber(taskBlock.BlockNumber, c.chain.BlockTask, log, false)
+				block, _ = c.blockChain.GetBlockByNumber(taskBlock.BlockNumber, log, false)
 			} else if len(taskBlock.BlockHash) > 10 {
-				block, _ = c.blockChain.GetBlockByHash(taskBlock.BlockHash, c.chain.BlockTask, log, false)
+				block, _ = c.blockChain.GetBlockByHash(taskBlock.BlockHash, log, false)
 			}
 
 			if block == nil {

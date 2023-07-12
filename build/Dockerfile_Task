@@ -7,11 +7,11 @@ ENV GOPROXY https://goproxy.cn,direct
 
 WORKDIR /build
 
-COPY go.mod .
-COPY go.sum .
+COPY ../go.mod .
+COPY ../go.sum .
 RUN go mod download
-COPY . .
-RUN go build -ldflags '-s -w' -o /app/collect ./cmd/collect/app.go
+COPY .. .
+RUN go build -ldflags '-s -w' -o /app/task ./cmd/task/app.go
 
 
 FROM alpine
@@ -24,7 +24,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 WORKDIR /app
 CMD  mkdir config
-COPY --from=builder /app/collect /app/collect
+COPY --from=builder /app/task /app/task
 
-ENTRYPOINT ["./collect"]
-CMD ["-collect","./config/collect_config.json"]
+ENTRYPOINT ["./task"]
+CMD ["-task","./config/task_config.json"]

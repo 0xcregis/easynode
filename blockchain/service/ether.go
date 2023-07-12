@@ -275,7 +275,7 @@ func (e *Ether) TokenBalance(chainCode int64, address string, contractAddr strin
 	defer func() {
 		e.log.Printf("TokenBalance,Duration=%v", time.Now().Sub(start))
 	}()
-	cluster := e.BalanceCluster(chainCode)
+	cluster := e.BalanceCluster()
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -329,7 +329,7 @@ func (e *Ether) SendRawTransaction(chainCode int64, signedTx string) (string, er
 }
 
 func (e *Ether) SendEthReqByWs(blockChain int64, receiverCh chan string, sendCh chan string) (string, error) {
-	cluster := e.BalanceCluster(blockChain)
+	cluster := e.BalanceCluster()
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -441,7 +441,7 @@ func (e *Ether) SendEthReqByWs(blockChain int64, receiverCh chan string, sendCh 
 }
 
 func (e *Ether) SendEthReq(blockChain int64, reqBody string) (string, error) {
-	cluster := e.BalanceCluster(blockChain)
+	cluster := e.BalanceCluster()
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -458,7 +458,7 @@ func (e *Ether) SendEthReq(blockChain int64, reqBody string) (string, error) {
 	return "", errors.New("blockChainCode is error")
 }
 
-func (e *Ether) BalanceCluster(blockChain int64) *config.NodeCluster {
+func (e *Ether) BalanceCluster() *config.NodeCluster {
 	var resultCluster *config.NodeCluster
 	l := len(e.nodeCluster)
 

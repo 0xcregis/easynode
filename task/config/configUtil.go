@@ -11,11 +11,14 @@ func LoadConfig(path string) Config {
 	if err != nil {
 		panic(err)
 	}
+	defer func() {
+		_ = f.Close()
+	}()
 	b, err := io.ReadAll(f)
 	if err != nil {
 		panic(err)
 	}
 	cfg := Config{}
-	json.Unmarshal(b, &cfg)
+	_ = json.Unmarshal(b, &cfg)
 	return cfg
 }

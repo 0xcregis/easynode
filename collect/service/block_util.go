@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// GetBlockFromJson
 /*
 *
 
@@ -138,10 +139,9 @@ func GetBlockFromJson(json string) (*Block, []*Tx) {
 	return &block, txList
 }
 
-/*
-*
-
-	{
+// GetTxFromJson
+/**
+{
 	        "blockHash": "0xb49d607f5b80890531e3e1d57798a7573cf8e18048ec0df34e3c81d48115078f",
 	        "blockNumber": "0xf3f088",
 	        "hash": "0x5917da4788cdc1383215541744beb93fd804c1902e221d2c5555ce99d9bfff42",

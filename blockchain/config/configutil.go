@@ -2,7 +2,7 @@ package config
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"os"
 )
 
@@ -11,12 +11,14 @@ func LoadConfig(path string) Config {
 	if err != nil {
 		panic(err)
 	}
-	defer f.Close()
-	b, err := ioutil.ReadAll(f)
+	defer func() {
+		_ = f.Close()
+	}()
+	b, err := io.ReadAll(f)
 	if err != nil {
 		panic(err)
 	}
 	cfg := Config{}
-	json.Unmarshal(b, &cfg)
+	_ = json.Unmarshal(b, &cfg)
 	return cfg
 }

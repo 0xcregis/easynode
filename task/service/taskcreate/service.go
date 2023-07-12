@@ -71,6 +71,7 @@ func (s *Service) updateLatestBlock(ctx context.Context, cfg *config.BlockConfig
 			time.Sleep(3 * time.Second)
 			continue
 		}
+
 		if lastNumber > 1 {
 			err = s.store.UpdateLastNumber(cfg.BlockChainCode, lastNumber)
 			if err == nil { //通知分配区块任务
@@ -84,25 +85,30 @@ func (s *Service) updateLatestBlock(ctx context.Context, cfg *config.BlockConfig
 			break
 		default:
 			time.Sleep(10 * time.Second)
-			continue
 		}
 	}
 }
 func (s *Service) startCreateBlockProc(ctx context.Context, cfg *config.BlockConfig, log *logrus.Entry, notify chan struct{}) {
 	interrupt := true
+	ticker := time.NewTicker(27 * time.Second)
 	for interrupt {
-		//处理自产生区块任务，包括：区块
-		err := s.NewBlockTask(*cfg, log)
-		if err != nil {
-			log.Errorf("NewBlockTask|err=%v", err.Error())
-		}
 		//<-time.After(20 * time.Second)
 		select {
+		case <-ticker.C:
+			_, err := s.store.GetAndDelNodeId(cfg.BlockChainCode)
+			if err != nil {
+				log.Warnf("GetAndDelNodeId|error=%v", err.Error())
+			}
 		case <-ctx.Done():
 			interrupt = false
+			ticker.Stop()
 			break
 		case <-notify:
-			continue
+			//处理自产生区块任务，包括：区块
+			err := s.NewBlockTask(*cfg, log)
+			if err != nil {
+				log.Errorf("NewBlockTask|err=%v", err.Error())
+			}
 		}
 	}
 }

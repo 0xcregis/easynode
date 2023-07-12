@@ -3,7 +3,6 @@ package service
 import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
-	"github.com/uduncloud/easynode/collect/config"
 )
 
 type Common interface {
@@ -45,12 +44,11 @@ type StoreTaskInterface interface {
 
 // BlockChainInterface 公链接口
 type BlockChainInterface interface {
-	GetTx(txHash string, task *config.TxTask, log *logrus.Entry) *TxInterface
-	GetReceipt(txHash string, task *config.ReceiptTask, log *logrus.Entry) (*ReceiptInterface, error)
-	GetReceiptByBlock(blockHash, number string, task *config.ReceiptTask, log *logrus.Entry) ([]*ReceiptInterface, error)
-	GetBlockByNumber(blockNumber string, task *config.BlockTask, log *logrus.Entry, flag bool) (*BlockInterface, []*TxInterface)
-	GetBlockByHash(blockHash string, cfg *config.BlockTask, log *logrus.Entry, flag bool) (*BlockInterface, []*TxInterface)
-	BalanceCluster(key string, clusterList []*config.FromCluster) (*config.FromCluster, error)
+	GetTx(txHash string, log *logrus.Entry) *TxInterface
+	GetReceipt(txHash string, log *logrus.Entry) (*ReceiptInterface, error)
+	GetReceiptByBlock(blockHash, number string, log *logrus.Entry) ([]*ReceiptInterface, error)
+	GetBlockByNumber(blockNumber string, log *logrus.Entry, flag bool) (*BlockInterface, []*TxInterface)
+	GetBlockByHash(blockHash string, log *logrus.Entry, flag bool) (*BlockInterface, []*TxInterface)
 	Monitor()
 	CheckAddress(tx []byte, addrList map[string]int64) bool
 }

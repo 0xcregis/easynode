@@ -6,7 +6,7 @@ import (
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
 	"github.com/uduncloud/easynode/blockchain/config"
-	"io/ioutil"
+	"io"
 	"strings"
 )
 
@@ -25,7 +25,7 @@ func NewHttpHandler(cluster map[int64][]*config.NodeCluster, xlog *xlog.XLog) *H
 }
 
 func (h *HttpHandler) GetBlockByHash(ctx *gin.Context) {
-	b, err := ioutil.ReadAll(ctx.Request.Body)
+	b, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
 		return
@@ -43,7 +43,7 @@ func (h *HttpHandler) GetBlockByHash(ctx *gin.Context) {
 }
 
 func (h *HttpHandler) GetBlockByNumber(ctx *gin.Context) {
-	b, err := ioutil.ReadAll(ctx.Request.Body)
+	b, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
 		return
@@ -61,7 +61,7 @@ func (h *HttpHandler) GetBlockByNumber(ctx *gin.Context) {
 }
 
 func (h *HttpHandler) GetTxByHash(ctx *gin.Context) {
-	b, err := ioutil.ReadAll(ctx.Request.Body)
+	b, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
 		return
@@ -79,7 +79,7 @@ func (h *HttpHandler) GetTxByHash(ctx *gin.Context) {
 }
 
 func (h *HttpHandler) GetTxReceiptByHash(ctx *gin.Context) {
-	b, err := ioutil.ReadAll(ctx.Request.Body)
+	b, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
 		return
@@ -97,7 +97,7 @@ func (h *HttpHandler) GetTxReceiptByHash(ctx *gin.Context) {
 }
 
 func (h *HttpHandler) GetBalance(ctx *gin.Context) {
-	b, err := ioutil.ReadAll(ctx.Request.Body)
+	b, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
 		return
@@ -117,7 +117,7 @@ func (h *HttpHandler) GetBalance(ctx *gin.Context) {
 
 // GetTokenBalance ERC20协议代币余额，后期补充
 func (h *HttpHandler) GetTokenBalance(ctx *gin.Context) {
-	b, err := ioutil.ReadAll(ctx.Request.Body)
+	b, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
 		return
@@ -139,7 +139,7 @@ func (h *HttpHandler) GetTokenBalance(ctx *gin.Context) {
 
 // GetNonce todo 仅适用于 ether,tron 暂不支持
 func (h *HttpHandler) GetNonce(ctx *gin.Context) {
-	b, err := ioutil.ReadAll(ctx.Request.Body)
+	b, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
 		return
@@ -158,7 +158,7 @@ func (h *HttpHandler) GetNonce(ctx *gin.Context) {
 }
 
 func (h *HttpHandler) GetLatestBlock(ctx *gin.Context) {
-	b, err := ioutil.ReadAll(ctx.Request.Body)
+	b, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
 		return
@@ -174,7 +174,7 @@ func (h *HttpHandler) GetLatestBlock(ctx *gin.Context) {
 }
 
 func (h *HttpHandler) SendRawTx(ctx *gin.Context) {
-	b, err := ioutil.ReadAll(ctx.Request.Body)
+	b, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
 		return
@@ -191,7 +191,7 @@ func (h *HttpHandler) SendRawTx(ctx *gin.Context) {
 
 // HandlerReq  有用户自定义请求内容，然后直接发送到节点 ，和eth_call 函数无关
 func (h *HttpHandler) HandlerReq(ctx *gin.Context) {
-	b, err := ioutil.ReadAll(ctx.Request.Body)
+	b, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
 		return

@@ -7,11 +7,11 @@ ENV GOPROXY https://goproxy.cn,direct
 
 WORKDIR /build
 
-COPY go.mod .
-COPY go.sum .
+COPY ../go.mod .
+COPY ../go.sum .
 RUN go mod download
-COPY . .
-RUN go build -ldflags '-s -w' -o /app/easynode ./cmd/easynode/app.go
+COPY .. .
+RUN go build -ldflags '-s -w' -o /app/store ./cmd/store/app.go
 
 
 FROM alpine
@@ -24,9 +24,9 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 WORKDIR /app
 CMD  mkdir config
-COPY --from=builder /app/easynode /app/easynode
+COPY --from=builder /app/store /app/store
 
-EXPOSE 9001 9002 9003
+EXPOSE 9003
 
-ENTRYPOINT ["./easynode"]
-CMD ["-collect","./config/collect_config.json","-task","./config/task_config.json","-blockchain","./config/blockchain_config.json","-taskapi","./config/taskapi_config.json","-store","./config/store_config.json"]
+ENTRYPOINT ["./store"]
+CMD ["-store","./config/store_config.json"]

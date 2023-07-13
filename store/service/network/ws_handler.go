@@ -28,8 +28,8 @@ type WsHandler struct {
 	kafka   *kafkaClient.EasyKafka
 	db      service.DbMonitorAddressInterface
 	cache   *db2.CacheService
-	connMap map[string]*websocket.Conn                //token:conn
-	cmdMap  map[string]map[int64]service.WsReqMessage //token:code-wsReq
+	connMap map[string]*websocket.Conn              //token:conn
+	cmdMap  map[string]map[int64]service.CmdMessage //token:code-wsReq
 	//ctxMap         map[string]map[int64]context.CancelFunc
 	//monitorAddress map[int64]map[string]*TokenAddress //blockchain:token-tokenAddress
 	writer chan *service.WsPushMessage
@@ -58,7 +58,7 @@ func NewWsHandler(cfg *config.Config, log *xlog.XLog) *WsHandler {
 		kafka:   kfk,
 		cache:   cache,
 		connMap: make(map[string]*websocket.Conn, 5),
-		cmdMap:  make(map[string]map[int64]service.WsReqMessage, 5),
+		cmdMap:  make(map[string]map[int64]service.CmdMessage, 5),
 		//ctxMap:         make(map[string]map[int64]context.CancelFunc, 5),
 		//monitorAddress: mp2,
 		writer: make(chan *service.WsPushMessage),
@@ -389,9 +389,6 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 					lock.RUnlock()
 					continue
 				}
-				//} else {
-				//	continue
-				//}
 
 				pushMp[token] = code
 			}
@@ -419,13 +416,12 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 				bufferMessage = append(bufferMessage, m)
 			}
 
-			//<-lock
 		}
 
 	}
 }
 
-func (ws *WsHandler) CheckCode(mp map[int64]service.WsReqMessage, tp uint64, blockChain int64) (int64, bool) {
+func (ws *WsHandler) CheckCode(mp map[int64]service.CmdMessage, tp uint64, blockChain int64) (int64, bool) {
 	push := false
 	var code int64
 	for c, q := range mp {
@@ -518,31 +514,43 @@ func (ws *WsHandler) handlerMessage(token string, c *websocket.Conn, mt int, mes
 		}
 	}
 
-	if msg.Code == 1 || msg.Code == 3 || msg.Code == 5 || msg.Code == 7 || msg.Code == 9 || msg.Code == 11 || msg.Code == 13 {
+	//已经存在订阅
+	for _, c := range msg.Code {
 		//订阅请求
 		v, ok := ws.cmdMap[token]
 		if ok {
-			_, ok = v[msg.Code]
+			_, ok = v[c]
 		}
 		if ok {
 			//已经订阅了，则返回订阅失败
 			returnMsg.Err = fmt.Sprintf("sub cmd is already existed")
 			returnMsg.Status = 1
-		} else {
-			//未订阅时，则订阅成功
-			if _, ok := ws.cmdMap[token]; !ok {
-				ws.cmdMap[token] = map[int64]service.WsReqMessage{msg.Code: msg}
-			} else {
-				ws.cmdMap[token][msg.Code] = msg
-			}
-		}
-	} else if msg.Code == 2 || msg.Code == 4 || msg.Code == 6 || msg.Code == 8 || msg.Code == 10 || msg.Code == 12 || msg.Code == 14 {
-		//取消订阅，回收资源
-		if v, ok := ws.cmdMap[token]; ok {
-			delete(v, msg.Code-1)
+			return
 		}
 	}
 
+	for _, c := range msg.Code {
+		if c == 1 || c == 3 || c == 5 || c == 7 || c == 9 || c == 11 || c == 13 {
+			//订阅请求
+			taskMap, ok := ws.cmdMap[token]
+			if ok {
+				_, ok = taskMap[c]
+			}
+			if !ok {
+				//未订阅时，则订阅成功
+				if _, ok := ws.cmdMap[token]; !ok {
+					ws.cmdMap[token] = map[int64]service.CmdMessage{c: {Id: msg.Id, Code: c, BlockChain: msg.BlockChain}}
+				} else {
+					ws.cmdMap[token][c] = service.CmdMessage{Id: msg.Id, Code: c, BlockChain: msg.BlockChain}
+				}
+			}
+		} else if c == 2 || c == 4 || c == 6 || c == 8 || c == 10 || c == 12 || c == 14 {
+			//取消订阅，回收资源
+			if v, ok := ws.cmdMap[token]; ok {
+				delete(v, c-1)
+			}
+		}
+	}
 }
 
 func (ws *WsHandler) returnMsg(r *service.WsRespMessage, log *logrus.Entry, mt int, c *websocket.Conn) {

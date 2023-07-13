@@ -136,7 +136,7 @@ curl --location --request POST 'localhost:9003/api/store/monitor/address/delete'
 //入参数据结构：
 type WsReqMessage struct {
 	Id         int64  `json:"id"` //客户端请求序列号
-	Code       int64  `json:"code"`//1:订阅资产转移交易，2:取消订阅资产转移交易
+	Code       []int64 `json:"code"`//1:订阅资产转移交易，2:取消订阅资产转移交易
 	BlockChain []int64 `json:"blockChain"` //订阅公链的代码
 	Params     map[string]string `json:"params"` //非必需
 }
@@ -154,7 +154,7 @@ type WsReqMessage struct {
 //返回数据结构：
 type WsRespMessage struct {
 	Id         int64  `json:"id"` //请求的序列号，和请求保持一致
-	Code       int64  `json:"code"` //命名code，和请求保持一致
+	Code       []int64  `json:"code"` //命名code，和请求保持一致
 	BlockChain []int64 `json:"blockChain"` //订阅公链的代码
 	Status     int   `json:"status"` //0:成功 1：失败
 	Err        string `json:"err"` //错误原因
@@ -169,6 +169,7 @@ type WsPushMessage struct {
 }
 
 ``````
+
 - 提交订阅并接受返回
 
 ``````
@@ -181,7 +182,7 @@ type WsPushMessage struct {
    入参：
             {
              "id":1001,
-             "code":1,
+             "code":[1],
              "blockChain":[200,205],
              "params":{}
             }
@@ -190,7 +191,7 @@ type WsPushMessage struct {
    
            {
             "id": 1001,
-            "code": 2,
+            "code": [1],
             "blockChain": [
               200,
               205
@@ -235,9 +236,10 @@ type WsPushMessage struct {
     
                      
 ``````
+
 - 交易类型说明：
 
-    1:合约调用，2:普通资产转移 3:资源代理 4:资源回收 5:激活 6:质押 7:解质押 8:解质押提现
+  1:合约调用，2:普通资产转移 3:资源代理 4:资源回收 5:激活 6:质押 7:解质押 8:解质押提现
 
 
 - notes

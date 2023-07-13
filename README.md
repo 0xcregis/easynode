@@ -234,7 +234,7 @@ notes:
    入参：
             {
              "id":1001,
-             "code":1,
+             "code":[1],
              "blockChain":[200,205],
              "params":{}
             }
@@ -243,7 +243,7 @@ notes:
    
             {
               "id": 1001,
-              "code": 2,
+              "code": [1],
               "blockChain": [
                 200,
                 205

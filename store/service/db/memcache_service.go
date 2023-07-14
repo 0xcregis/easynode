@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/0xcregis/easynode/store/config"
+	"github.com/0xcregis/easynode/store/service"
 	"github.com/redis/go-redis/v9"
 	"github.com/sunjiangjun/xlog"
-	"github.com/uduncloud/easynode/store/config"
-	"github.com/uduncloud/easynode/store/service"
 )
 
 var (
@@ -22,7 +23,7 @@ type CacheService struct {
 func (s *CacheService) GetMonitorAddress(blockChain int64) ([]string, error) {
 
 	if _, ok := s.cacheClient[blockChain]; !ok {
-		return nil, errors.New(fmt.Sprintf("blockChain:%v does not support", blockChain))
+		return nil, fmt.Errorf("blockChain:%v does not support", blockChain)
 	}
 	list, err := s.cacheClient[blockChain].HKeys(context.Background(), fmt.Sprintf(MonitorKey, blockChain)).Result()
 	if err != nil {
@@ -39,7 +40,7 @@ func (s *CacheService) GetMonitorAddress(blockChain int64) ([]string, error) {
 
 func (s *CacheService) SetMonitorAddress(blockChain int64, addrList []*service.MonitorAddress) error {
 	if _, ok := s.cacheClient[blockChain]; !ok {
-		return errors.New(fmt.Sprintf("blockChain:%v does not support", blockChain))
+		return fmt.Errorf("blockChain:%v does not support", blockChain)
 	}
 	_, err := s.cacheClient[blockChain].Del(context.Background(), fmt.Sprintf(MonitorKey, blockChain)).Result()
 	if err != nil {

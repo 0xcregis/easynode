@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/sunjiangjun/xlog"
-	"github.com/tidwall/gjson"
-	"github.com/uduncloud/easynode/blockchain/chain"
-	"github.com/uduncloud/easynode/blockchain/chain/tron"
-	"github.com/uduncloud/easynode/blockchain/config"
 	"math"
 	"strconv"
 	"time"
+
+	"github.com/0xcregis/easynode/blockchain/chain"
+	"github.com/0xcregis/easynode/blockchain/chain/tron"
+	"github.com/0xcregis/easynode/blockchain/config"
+	"github.com/sunjiangjun/xlog"
+	"github.com/tidwall/gjson"
 )
 
 type Tron struct {
@@ -24,12 +25,9 @@ func (t *Tron) startWDT() {
 	go func() {
 		ticker := time.NewTicker(10 * time.Minute)
 		for {
-			select {
-			case <-ticker.C:
-				for _, v := range t.nodeCluster {
-					v.ErrorCount = 0
-				}
-
+			<-ticker.C
+			for _, v := range t.nodeCluster {
+				v.ErrorCount = 0
 			}
 		}
 	}()
@@ -48,7 +46,7 @@ func (t *Tron) GetCode(chainCode int64, address string) (string, error) {
 func (t *Tron) GetAddressType(chainCode int64, address string) (string, error) {
 	start := time.Now()
 	defer func() {
-		t.log.Printf("GetAddressType,Duration=%v", time.Now().Sub(start))
+		t.log.Printf("GetAddressType,Duration=%v", time.Since(start))
 	}()
 	req := `{ "value": "%v", "visible": true}`
 	req = fmt.Sprintf(req, address)
@@ -84,7 +82,7 @@ func (t *Tron) UnSubscribe(chainCode int64, subId string) (string, error) {
 func (t *Tron) GetBlockReceiptByBlockNumber(chainCode int64, number string) (string, error) {
 	start := time.Now()
 	defer func() {
-		t.log.Printf("GetBlockReceiptByBlockNumber,Duration=%v", time.Now().Sub(start))
+		t.log.Printf("GetBlockReceiptByBlockNumber,Duration=%v", time.Since(start))
 	}()
 	req := `{"num": %v}`
 
@@ -103,7 +101,7 @@ func (t *Tron) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string,
 func (t *Tron) GetTransactionReceiptByHash(chainCode int64, hash string) (string, error) {
 	start := time.Now()
 	defer func() {
-		t.log.Printf("GetTransactionReceiptByHash,Duration=%v", time.Now().Sub(start))
+		t.log.Printf("GetTransactionReceiptByHash,Duration=%v", time.Since(start))
 	}()
 	req := `{ "value": "%v"}`
 	req = fmt.Sprintf(req, hash)
@@ -124,7 +122,7 @@ func NewTron(cluster []*config.NodeCluster, xlog *xlog.XLog) API {
 func (t *Tron) GetBlockByHash(chainCode int64, hash string, flag bool) (string, error) {
 	start := time.Now()
 	defer func() {
-		t.log.Printf("GetBlockByHash,Duration=%v", time.Now().Sub(start))
+		t.log.Printf("GetBlockByHash,Duration=%v", time.Since(start))
 	}()
 
 	req := `{"id_or_num": "%v","detail":%v}`
@@ -148,7 +146,7 @@ func (t *Tron) GetBlockByHash(chainCode int64, hash string, flag bool) (string, 
 func (t *Tron) GetBlockByNumber(chainCode int64, number string, flag bool) (string, error) {
 	start := time.Now()
 	defer func() {
-		t.log.Printf("GetBlockByNumber,Duration=%v", time.Now().Sub(start))
+		t.log.Printf("GetBlockByNumber,Duration=%v", time.Since(start))
 	}()
 
 	req := `{"id_or_num": "%v","detail":%v}`
@@ -172,13 +170,12 @@ func (t *Tron) GetBlockByNumber(chainCode int64, number string, flag bool) (stri
 	//} else {
 	return res, nil
 	//}
-
 }
 
 func (t *Tron) GetTxByHash(chainCode int64, hash string) (string, error) {
 	start := time.Now()
 	defer func() {
-		t.log.Printf("GetTxByHash,Duration=%v", time.Now().Sub(start))
+		t.log.Printf("GetTxByHash,Duration=%v", time.Since(start))
 	}()
 	req := `{ "value": "%v"}`
 	req = fmt.Sprintf(req, hash)
@@ -198,7 +195,7 @@ func (t *Tron) SendJsonRpc(chainCode int64, req string) (string, error) {
 func (t *Tron) Balance(chainCode int64, address string, tag string) (string, error) {
 	start := time.Now()
 	defer func() {
-		t.log.Printf("Balance,Duration=%v", time.Now().Sub(start))
+		t.log.Printf("Balance,Duration=%v", time.Since(start))
 	}()
 	req := `{"address":"%v",  "visible": true}`
 	req = fmt.Sprintf(req, address)
@@ -221,7 +218,7 @@ func (t *Tron) Balance(chainCode int64, address string, tag string) (string, err
 func (t *Tron) TokenBalance(chainCode int64, address string, contractAddr string, abi string) (string, error) {
 	start := time.Now()
 	defer func() {
-		t.log.Printf("TokenBalance,Duration=%v", time.Now().Sub(start))
+		t.log.Printf("TokenBalance,Duration=%v", time.Since(start))
 	}()
 	cluster := t.BalanceCluster()
 	if cluster == nil {

@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/0xcregis/easynode/blockchain/config"
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
-	"github.com/uduncloud/easynode/blockchain/config"
-	"net/http"
-	"strconv"
-	"time"
 )
 
 type WsHandler struct {
@@ -182,7 +183,6 @@ func (s *WsHandler) requestMsg(msg *WsReqMessage, log *logrus.Entry, errCh chan 
 			case r := <-tempCh:
 				returnCh <- r
 			}
-
 		}
 
 	case 2: //单笔区块
@@ -360,7 +360,6 @@ func (s *WsHandler) requestMsg(msg *WsReqMessage, log *logrus.Entry, errCh chan 
 			}
 			returnCh <- nonce
 		}
-
 	}
 }
 

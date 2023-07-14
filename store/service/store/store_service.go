@@ -4,15 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
+	"time"
+
+	kafkaClient "github.com/0xcregis/easynode/common/kafka"
+	"github.com/0xcregis/easynode/store/config"
+	"github.com/0xcregis/easynode/store/service"
+	"github.com/0xcregis/easynode/store/service/db"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
-	kafkaClient "github.com/uduncloud/easynode/common/kafka"
-	"github.com/uduncloud/easynode/store/config"
-	"github.com/uduncloud/easynode/store/service"
-	"github.com/uduncloud/easynode/store/service/db"
-	"sync"
-	"time"
 )
 
 type Service struct {
@@ -70,7 +71,7 @@ func (s *Service) ReadSubTxFromKafka(blockChain int64, kafkaCfg map[string]*conf
 	tk := time.NewTicker(5 * time.Second)
 	lock := sync.RWMutex{}
 
-	for true {
+	for {
 		select {
 		case <-ctx2.Done():
 			tk.Stop()
@@ -120,7 +121,7 @@ func (s *Service) ReadTxFromKafka(blockChain int64, kafkaCfg map[string]*config.
 	tk := time.NewTicker(5 * time.Second)
 	lock := sync.RWMutex{}
 
-	for true {
+	for {
 		select {
 		case <-ctx.Done():
 			tk.Stop()
@@ -169,7 +170,7 @@ func (s *Service) ReadBlockFromKafka(blockChain int64, kafkaCfg map[string]*conf
 	list := make([]*service.Block, 0, 20)
 	tk := time.NewTicker(5 * time.Second)
 	lock := sync.RWMutex{}
-	for true {
+	for {
 		select {
 		case <-ctx2.Done():
 			tk.Stop()
@@ -217,7 +218,7 @@ func (s *Service) ReadReceiptFromKafka(blockChain int64, kafkaCfg map[string]*co
 	tk := time.NewTicker(5 * time.Second)
 	lock := sync.RWMutex{}
 
-	for true {
+	for {
 		select {
 		case <-ctx2.Done():
 			tk.Stop()

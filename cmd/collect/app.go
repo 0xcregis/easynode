@@ -3,15 +3,16 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/uduncloud/easynode/collect/config"
-	"github.com/uduncloud/easynode/collect/service/cmd"
-	"github.com/uduncloud/easynode/collect/service/monitor"
-	"github.com/uduncloud/easynode/common/util"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/0xcregis/easynode/collect/config"
+	"github.com/0xcregis/easynode/collect/service/cmd"
+	"github.com/0xcregis/easynode/collect/service/monitor"
+	"github.com/0xcregis/easynode/common/util"
 )
 
 func main() {

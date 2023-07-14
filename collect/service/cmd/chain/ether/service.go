@@ -4,17 +4,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"github.com/sunjiangjun/xlog"
-	"github.com/tidwall/gjson"
-	chainConfig "github.com/uduncloud/easynode/blockchain/config"
-	chainService "github.com/uduncloud/easynode/blockchain/service"
-	"github.com/uduncloud/easynode/collect/config"
-	"github.com/uduncloud/easynode/collect/service"
-	"github.com/uduncloud/easynode/common/util"
 	"strconv"
 	"strings"
 	"time"
+
+	chainConfig "github.com/0xcregis/easynode/blockchain/config"
+	chainService "github.com/0xcregis/easynode/blockchain/service"
+	"github.com/0xcregis/easynode/collect/config"
+	"github.com/0xcregis/easynode/collect/service"
+	"github.com/0xcregis/easynode/common/util"
+	"github.com/sirupsen/logrus"
+	"github.com/sunjiangjun/xlog"
+	"github.com/tidwall/gjson"
 )
 
 type Service struct {
@@ -45,7 +46,6 @@ func (s *Service) Monitor() {
 				receiptCluster := s.receiptChainClient.MonitorCluster()
 				_ = s.store.StoreClusterNode(int64(s.chain.BlockChainCode), "receipt", receiptCluster)
 			}
-
 		}
 	}()
 }
@@ -53,7 +53,7 @@ func (s *Service) Monitor() {
 func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool) (*service.BlockInterface, []*service.TxInterface) {
 	start := time.Now()
 	defer func() {
-		eLog.Printf("GetBlockByHash.Duration =%v,blockHash:%v", time.Now().Sub(start), blockHash)
+		eLog.Printf("GetBlockByHash.Duration =%v,blockHash:%v", time.Since(start), blockHash)
 	}()
 	//调用接口
 	resp, err := s.blockChainClient.GetBlockByHash(int64(s.chain.BlockChainCode), blockHash, flag)
@@ -115,7 +115,7 @@ func (s *Service) GetBlockByNumber(blockNumber string, eLog *logrus.Entry, flag 
 
 	start := time.Now()
 	defer func() {
-		eLog.Printf("GetBlockByNumber.Duration =%v,blockNumber:%v", time.Now().Sub(start), blockNumber)
+		eLog.Printf("GetBlockByNumber.Duration =%v,blockNumber:%v", time.Since(start), blockNumber)
 	}()
 
 	if !strings.HasPrefix(blockNumber, "0x") {
@@ -174,7 +174,7 @@ func (s *Service) GetBlockByNumber(blockNumber string, eLog *logrus.Entry, flag 
 			t := &service.TxInterface{TxHash: tx.TxHash, Tx: tx}
 			txs = append(txs, t)
 		} else {
-
+			eLog.Warnf("the tx is ignored,hash=%v", tx.TxHash)
 		}
 	}
 	//r := &service.BlockInterface{BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, Block: block}
@@ -424,11 +424,8 @@ func (s *Service) CheckAddress(tx []byte, addrList map[string]int64) bool {
 				if len(to) > 0 {
 					txAddressList[getCoreAddr(to)] = 1
 				}
-
 			}
-
 		}
-
 	}
 
 	//mp := make(map[string]int64, len(addrList))

@@ -1,12 +1,13 @@
 package db
 
 import (
-	"github.com/sunjiangjun/xlog"
-	"github.com/uduncloud/easynode/collect/config"
-	"github.com/uduncloud/easynode/collect/service"
 	"log"
 	"testing"
 	"time"
+
+	"github.com/0xcregis/easynode/collect/config"
+	"github.com/0xcregis/easynode/collect/service"
+	"github.com/sunjiangjun/xlog"
 )
 
 func Init() service.StoreTaskInterface {

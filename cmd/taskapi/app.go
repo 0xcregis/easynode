@@ -3,12 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/sunjiangjun/xlog"
-	"github.com/uduncloud/easynode/taskapi/config"
-	"github.com/uduncloud/easynode/taskapi/service"
 	"log"
 	"time"
+
+	"github.com/0xcregis/easynode/taskapi/config"
+	"github.com/0xcregis/easynode/taskapi/service"
+	"github.com/gin-gonic/gin"
+	"github.com/sunjiangjun/xlog"
 )
 
 func main() {

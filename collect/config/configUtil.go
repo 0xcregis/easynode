@@ -24,14 +24,14 @@ func LoadConfig(path string) Config {
 }
 
 func (k *Kafka) CopyKafka() Kafka {
-	var ka Kafka
-	ka = *k
+	//var ka Kafka
+	ka := *k
 	return ka
 }
 
 func (f *FromCluster) CopyFromCluster() FromCluster {
-	var fc FromCluster
-	fc = *f
+	//var fc FromCluster
+	fc := *f
 	return fc
 }
 

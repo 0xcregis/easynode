@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/segmentio/kafka-go"
 	"github.com/sunjiangjun/xlog"
-	"time"
 )
 
 type Config struct {
@@ -71,7 +72,6 @@ func (easy *EasyKafka) Read(c *Config, ch chan *kafka.Message, ctx context.Conte
 			//easy.log.Printf("kafka|read message at offset %d: %s ", m.Offset, string(m.Key))
 			ch <- &m
 		}
-
 	}(r, ch, errCh)
 
 	select {
@@ -86,7 +86,7 @@ func (easy *EasyKafka) Read(c *Config, ch chan *kafka.Message, ctx context.Conte
 
 func (easy *EasyKafka) WriteBatch(c *Config, ch chan []*kafka.Message, resp func([]*kafka.Message), parent context.Context, count int) {
 	query := make(chan int, count)
-	for true {
+	for {
 		query <- 1
 		go func(c *Config, ch chan []*kafka.Message, resp func([]*kafka.Message), parent context.Context) {
 			ctx, cancel := context.WithCancel(parent)
@@ -123,11 +123,8 @@ func (easy *EasyKafka) Write(c Config, ch chan []*kafka.Message, resp func([]*ka
 	running := true
 
 	go func(ctx context.Context) {
-		select {
-		case <-ctx.Done():
-			running = false
-			return
-		}
+		<-ctx.Done()
+		running = false
 	}(ctx)
 
 	for running {
@@ -145,9 +142,7 @@ func (easy *EasyKafka) Write(c Config, ch chan []*kafka.Message, resp func([]*ka
 				break
 			}
 		}
-
 	}
-
 }
 
 func (easy *EasyKafka) sendToKafka(w *kafka.Writer, ms []*kafka.Message, resp func([]*kafka.Message)) error {

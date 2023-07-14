@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"math/rand"
+
+	"github.com/0xcregis/easynode/taskapi/config"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
-	"github.com/uduncloud/easynode/taskapi/config"
-	"io"
-	"math/rand"
 )
 
 const (
@@ -66,7 +67,6 @@ func (s *Server) ExistNodeId(blockChainCode int64, nodeId string) bool {
 }
 
 func (s *Server) PushBlockTask(c *gin.Context) {
-
 	bs, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -120,7 +120,6 @@ func (s *Server) PushBlockTask(c *gin.Context) {
 }
 
 func (s *Server) PushTxTask(c *gin.Context) {
-
 	bs, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -172,7 +171,6 @@ func (s *Server) PushTxTask(c *gin.Context) {
 }
 
 func (s *Server) PushTxsTask(c *gin.Context) {
-
 	bs, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -225,7 +223,6 @@ func (s *Server) PushTxsTask(c *gin.Context) {
 }
 
 func (s *Server) PushReceiptTask(c *gin.Context) {
-
 	bs, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -278,7 +275,6 @@ func (s *Server) PushReceiptTask(c *gin.Context) {
 }
 
 func (s *Server) PushReceiptsTask(c *gin.Context) {
-
 	bs, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())

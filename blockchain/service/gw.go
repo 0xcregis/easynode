@@ -1,8 +1,8 @@
 package service
 
 import (
+	"github.com/0xcregis/easynode/blockchain/config"
 	"github.com/sunjiangjun/xlog"
-	"github.com/uduncloud/easynode/blockchain/config"
 )
 
 func NewApi(blockchain int64, cluster []*config.NodeCluster, xlog *xlog.XLog) API {

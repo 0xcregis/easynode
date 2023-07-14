@@ -2,14 +2,15 @@ package tron2
 
 import (
 	"encoding/json"
-	"github.com/sirupsen/logrus"
-	"github.com/sunjiangjun/xlog"
-	"github.com/uduncloud/easynode/collect/config"
-	"github.com/uduncloud/easynode/collect/service"
-	"github.com/uduncloud/easynode/collect/service/db"
 	"log"
 	"strings"
 	"testing"
+
+	"github.com/0xcregis/easynode/collect/config"
+	"github.com/0xcregis/easynode/collect/service"
+	"github.com/0xcregis/easynode/collect/service/db"
+	"github.com/sirupsen/logrus"
+	"github.com/sunjiangjun/xlog"
 )
 
 func Init() (service.BlockChainInterface, config.Config, *xlog.XLog) {
@@ -21,9 +22,9 @@ func Init() (service.BlockChainInterface, config.Config, *xlog.XLog) {
 
 func TestService_GetTx(t *testing.T) {
 
-	s, cfg, x := Init()
+	s, _, x := Init()
 
-	tx := s.GetTx("76f1ff8be6b3cf041f29b67c3a5d025f232d2a48a6d0810f0f234fc73c16adcc", cfg.Chains[0].TxTask, x.WithFields(logrus.Fields{}))
+	tx := s.GetTx("76f1ff8be6b3cf041f29b67c3a5d025f232d2a48a6d0810f0f234fc73c16adcc", x.WithFields(logrus.Fields{}))
 
 	log.Printf("%+v\n", tx)
 
@@ -33,7 +34,7 @@ func TestService_GetTx(t *testing.T) {
 
 func TestService_GetBlockByNumber(t *testing.T) {
 	s, _, x := Init()
-	b, t1 := s.GetBlockByNumber("52642923", nil, x.WithFields(logrus.Fields{}), true)
+	b, t1 := s.GetBlockByNumber("52642923", x.WithFields(logrus.Fields{}), true)
 	log.Println(b)
 	log.Println(t1[0])
 }

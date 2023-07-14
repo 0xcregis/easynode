@@ -2,17 +2,17 @@ package taskcreate
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"math/rand"
+	"time"
+
+	kafkaClient "github.com/0xcregis/easynode/common/kafka"
+	"github.com/0xcregis/easynode/task/config"
+	"github.com/0xcregis/easynode/task/service"
+	"github.com/0xcregis/easynode/task/service/taskcreate/db"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
-	kafkaClient "github.com/uduncloud/easynode/common/kafka"
-	"github.com/uduncloud/easynode/task/config"
-	"github.com/uduncloud/easynode/task/service"
-	"github.com/uduncloud/easynode/task/service/taskcreate/db"
-	"math/rand"
-	"time"
 )
 
 type Service struct {
@@ -25,7 +25,6 @@ type Service struct {
 }
 
 func (s *Service) Start(ctx context.Context) {
-
 	log := s.log.WithFields(logrus.Fields{
 		"model": "CreateBlockProc",
 		"id":    time.Now().UnixMilli(),
@@ -48,7 +47,6 @@ func (s *Service) Start(ctx context.Context) {
 			s.startCreateBlockProc(ctx, cfg, log, notify)
 		}(ctx, v, log, notify)
 	}
-
 }
 
 func (s *Service) startKafka(ctx context.Context) {
@@ -141,7 +139,7 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 	}
 
 	if UsedMaxNumber >= v.BlockMax {
-		return errors.New(fmt.Sprintf("UsedMaxNumber more than BlockMax,UsedMaxNumber:%v,BlockMax:%v", UsedMaxNumber, v.BlockMax))
+		return fmt.Errorf("UsedMaxNumber more than BlockMax,UsedMaxNumber:%v,BlockMax:%v", UsedMaxNumber, v.BlockMax)
 	}
 	list := make([]*service.NodeTask, 0)
 

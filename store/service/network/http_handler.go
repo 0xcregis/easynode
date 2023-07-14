@@ -3,18 +3,19 @@ package network
 import (
 	"errors"
 	"fmt"
+	"io"
+	"strings"
+	"time"
+
+	"github.com/0xcregis/easynode/common/util"
+	"github.com/0xcregis/easynode/store/config"
+	"github.com/0xcregis/easynode/store/service"
+	db2 "github.com/0xcregis/easynode/store/service/db"
 	"github.com/gin-gonic/gin"
 	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
-	"github.com/uduncloud/easynode/common/util"
-	"github.com/uduncloud/easynode/store/config"
-	"github.com/uduncloud/easynode/store/service"
-	db2 "github.com/uduncloud/easynode/store/service/db"
-	"io"
-	"strings"
-	"time"
 )
 
 type Server struct {
@@ -37,7 +38,6 @@ func NewServer(cfg *config.Config, log *xlog.XLog) *Server {
 }
 
 func (s *Server) NewToken(c *gin.Context) {
-
 	bs, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -72,7 +72,6 @@ func (s *Server) NewToken(c *gin.Context) {
 }
 
 func (s *Server) DelMonitorAddress(c *gin.Context) {
-
 	bs, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -112,7 +111,6 @@ func (s *Server) GetMonitorAddress(c *gin.Context) {
 }
 
 func (s *Server) MonitorAddress(c *gin.Context) {
-
 	bs, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())

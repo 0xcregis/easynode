@@ -1,12 +1,13 @@
-
 集成 collect,blockchain,task,task_api,store等服务到一个application, 该app拥有easynode全部功能模块
 
 ## Prerequisites
+
 - go version >=1.20
 
 ## Building the source
 
 (以linux系统为例)
+
 - mkdir easynode & cd easynode
 - git clone https://github.com/0xcregis/easynode.git
 - cd easynode/cmd/easynode

@@ -1,13 +1,14 @@
 package service
 
 import (
+	"io"
+	"strings"
+
+	"github.com/0xcregis/easynode/blockchain/config"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
-	"github.com/uduncloud/easynode/blockchain/config"
-	"io"
-	"strings"
 )
 
 type HttpHandler struct {
@@ -154,7 +155,6 @@ func (h *HttpHandler) GetNonce(ctx *gin.Context) {
 	}
 
 	h.Success(ctx, string(b), res, ctx.Request.RequestURI)
-
 }
 
 func (h *HttpHandler) GetLatestBlock(ctx *gin.Context) {

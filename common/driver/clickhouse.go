@@ -2,23 +2,22 @@ package driver
 
 import (
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/sunjiangjun/xlog"
 	"gorm.io/driver/clickhouse"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
-	"log"
-	"time"
 )
 
 func OpenCK(user, password, addr, dbName string, port int, xlog *xlog.XLog) (*gorm.DB, error) {
-
 	var err error
 	var db *gorm.DB
 	var count int64
 
-	for true {
-
+	for {
 		//mysql
 		//dsn := fmt.Sprintf("%s:%s@tcp(%s:%v)/%s?charset=utf8mb4,utf8&parseTime=True&loc=%s",
 		//	user,

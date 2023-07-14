@@ -2,14 +2,15 @@ package tron
 
 import (
 	"errors"
+	"strconv"
+	"time"
+
+	chainConfig "github.com/0xcregis/easynode/blockchain/config"
+	"github.com/0xcregis/easynode/blockchain/service"
+	"github.com/0xcregis/easynode/task/config"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
-	chainConfig "github.com/uduncloud/easynode/blockchain/config"
-	"github.com/uduncloud/easynode/blockchain/service"
-	"github.com/uduncloud/easynode/task/config"
-	"strconv"
-	"time"
 )
 
 type Tron struct {
@@ -19,7 +20,6 @@ type Tron struct {
 }
 
 func NewTron(log *xlog.XLog, v *config.BlockConfig) *Tron {
-
 	clusters := make([]*chainConfig.NodeCluster, 0, 2)
 	for _, v := range v.Cluster {
 		c := &chainConfig.NodeCluster{NodeUrl: v.NodeHost, NodeToken: v.NodeKey, Weight: v.Weight}

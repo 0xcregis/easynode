@@ -3,13 +3,13 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/redis/go-redis/v9"
 	"log"
 	"testing"
+
+	"github.com/redis/go-redis/v9"
 )
 
 func TestGetBlockFromJson(t *testing.T) {
-
 	str := `
 {
         "number": "0xf3f088",
@@ -150,5 +150,4 @@ func TestRedis(t *testing.T) {
 	} else {
 		_ = client.HSet(context.Background(), LatestBlockKey, field, newNumber).Err()
 	}
-
 }

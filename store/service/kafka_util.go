@@ -3,14 +3,15 @@ package service
 import (
 	"errors"
 	"fmt"
-	"github.com/segmentio/kafka-go"
-	"github.com/tidwall/gjson"
-	"github.com/uduncloud/easynode/collect/service"
-	"github.com/uduncloud/easynode/common/util"
 	"math/big"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/0xcregis/easynode/collect/service"
+	"github.com/0xcregis/easynode/common/util"
+	"github.com/segmentio/kafka-go"
+	"github.com/tidwall/gjson"
 )
 
 func ParseTx(blockchain int64, msg *kafka.Message) (*SubTx, error) {
@@ -165,14 +166,12 @@ func ParseTxForEther(body []byte) (*SubTx, error) {
 			m.Method = "Transfer"
 			contractTx = append(contractTx, &m)
 		}
-
 	}
 	r.ContractTx = contractTx
 	return &r, nil
 }
 
 func GetTxTypeForTron(body []byte) (uint64, error) {
-
 	root := gjson.ParseBytes(body)
 	txBody := root.Get("tx").String()
 	if len(txBody) < 5 {
@@ -206,7 +205,6 @@ func GetTxTypeForTron(body []byte) (uint64, error) {
 }
 
 func ParseTxForTron(body []byte) (*SubTx, error) {
-
 	root := gjson.ParseBytes(body)
 
 	blockId := root.Get("blockId").String()
@@ -305,7 +303,6 @@ func ParseTxForTron(body []byte) (*SubTx, error) {
 			data := v.Get("data").String()
 			r := gjson.Parse(data)
 			if r.IsObject() {
-
 				//mp := make(map[string]string, 2)
 				contractDecimals := r.Get("contractDecimals").String()
 				if len(contractDecimals) < 1 {
@@ -351,7 +348,6 @@ func ParseTxForTron(body []byte) (*SubTx, error) {
 				m.Method = "Transfer"
 				contractTx = append(contractTx, &m)
 			}
-
 		}
 		r.ContractTx = contractTx
 	}
@@ -370,7 +366,7 @@ func div(str string, pos int) string {
 	}
 
 	r := make([]string, 0, 10)
-	for true {
+	for {
 		if len(str) <= pos {
 			str = "0" + str
 		} else {
@@ -392,16 +388,11 @@ func div(str string, pos int) string {
 		p++
 	}
 
-	result := fmt.Sprintf("%s", strings.Join(r, ""))
+	result := strings.Join(r, "")
 
 	for strings.HasSuffix(result, "0") || strings.HasSuffix(result, ".") {
-		if strings.HasSuffix(result, "0") {
-			result = strings.TrimSuffix(result, "0")
-		}
-
-		if strings.HasSuffix(result, ".") {
-			result = strings.TrimSuffix(result, ".")
-		}
+		result = strings.TrimSuffix(result, "0")
+		result = strings.TrimSuffix(result, ".")
 	}
 	return result
 }
@@ -461,11 +452,8 @@ func CheckAddressEth(tx []byte, addrList map[string]*MonitorAddress) bool {
 				if len(to) > 0 {
 					txAddressList[getCoreAddrEth(to)] = 1
 				}
-
 			}
-
 		}
-
 	}
 
 	has := false

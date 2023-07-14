@@ -4,22 +4,23 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
-	"github.com/sunjiangjun/xlog"
-	kafkaClient "github.com/uduncloud/easynode/common/kafka"
-	"github.com/uduncloud/easynode/store/config"
-	"github.com/uduncloud/easynode/store/service"
-	db2 "github.com/uduncloud/easynode/store/service/db"
 	"log"
 	"net"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	kafkaClient "github.com/0xcregis/easynode/common/kafka"
+	"github.com/0xcregis/easynode/store/config"
+	"github.com/0xcregis/easynode/store/service"
+	db2 "github.com/0xcregis/easynode/store/service/db"
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+	"github.com/sunjiangjun/xlog"
 )
 
 type WsHandler struct {
@@ -191,7 +192,6 @@ func (ws *WsHandler) Sub(w http.ResponseWriter, r *http.Request, token string) {
 				return
 			}
 		}
-
 	}(PongCh, ws, token, cancel)
 
 	//定时发送 ping 命令
@@ -241,7 +241,6 @@ func (ws *WsHandler) Sub(w http.ResponseWriter, r *http.Request, token string) {
 
 	//延迟时间，待其他服务清理
 	<-time.After(4 * time.Second)
-
 }
 
 func (ws *WsHandler) sendMessageEx(kafkaConfig map[int64]*config.KafkaConfig, subKafkaConfig map[int64]*config.KafkaConfig, ctx context.Context) {
@@ -334,91 +333,88 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 			}
 
 		}
-
 	}(blockChain, ctx)
 
 	for {
-		select {
-		case msg := <-receiver:
-			//消息过滤
-			//根据这个用户（token）最新的订阅命令，筛选符合条件的交易且推送出去
-			if len(ws.connMap) < 1 {
-				//用户不在线
+		msg := <-receiver
+		//消息过滤
+		//根据这个用户（token）最新的订阅命令，筛选符合条件的交易且推送出去
+		if len(ws.connMap) < 1 {
+			//用户不在线
+			continue
+		}
+
+		//用户在线 但没有订阅
+		if len(ws.cmdMap) < 1 {
+			continue
+		}
+
+		//无用户监控
+		lock.RLock()
+		if len(monitorAddress) < 1 {
+			lock.RUnlock()
+			continue
+		}
+		lock.RUnlock()
+
+		tp, err := service.GetTxType(blockChain, msg)
+		if err != nil {
+			continue
+		}
+
+		pushMp := make(map[string]int64, 1)
+		for token, mp := range ws.cmdMap {
+			//push := false
+			//var code int64
+			code, push := ws.CheckCode(mp, tp, blockChain)
+
+			//不符合订阅条件
+			if !push {
 				continue
 			}
 
-			//用户在线 但没有订阅
-			if len(ws.cmdMap) < 1 {
-				continue
-			}
-
-			//无用户监控
+			//检查地址 是否和交易 相关
 			lock.RLock()
-			if len(monitorAddress) < 1 {
+			//if tokenMp, ok := ws.monitorAddress[blockChain]; ok {
+			if tokenAddress, ok := monitorAddress[token]; ok {
+				if !service.CheckAddress(blockChain, msg, tokenAddress.List) {
+					lock.RUnlock()
+					continue
+				}
+				lock.RUnlock()
+			} else {
 				lock.RUnlock()
 				continue
 			}
-			lock.RUnlock()
 
-			tp, err := service.GetTxType(blockChain, msg)
+			pushMp[token] = code
+		}
+
+		//parse tx
+		var tx *service.SubTx
+		if len(pushMp) > 0 {
+			tx, err = service.ParseTx(blockChain, msg)
 			if err != nil {
+				ws.log.Warnf("ParseTx|blockchain:%v,kafka.msg:%v,err:%v", blockChain, string(msg.Value), err)
 				continue
 			}
+		}
 
-			pushMp := make(map[string]int64, 1)
-			for token, mp := range ws.cmdMap {
-				//push := false
-				//var code int64
-				code, push := ws.CheckCode(mp, tp, blockChain)
+		//push
+		for token, code := range pushMp {
+			wpm := &service.WsPushMessage{Code: code, BlockChain: blockChain, Data: tx, Token: token}
+			ws.writer <- wpm
+		}
 
-				//不符合订阅条件
-				if !push {
-					continue
-				}
-
-				//检查地址 是否和交易 相关
-				lock.RLock()
-				//if tokenMp, ok := ws.monitorAddress[blockChain]; ok {
-				if tokenAddress, ok := monitorAddress[token]; ok {
-					if !service.CheckAddress(blockChain, msg, tokenAddress.List) {
-						lock.RUnlock()
-						continue
-					}
-					lock.RUnlock()
-				} else {
-					lock.RUnlock()
-					continue
-				}
-
-				pushMp[token] = code
-			}
-
-			//parse tx
-			var tx *service.SubTx
-			if len(pushMp) > 0 {
-				tx, err = service.ParseTx(blockChain, msg)
-				if err != nil {
-					ws.log.Warnf("ParseTx|blockchain:%v,kafka.msg:%v,err:%v", blockChain, string(msg.Value), err)
-					continue
-				}
-			}
-
-			//push
-			for token, code := range pushMp {
-				wpm := &service.WsPushMessage{Code: code, BlockChain: blockChain, Data: tx, Token: token}
-				ws.writer <- wpm
-			}
-
-			//save to kafka
-			if len(pushMp) > 0 && SubKafkaConfig != nil {
-				r, _ := json.Marshal(tx)
-				m := &kafka.Message{Topic: SubKafkaConfig.Topic, Key: []byte(uuid.New().String()), Value: r}
-				bufferMessage = append(bufferMessage, m)
-			}
-
+		//save to kafka
+		if len(pushMp) > 0 && SubKafkaConfig != nil {
+			r, _ := json.Marshal(tx)
+			m := &kafka.Message{Topic: SubKafkaConfig.Topic, Key: []byte(uuid.New().String()), Value: r}
+			bufferMessage = append(bufferMessage, m)
 		}
 
 	}
+
 }
 
 func (ws *WsHandler) CheckCode(mp map[int64]service.CmdMessage, tp uint64, blockChain int64) (int64, bool) {
@@ -523,7 +519,7 @@ func (ws *WsHandler) handlerMessage(token string, c *websocket.Conn, mt int, mes
 		}
 		if ok {
 			//已经订阅了，则返回订阅失败
-			returnMsg.Err = fmt.Sprintf("sub cmd is already existed")
+			returnMsg.Err = "sub cmd is already existed"
 			returnMsg.Status = 1
 			return
 		}

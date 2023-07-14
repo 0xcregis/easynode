@@ -3,13 +3,14 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/uduncloud/easynode/task/config"
-	"github.com/uduncloud/easynode/task/service/taskcreate"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/0xcregis/easynode/task/config"
+	"github.com/0xcregis/easynode/task/service/taskcreate"
 )
 
 func main() {

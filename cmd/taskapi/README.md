@@ -9,13 +9,13 @@
 ### Building the source
 
 (以linux系统为例)
+
 - mkdir easynode & cd easynode
 - git clone https://github.com/0xcregis/easynode.git
 - cd easynode/cmd/taskapi
 - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o easynode_taskapi app.go
   (mac下编译linux程序为例，其他交叉编译的命令请自行搜索)
-- ./easynode_taskapi -config ./config.json 
-  
+- ./easynode_taskapi -config ./config.json
 
 ### config.json 解释
 

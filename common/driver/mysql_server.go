@@ -2,13 +2,14 @@ package driver
 
 import (
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/sunjiangjun/xlog"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
-	"log"
-	"time"
 )
 
 func Open(user, password, addr, dbName string, port int, xlog *xlog.XLog) (*gorm.DB, error) {

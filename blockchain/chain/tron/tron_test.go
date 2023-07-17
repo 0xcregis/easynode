@@ -1,9 +1,7 @@
 package tron
 
 import (
-	"fmt"
 	"log"
-	"strings"
 	"testing"
 )
 
@@ -22,58 +20,4 @@ func TestGetTokenByHttp(t *testing.T) {
 	//log.Println(time.Now().UTC())
 
 	//log.Println(div("100000", 5))
-
-}
-
-func div(str string, pos int) string {
-
-	if str == "" || str == "0" {
-		return "0"
-	}
-
-	if pos == 0 {
-		return str
-	}
-
-	r := make([]string, 0, 10)
-
-	for true {
-		if len(str) <= pos {
-			str = "0" + str
-		} else {
-			break
-		}
-	}
-
-	list := []byte(str)
-	l := len(list)
-	p := 0
-	for i := l - 1; i >= 0; i-- {
-		log.Printf("post:%c", list[i])
-		log.Printf("pre:%c", list[l-1-i])
-
-		s := fmt.Sprintf("%c", list[l-1-i])
-		r = append(r, s)
-
-		if l-1 > 0 && (l-1-p == pos) {
-			log.Println(".")
-			r = append(r, ".")
-		}
-
-		p++
-	}
-
-	result := fmt.Sprintf("%s", strings.Join(r, ""))
-
-	for strings.HasSuffix(result, "0") || strings.HasSuffix(result, ".") {
-		if strings.HasSuffix(result, "0") {
-			result = strings.TrimSuffix(result, "0")
-		}
-
-		if strings.HasSuffix(result, ".") {
-			result = strings.TrimSuffix(result, ".")
-		}
-	}
-
-	return result
 }

@@ -67,7 +67,6 @@
             "Host": "https://nodes.mewapi.io/rpc/eth",
             "Key": ""
           }
-
         ],
         "Kafka": {
           "Topic": "ether_receipt",

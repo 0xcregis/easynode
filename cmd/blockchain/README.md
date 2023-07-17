@@ -1,8 +1,9 @@
-
 ### 概述
+
 本服务转发用户端发起请求到区块链相应的节点并在此期间提供最优节点，主要应用在提交交易、余额查阅，查询矿工费等场景
 
 ### 架构简述
+
 1.网关由gin实现，负责接受客户端发起的请求，
 
 2.收到请求并通过验证后，将请求转发到service中
@@ -15,16 +16,16 @@
 
 ### 限制
 
- - 目前仅支持 ether、 tron 等2种公链
- 
- 
-### Prerequisites 
+- 目前仅支持 ether、 tron 等2种公链
+
+### Prerequisites
 
 - go version>=1.18
 
 ### Building the source
 
 (以linux系统为例)
+
 - mkdir easynode & cd easynode
 - git clone https://github.com/0xcregis/easynode.git
 - cd easynode/cmd/blockchain
@@ -57,6 +58,7 @@
 ### usages
 
 - http 协议
+
 ``````
 //发送交易接口
 curl -X POST \

@@ -2,10 +2,11 @@ package util
 
 import (
 	"errors"
-	"github.com/gofrs/uuid"
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/gofrs/uuid"
 )
 
 const (
@@ -32,7 +33,6 @@ func PathExists(path string) (bool, error) {
 }
 
 func GetLocalNodeId(path string) (string, error) {
-
 	file := filepath.Join(path, Key)
 	if ok, _ := PathExists(file); ok {
 		//存在
@@ -69,7 +69,6 @@ func GetLocalNodeId(path string) (string, error) {
 		}
 		return nodeId, nil
 	}
-
 }
 
 func WriteLatestBlock(content string) error {

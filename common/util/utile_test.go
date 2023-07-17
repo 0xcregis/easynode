@@ -10,6 +10,5 @@ func TestGetLocalNodeId(t *testing.T) {
 }
 
 func TestReadLatestBlock(t *testing.T) {
-
 	log.Println(ReadLatestBlock())
 }

@@ -15,7 +15,7 @@
       "BlockChainName": "eth",
       "BlockChainCode": 200,
       "BlockMin": 16103500,
-      "BlockMax":16125881
+      "BlockMax": 16125881
     },
     {
       "NodeHost": "https://api.trongrid.io",
@@ -23,7 +23,7 @@
       "BlockChainName": "tron",
       "BlockChainCode": 205,
       "BlockMin": 47153472,
-      "BlockMax":0
+      "BlockMax": 0
     }
   ]
 }

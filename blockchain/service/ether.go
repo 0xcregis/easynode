@@ -5,16 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gorilla/websocket"
-	"github.com/sunjiangjun/xlog"
-	"github.com/tidwall/gjson"
-	"github.com/uduncloud/easynode/blockchain/chain"
-	"github.com/uduncloud/easynode/blockchain/chain/ether"
-	"github.com/uduncloud/easynode/blockchain/config"
 	"log"
 	"math"
 	"strings"
 	"time"
+
+	"github.com/0xcregis/easynode/blockchain/chain"
+	"github.com/0xcregis/easynode/blockchain/chain/ether"
+	"github.com/0xcregis/easynode/blockchain/config"
+	"github.com/gorilla/websocket"
+	"github.com/sunjiangjun/xlog"
+	"github.com/tidwall/gjson"
 )
 
 type Ether struct {
@@ -40,7 +41,7 @@ func (e *Ether) GetCode(chainCode int64, address string) (string, error) {
 func (e *Ether) GetAddressType(chainCode int64, address string) (string, error) {
 	start := time.Now()
 	defer func() {
-		e.log.Printf("GetAddressType,Duration=%v", time.Now().Sub(start))
+		e.log.Printf("GetAddressType,Duration=%v", time.Since(start))
 	}()
 	query := `{
 				"id": 1,
@@ -148,7 +149,7 @@ func (e *Ether) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string
 func (e *Ether) GetTransactionReceiptByHash(chainCode int64, hash string) (string, error) {
 	start := time.Now()
 	defer func() {
-		e.log.Printf("GetTransactionReceiptByHash,Duration=%v", time.Now().Sub(start))
+		e.log.Printf("GetTransactionReceiptByHash,Duration=%v", time.Since(start))
 	}()
 	query := `{
 				"id": 1,
@@ -197,7 +198,7 @@ func (e *Ether) GetBlockByNumber(chainCode int64, number string, flag bool) (str
 func (e *Ether) GetTxByHash(chainCode int64, hash string) (string, error) {
 	start := time.Now()
 	defer func() {
-		e.log.Printf("GetTxByHash,Duration=%v", time.Now().Sub(start))
+		e.log.Printf("GetTxByHash,Duration=%v", time.Since(start))
 	}()
 	req := `
 		{
@@ -233,12 +234,9 @@ func (e *Ether) startWDT() {
 	go func() {
 		t := time.NewTicker(10 * time.Minute)
 		for {
-			select {
-			case <-t.C:
-				for _, v := range e.nodeCluster {
-					v.ErrorCount = 0
-				}
-
+			<-t.C
+			for _, v := range e.nodeCluster {
+				v.ErrorCount = 0
 			}
 		}
 	}()
@@ -251,7 +249,7 @@ func (e *Ether) MonitorCluster() any {
 func (e *Ether) Balance(chainCode int64, address string, tag string) (string, error) {
 	start := time.Now()
 	defer func() {
-		e.log.Printf("Balance,Duration=%v", time.Now().Sub(start))
+		e.log.Printf("Balance,Duration=%v", time.Since(start))
 	}()
 	if len(tag) < 1 {
 		tag = "latest"
@@ -273,7 +271,7 @@ func (e *Ether) Balance(chainCode int64, address string, tag string) (string, er
 func (e *Ether) TokenBalance(chainCode int64, address string, contractAddr string, abi string) (string, error) {
 	start := time.Now()
 	defer func() {
-		e.log.Printf("TokenBalance,Duration=%v", time.Now().Sub(start))
+		e.log.Printf("TokenBalance,Duration=%v", time.Since(start))
 	}()
 	cluster := e.BalanceCluster()
 	if cluster == nil {
@@ -373,8 +371,7 @@ func (e *Ether) SendEthReqByWs(blockChain int64, receiverCh chan string, sendCh 
 			}
 		}(sendCh)
 
-		interrupt := true
-		for interrupt {
+		for {
 			//接受消息
 			_, p, err := conn.ReadMessage()
 			if err != nil {
@@ -389,7 +386,6 @@ func (e *Ether) SendEthReqByWs(blockChain int64, receiverCh chan string, sendCh 
 				mp["cmd"] = 0
 				rs, _ := json.Marshal(mp)
 				receiverCh <- string(rs)
-				interrupt = false
 				cancel()
 				break
 			}
@@ -417,7 +413,6 @@ func (e *Ether) SendEthReqByWs(blockChain int64, receiverCh chan string, sendCh 
 					mp["cmd"] = 3
 					rs, _ := json.Marshal(mp)
 					receiverCh <- string(rs)
-					interrupt = false
 					cancel()
 					break
 				} else {
@@ -496,5 +491,4 @@ func (e *Ether) BalanceCluster() *config.NodeCluster {
 		return nil
 	}
 	return resultCluster
-
 }

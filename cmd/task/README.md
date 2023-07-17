@@ -1,14 +1,15 @@
-
 task是easynode系统的基础和核心服务，是其他服务的运行的必要条件。
 该服务负责任务产生、任务分发、系统监控等功能。
 
 ## Prerequisites
+
 - go version >=1.20
 - collect 服务已完成部署
 
 ## Building the source
 
 (以linux系统为例)
+
 - mkdir easynode & cd easynode
 - git clone https://github.com/0xcregis/easynode.git
 - cd easynode/cmd/task

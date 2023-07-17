@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/segmentio/kafka-go"
-	"github.com/uduncloud/easynode/collect/config"
-	"github.com/uduncloud/easynode/collect/service"
-	"github.com/uduncloud/easynode/common/util"
 	"testing"
 	"time"
+
+	"github.com/0xcregis/easynode/collect/config"
+	"github.com/0xcregis/easynode/collect/service"
+	"github.com/0xcregis/easynode/common/util"
+	"github.com/segmentio/kafka-go"
 )
 
 func Init() *Service {
@@ -45,7 +46,7 @@ func TestService_CheckErrTx(t *testing.T) {
 			_ = json.Unmarshal([]byte(data), &v)
 
 			//清理 已经重试成功的交易
-			if count < 5 && time.Now().Sub(v.LogTime) >= 24*time.Hour {
+			if count < 5 && time.Since(v.LogTime) >= 24*time.Hour {
 				_, _ = store.DelErrTxNodeTask(blockchain, hash)
 				continue
 			}
@@ -89,7 +90,7 @@ func TestService_CheckNodeTask(t *testing.T) {
 			}
 
 			//清理 已经重试成功的交易
-			if count < 5 && time.Now().Sub(task.LogTime) >= 24*time.Hour {
+			if count < 5 && time.Since(task.LogTime) >= 24*time.Hour {
 				_, _, _ = store.DelNodeTask(blockchain, hash)
 				continue
 			}

@@ -5,17 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/redis/go-redis/v9"
-	"github.com/segmentio/kafka-go"
-	"github.com/sunjiangjun/xlog"
-	"github.com/tidwall/gjson"
-	"github.com/uduncloud/easynode/collect/config"
-	"github.com/uduncloud/easynode/collect/service"
 	"math/rand"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/0xcregis/easynode/collect/config"
+	"github.com/0xcregis/easynode/collect/service"
+	"github.com/redis/go-redis/v9"
+	"github.com/segmentio/kafka-go"
+	"github.com/sunjiangjun/xlog"
+	"github.com/tidwall/gjson"
 )
 
 var (
@@ -142,7 +143,6 @@ func (s *Service) StoreLatestBlock(blockchain int64, key string, data any, numbe
 }
 
 func (s *Service) GetMonitorAddress(blockChain int64) ([]string, error) {
-
 	list, err := s.cacheClient.HKeys(context.Background(), fmt.Sprintf(MonitorKey, blockChain)).Result()
 	if err != nil {
 		s.log.Warnf("GetMonitorAddress|err=%v", err.Error())
@@ -225,7 +225,7 @@ func (s *Service) GetAllKeyForErrTx(blockchain int64) ([]string, error) {
 }
 
 func (s *Service) StoreErrTxNodeTask(blockchain int64, key string, data any) error {
-	c, d, err := s.GetErrTxNodeTask(blockchain, key)
+	c, d, _ := s.GetErrTxNodeTask(blockchain, key)
 	//已存在且错误超过5次 忽略
 	if c > 5 {
 		return nil
@@ -243,7 +243,7 @@ func (s *Service) StoreErrTxNodeTask(blockchain int64, key string, data any) err
 	mp["data"] = data
 
 	bs, _ := json.Marshal(mp)
-	err = s.cacheClient.HSet(context.Background(), fmt.Sprintf(ErrTxKey, blockchain), key, string(bs)).Err()
+	err := s.cacheClient.HSet(context.Background(), fmt.Sprintf(ErrTxKey, blockchain), key, string(bs)).Err()
 	if err != nil {
 		s.log.Warnf("StoreErrTxNodeTask|err=%v", err.Error())
 		return err
@@ -252,7 +252,6 @@ func (s *Service) StoreErrTxNodeTask(blockchain int64, key string, data any) err
 }
 
 func (s *Service) GetErrTxNodeTask(blockchain int64, key string) (int64, string, error) {
-
 	has, err := s.cacheClient.HExists(context.Background(), fmt.Sprintf(ErrTxKey, blockchain), key).Result()
 	if err != nil {
 		return 0, "", err
@@ -339,8 +338,7 @@ func (s *Service) GetNodeTask(blockchain int64, key string) (int64, *service.Nod
 
 // StoreNodeTask StoreExecTask key which tx:tx_txHash,receipt:receipt_txHash, block: block_number_blockHash
 func (s *Service) StoreNodeTask(key string, task *service.NodeTask) {
-
-	c, d, err := s.GetNodeTask(int64(task.BlockChain), key)
+	c, d, _ := s.GetNodeTask(int64(task.BlockChain), key)
 	//已存在且错误超过5次 忽略
 	if c > 5 {
 		return
@@ -358,7 +356,7 @@ func (s *Service) StoreNodeTask(key string, task *service.NodeTask) {
 	mp["data"] = d
 
 	bs, _ := json.Marshal(mp)
-	err = s.cacheClient.HSet(context.Background(), fmt.Sprintf(NodeTaskKey, task.BlockChain), key, string(bs)).Err()
+	err := s.cacheClient.HSet(context.Background(), fmt.Sprintf(NodeTaskKey, task.BlockChain), key, string(bs)).Err()
 	if err != nil {
 		s.log.Errorf("StoreNodeTask|err=%v", err.Error())
 	}
@@ -382,7 +380,7 @@ func (s *Service) UpdateNodeTaskStatus(key string, status int) error {
 		chain := strArray[0]
 		blockchain, _ = strconv.ParseInt(chain, 0, 64)
 	} else {
-		return errors.New(fmt.Sprintf("key is error,key:%v", key))
+		return fmt.Errorf("key is error,key:%v", key)
 	}
 
 	if status == 1 {
@@ -399,7 +397,6 @@ func (s *Service) UpdateNodeTaskStatus(key string, status int) error {
 			task.LogTime = time.Now()
 			s.StoreNodeTask(key, task)
 		}
-
 	}
 
 	return nil

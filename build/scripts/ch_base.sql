@@ -1,28 +1,35 @@
-CREATE DATABASE IF NOT EXISTS base;
+CREATE
+DATABASE IF NOT EXISTS base;
 
-CREATE TABLE IF NOT EXISTS  base.address
+CREATE TABLE IF NOT EXISTS base.address
 (
 
-    `token` String,
+    `token`
+    String,
 
-    `address` String,
+    `address`
+    String,
 
-    `tx_type` String,
+    `tx_type`
+    String,
 
-    `block_chain` Int64,
+    `block_chain`
+    Int64,
 
-    `id` Int64
-) ENGINE = ReplacingMergeTree ORDER BY id  SETTINGS index_granularity = 8192;
+    `id`
+    Int64
+) ENGINE = ReplacingMergeTree ORDER BY id SETTINGS index_granularity = 8192;
 
 CREATE TABLE IF NOT EXISTS base.token
 (
 
 
+    `token`
+    String,
 
+    `email`
+    String,
 
-    `token` String,
-
-    `email` String,
-
-    `id` Int64
+    `id`
+    Int64
 ) ENGINE = ReplacingMergeTree ORDER BY id SETTINGS index_granularity = 8192;

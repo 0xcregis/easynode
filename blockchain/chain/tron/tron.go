@@ -3,13 +3,14 @@ package tron
 import (
 	"errors"
 	"fmt"
-	"github.com/tidwall/gjson"
-	"github.com/uduncloud/easynode/blockchain/chain"
-	"github.com/uduncloud/easynode/common/util"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/0xcregis/easynode/blockchain/chain"
+	"github.com/0xcregis/easynode/common/util"
+	"github.com/tidwall/gjson"
 )
 
 type Tron struct {
@@ -66,10 +67,9 @@ func (t *Tron) SendRequestToChain(host string, token string, query string) (stri
 }
 
 func (t *Tron) SendRequestToChainByHttp(host string, token string, query string) (string, error) {
-	payload := strings.NewReader(query)
-
 	query = strings.Replace(query, "\t", "", -1)
 	query = strings.Replace(query, "\n", "", -1)
+	payload := strings.NewReader(query)
 	req, err := http.NewRequest("POST", host, payload)
 	if err != nil {
 		return "", err

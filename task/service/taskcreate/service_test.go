@@ -1,9 +1,10 @@
 package taskcreate
 
 import (
-	"github.com/uduncloud/easynode/task/config"
 	"log"
 	"testing"
+
+	"github.com/0xcregis/easynode/task/config"
 )
 
 func Init() *Service {

@@ -1,11 +1,13 @@
 package kafka
 
 import (
-	"github.com/segmentio/kafka-go"
-	"github.com/sunjiangjun/xlog"
+	"context"
 	"log"
 	"testing"
 	"time"
+
+	"github.com/segmentio/kafka-go"
+	"github.com/sunjiangjun/xlog"
 )
 
 func Init() *EasyKafka {
@@ -17,18 +19,17 @@ func TestEasyKafka_Write(t *testing.T) {
 	k := Init()
 	ch := make(chan []*kafka.Message, 10)
 	go func() {
-		for true {
+		for {
 			msg := &kafka.Message{Key: []byte("901"), Value: []byte(`{"name":"sunhongtao","age":11}`), Topic: "test2", Partition: 0}
-			select {
-			case ch <- []*kafka.Message{msg}:
-				log.Printf("==  %+v\n", msg)
-			}
+
+			ch <- []*kafka.Message{msg}
+			log.Printf("==  %+v\n", msg)
+
 			time.Sleep(3 * time.Second)
 		}
 	}()
 
-	respCh := make(chan []*kafka.Message, 10)
-	k.Write(Config{Brokers: []string{"kafka:9092"}, Group: "g1"}, ch, respCh)
+	k.Write(Config{Brokers: []string{"kafka:9092"}, Group: "g1"}, ch, nil, context.Background())
 }
 
 func TestEasyKafka_Read(t *testing.T) {
@@ -36,14 +37,11 @@ func TestEasyKafka_Read(t *testing.T) {
 	ch := make(chan *kafka.Message, 10)
 
 	go func() {
-		for true {
-			select {
-			case msg := <-ch:
-				log.Printf("==  %+v\n", msg)
-			}
+		for {
+			msg := <-ch
+			log.Printf("==  %+v\n", msg)
 		}
 	}()
 
-	k.Read(&Config{Brokers: []string{"192.168.2.20:9092"}, Topic: "test2", Partition: 0, Group: "g1"}, ch)
-
+	k.Read(&Config{Brokers: []string{"192.168.2.20:9092"}, Topic: "test2", Partition: 0, Group: "g1"}, ch, context.Background())
 }

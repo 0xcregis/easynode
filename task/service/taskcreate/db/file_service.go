@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"github.com/0xcregis/easynode/task/config"
+	"github.com/0xcregis/easynode/task/service"
 	"github.com/redis/go-redis/v9"
 	"github.com/segmentio/kafka-go"
 	"github.com/sunjiangjun/xlog"
-	"github.com/uduncloud/easynode/task/config"
-	"github.com/uduncloud/easynode/task/service"
 )
 
 var (
@@ -25,7 +26,6 @@ type TaskCreateFile struct {
 }
 
 func NewFileTaskCreateService(config *config.Config, xg *xlog.XLog) service.StoreTaskInterface {
-
 	client := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%v:%v", config.Redis.Addr, config.Redis.Port),
 		Password: "", // no password set
@@ -75,7 +75,6 @@ func (t *TaskCreateFile) AddNodeTask(list []*service.NodeTask) ([]*kafka.Message
 }
 
 func (t *TaskCreateFile) UpdateLastNumber(blockChainCode int64, latestNumber int64) error {
-
 	err := t.client.HSet(context.Background(), BlockChain, fmt.Sprintf("latestNumber_%v", blockChainCode), latestNumber).Err()
 	if err != nil {
 		return err
@@ -111,7 +110,6 @@ func (t *TaskCreateFile) UpdateLastNumber(blockChainCode int64, latestNumber int
 }
 
 func (t *TaskCreateFile) UpdateRecentNumber(blockChainCode int64, recentNumber int64) error {
-
 	err := t.client.HSet(context.Background(), BlockChain, fmt.Sprintf("recentNumber_%v", blockChainCode), recentNumber).Err()
 	if err != nil {
 		return err
@@ -147,9 +145,7 @@ func (t *TaskCreateFile) UpdateRecentNumber(blockChainCode int64, recentNumber i
 }
 
 func (t *TaskCreateFile) GetRecentNumber(blockCode int64) (int64, int64, error) {
-
 	//var recentNumber,LatestNumber int64
-
 	recentNumber, err := t.client.HGet(context.Background(), BlockChain, fmt.Sprintf("recentNumber_%v", blockCode)).Int64()
 	if err != nil {
 		t.log.Warnf("GetRecentNumber,err=%v", err.Error())
@@ -175,5 +171,4 @@ func (t *TaskCreateFile) GetRecentNumber(blockCode int64) (int64, int64, error) 
 	//} else {
 	//	return 0, 0, errors.New("no record")
 	//}
-
 }

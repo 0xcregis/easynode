@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/tidwall/gjson"
-	"github.com/uduncloud/easynode/store/service"
 	"time"
+
+	"github.com/0xcregis/easynode/store/service"
+	"github.com/tidwall/gjson"
 )
 
 func GetReceiptFromKafka(value []byte, blockChain int64) (*service.Receipt, error) {
@@ -42,7 +43,7 @@ func GetReceiptFromKafka(value []byte, blockChain int64) (*service.Receipt, erro
 		receipt.Logs = list
 		receipt.CumulativeGasUsed = root.Get("receipt").String()
 	} else {
-		return nil, errors.New(fmt.Sprintf("blockchain:%v does not support", blockChain))
+		return nil, fmt.Errorf("blockchain:%v does not support", blockChain)
 	}
 
 	return &receipt, nil
@@ -81,7 +82,7 @@ func GetBlockFromKafka(value []byte, blockChain int64) (*service.Block, error) {
 		}
 		block.Transactions = list
 	} else {
-		return nil, errors.New(fmt.Sprintf("blockchain:%v does not support", blockChain))
+		return nil, fmt.Errorf("blockchain:%v does not support", blockChain)
 	}
 
 	return &block, nil
@@ -154,7 +155,7 @@ func GetTxFromKafka(value []byte, blockChain int64) (*service.Tx, error) {
 		}
 
 	} else {
-		return nil, errors.New(fmt.Sprintf("blockchain:%v does not support", blockChain))
+		return nil, fmt.Errorf("blockchain:%v does not support", blockChain)
 	}
 	return &tx, nil
 }

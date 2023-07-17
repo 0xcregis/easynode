@@ -31,3 +31,5 @@ go.work
 /kafka_data/
 /zookeeper_data/
 /easynode
+/build/bin/
+/build/_workspace/

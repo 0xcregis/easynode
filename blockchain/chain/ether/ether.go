@@ -3,23 +3,23 @@ package ether
 import (
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/tidwall/gjson"
-	"github.com/uduncloud/easynode/blockchain/chain"
-	"github.com/uduncloud/easynode/blockchain/chain/token"
 	"io"
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/0xcregis/easynode/blockchain/chain"
+	"github.com/0xcregis/easynode/blockchain/chain/token"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/tidwall/gjson"
 )
 
 type Ether struct {
 }
 
 func (e *Ether) EthSubscribe(host string, token string) (string, error) {
-
 	if len(token) > 1 {
 		host = fmt.Sprintf("%v/%v", host, token)
 	}
@@ -53,7 +53,6 @@ func (e *Ether) GetTokenBalanceByHttp(host string, token string, contractAddress
 }
 
 func (e *Ether) SendRequestToChain(host string, token string, query string) (string, error) {
-
 	if len(token) > 1 {
 		host = fmt.Sprintf("%v/%v", host, token)
 	}

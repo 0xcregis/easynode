@@ -4,18 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path"
+	"time"
+
+	chainConfig "github.com/0xcregis/easynode/blockchain/config"
+	chainService "github.com/0xcregis/easynode/blockchain/service"
+	"github.com/0xcregis/easynode/collect/config"
+	"github.com/0xcregis/easynode/collect/service"
+	"github.com/0xcregis/easynode/collect/service/db"
+	kafkaClient "github.com/0xcregis/easynode/common/kafka"
+	"github.com/0xcregis/easynode/common/util"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
-	chainConfig "github.com/uduncloud/easynode/blockchain/config"
-	chainService "github.com/uduncloud/easynode/blockchain/service"
-	"github.com/uduncloud/easynode/collect/config"
-	"github.com/uduncloud/easynode/collect/service"
-	"github.com/uduncloud/easynode/collect/service/db"
-	kafkaClient "github.com/uduncloud/easynode/common/kafka"
-	"github.com/uduncloud/easynode/common/util"
-	"path"
-	"time"
 )
 
 type Service struct {
@@ -39,7 +40,7 @@ func (s *Service) Start(ctx context.Context) {
 	}()
 
 	go func(nodeId string) {
-		for true {
+		for {
 			for b, s := range s.taskStore {
 				_ = s.StoreNodeId(b, nodeId, 1)
 			}
@@ -65,7 +66,7 @@ func (s *Service) Start(ctx context.Context) {
 
 func (s *Service) CheckClusterHealth() {
 	go func() {
-		for true {
+		for {
 			<-time.After(1 * time.Minute)
 			for blockchain, t := range s.taskStore {
 				mp := make(map[string]int64, 2)
@@ -91,8 +92,7 @@ func (s *Service) rebuildCluster(t service.StoreTaskInterface, blockChain int64,
 
 func (s *Service) CheckNodeTask() {
 	go func() {
-
-		for true {
+		for {
 			<-time.After(2 * time.Hour)
 
 			for blockchain, store := range s.taskStore {
@@ -111,7 +111,7 @@ func (s *Service) CheckNodeTask() {
 					}
 
 					//清理 已经重试成功的交易
-					if count < 5 && time.Now().Sub(task.LogTime) >= 24*time.Hour {
+					if count < 5 && time.Since(task.LogTime) >= 24*time.Hour {
 						_, _, _ = store.DelNodeTask(blockchain, hash)
 						continue
 					}
@@ -138,7 +138,6 @@ func (s *Service) CheckNodeTask() {
 			}
 
 		}
-
 	}()
 }
 
@@ -146,7 +145,7 @@ func (s *Service) CheckContract() {
 
 	go func() {
 
-		for true {
+		for {
 			<-time.After(1 * time.Hour)
 
 			for blockchain, store := range s.taskStore {
@@ -176,7 +175,7 @@ func (s *Service) CheckContract() {
 func (s *Service) CheckErrTx() {
 	go func() {
 
-		for true {
+		for {
 			<-time.After(3 * time.Hour)
 
 			for blockchain, store := range s.taskStore {
@@ -199,7 +198,7 @@ func (s *Service) CheckErrTx() {
 					_ = json.Unmarshal([]byte(data), &v)
 
 					//清理 已经重试成功的交易
-					if count < 5 && time.Now().Sub(v.LogTime) >= 24*time.Hour {
+					if count < 5 && time.Since(v.LogTime) >= 24*time.Hour {
 						_, _ = store.DelErrTxNodeTask(blockchain, hash)
 						continue
 					}
@@ -232,7 +231,7 @@ func (s *Service) CheckErrTx() {
 
 func (s *Service) clearLog() {
 	go func() {
-		for true {
+		for {
 			<-time.After(7 * time.Hour)
 			p := s.cfg.LogConfig.Path
 			d := s.cfg.LogConfig.Delay

@@ -1,6 +1,7 @@
 ## collect
 
 easynode是对区块链节点进一步抽象和简化，封装了普通区块链节点的技术难点，是面向业务方的节点。使业务方即使不了解区块链概念和技术的情况下，基于现有技术栈和经验，仍然可以设计自己基于区块链的业务。具有一下特征：
+
 - 支持多种公链：目前已支持 ether、tron等公链
 - 功能可配制化：通过配置文件可以开启或关闭部分功能
 - 动态横向扩展：在不重启系统情况下，可以启动新节点，分担当前系统的压力
@@ -12,23 +13,26 @@ easynode是对区块链节点进一步抽象和简化，封装了普通区块链
 
 collect是easynode系统的基础和核心服务，是其他服务的运行的必要条件。该服务负责同步主网区块数据的服务，根据用户配置的规则，自动同步主网数据到本地，collect服务支持横向扩展和负载均衡。
 
-
 ## Prerequisites
 
 - go version: >=1.20
 
 ## Building the source
+
 (以linux系统为例)
+
 - mkdir easynode & cd easynode
 - git clone https://github.com/0xcregis/easynode.git
 - cd easynode/cmd/collect
 - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o easynode_collect app.go
-(mac下编译linux程序为例，其他交叉编译的命令请自行搜索)
+  (mac下编译linux程序为例，其他交叉编译的命令请自行搜索)
 
 - ./easynode_collect -config ./config.json
 
 ## config.json 详解
+
 (不要copy,使用代码库中配置文件，作为模版)
+
 ``````
 {
   "Log": { //日志配置

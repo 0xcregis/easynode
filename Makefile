@@ -14,13 +14,14 @@ easynode:
 
 all:
 	$(GORUN) build/ci.go install
+	@echo "Done building."
 
-test: all
-	$(GORUN) build/ci.go test
+test:
+	$(GORUN) build/ci.go test ./test
 
 lint: ## Run linters.
 	$(GORUN) build/ci.go lint
 
 clean:
 	env GO111MODULE=on go clean -cache
-	rm -fr build/_workspace/pkg/ $(GOBIN)/*
+	rm -fr build/_workspace

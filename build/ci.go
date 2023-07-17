@@ -107,13 +107,17 @@ func doInstall(cmdline []string) {
 	var (
 		dlgo       = flag.Bool("dlgo", false, "Download Go and build with it")
 		arch       = flag.String("arch", "", "Architecture to cross build for")
+		goos       = flag.String("goos", "", "os system for target to build,one of this ,[darwin、freebsd、linux、windows]")
 		cc         = flag.String("cc", "", "C compiler to cross build with")
 		staticlink = flag.Bool("static", false, "Create statically-linked executable")
 	)
-	flag.CommandLine.Parse(cmdline)
+	err := flag.CommandLine.Parse(cmdline)
+	if err != nil {
+		panic(err)
+	}
 
 	// Configure the toolchain.
-	tc := build.GoToolchain{GOARCH: *arch, CC: *cc}
+	tc := build.GoToolchain{GOARCH: *arch, CC: *cc, GOOS: *goos}
 	if *dlgo {
 		csdb := build.MustLoadChecksums("build/checksums.txt")
 		tc.Root = build.DownloadGo(csdb, dlgoVersion)
@@ -201,7 +205,7 @@ func doTest(cmdline []string) {
 		verbose  = flag.Bool("v", false, "Whether to log verbosely")
 		race     = flag.Bool("race", false, "Execute the race detector")
 	)
-	flag.CommandLine.Parse(cmdline)
+	_ = flag.CommandLine.Parse(cmdline)
 
 	// Configure the toolchain.
 	tc := build.GoToolchain{GOARCH: *arch, CC: *cc}
@@ -237,7 +241,7 @@ func doLint(cmdline []string) {
 	var (
 		cachedir = flag.String("cachedir", "./build/_workspace/cache", "directory for caching golangci-lint binary.")
 	)
-	flag.CommandLine.Parse(cmdline)
+	_ = flag.CommandLine.Parse(cmdline)
 	packages := []string{"./..."}
 	if len(flag.CommandLine.Args()) > 0 {
 		packages = flag.CommandLine.Args()

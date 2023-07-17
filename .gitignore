@@ -32,3 +32,4 @@ go.work
 /zookeeper_data/
 /easynode
 /build/bin/
+/build/_workspace/

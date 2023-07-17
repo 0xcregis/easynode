@@ -2,10 +2,8 @@
 # with Go source code. If you know what GOPATH is then you probably
 # don't need to bother with make.
 
-.PHONY: geth android ios evm all test clean
+.PHONY: easynode all test clean
 
-GOBIN = ./build/bin
-GO ?= latest
 GORUN = env GO111MODULE=on go run
 
 easynode:

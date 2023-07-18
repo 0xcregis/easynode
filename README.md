@@ -122,7 +122,7 @@ In order to improve the scope of application of easynode, we adopt a componentiz
   192.168.2.9 easykafka
   ``````
 
-*Among them, 192.168.2.9: Kafka server IP, replace it with your own server IP, easykafka: Kafka service name needs to be consistent with the environment script, and the general situation remains unchanged*
+  *Among them, 192.168.2.9: Kafka server IP, replace it with your own server IP, easykafka: Kafka service name needs to be consistent with the environment script, and the general situation remains unchanged*
 
 - Run easynode
 
@@ -132,7 +132,7 @@ In order to improve the scope of application of easynode, we adopt a componentiz
 
 #### Docker mode
 
-- build image
+- Build image
 
 ``````
    #create image
@@ -171,7 +171,7 @@ notes:
 
 #### Docker-compose cluster mode
 
-- networks setting
+- Networks setting
 
   Determine the network name in step 4, use the following command to view, and modify the networks.default.name field in docker-compose-cluster-easynode.yml
 
@@ -179,17 +179,17 @@ notes:
   docker network ls|grep easynode_net
   ``````
 
-- manager service
+- Manager service
 
-According to the needs of specific scenarios, add or delete related services [learn ](https://github.com/0xcregis/easynode/wiki/Overall-Design-For-Easynode)
+  According to the needs of specific scenarios, add or delete related services [learn ](https://github.com/0xcregis/easynode/wiki/Overall-Design-For-Easynode)
 
-- run cluster
+- Run cluster
 
-``````
-docker-compose -f docker-compose-cluster-easynode.yml up -d
-``````
+  ``````
+  docker-compose -f docker-compose-cluster-easynode.yml up -d
+  ``````
 
-The use and function of each service, [details](https://github.com/0xcregis/easynode/blob/main/cmd/easynode/README.md)
+  The use and function of each service, [details](https://github.com/0xcregis/easynode/blob/main/cmd/easynode/README.md)
 
 ### 6. Check
 
@@ -227,7 +227,7 @@ notes:
 - Port 9002 of easynode [Instructions](https://github.com/0xcregis/easynode/blob/main/cmd/blockchain/README.md)
 - Port 9003 of easynode [Instructions](https://github.com/0xcregis/easynode/blob/main/cmd/store/README.md)
 
-### 7.Usage
+### 7. Usage
 
 1. Add monitoring address
 

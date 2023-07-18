@@ -1,39 +1,55 @@
-## Overview
+# Easynode
 
-该系统使访问各种公链更简易、更稳定，使用用户专注于自己的业务。包含以下子服务
+该系统使访问各种公链更简易、更稳定，使用用户专注于自己的业务，包含以下核心服务：
 
-- blockchain: 直接访问公链，选择最优节点。对外提供 http、ws 类型协议与其交互
-- collect: 任务(包括：交易任务、区块任务、收据任务)的具体执行者，对公链返回的数据验证、解析后，
-  发送到指定的Kafka上
-- task: 时时根据公链最新高度，产生区块任务
+- blockchain: 直接访问公链，选择最优节点,对外提供 http、ws 类型协议与其交互
+- collect: 任务的具体执行者，对获取链上的数据筛选、验证、解析
+- task: 根据公链最新高度，产生区块任务
 - taskapi: 接收用户自定义的任务
-- store: 接收用户提交的监控地址、接收用户的订阅、主动推送符合条件的交易 和 数据落盘
+- store: 接收用户提交的监控地址、接收用户的订阅、主动推送符合条件的交易、数据落盘
 
+## 核心能力
+
+- 可获取你关心交易也可获取公链原始交易
+- 为每个公链配置多个节点，智能选择最佳节点
+- 提供http、ws等协议，适配更多场景
+- 组件可独立使用，也可以组合使用
+- 功能可配置，根据业务需要，自由配置
+- 支持各个公链
+- 数据可追溯、可回放
+- 具备异常监控，任务重试能力
+- 任务执行过程可视化
+- 提交自定义任务
+- 设定交易过滤条件
+- 用户订阅
+- 主动推送
+- 支持订阅多种业务场景：资产交易，代币转移，质押，激活等
+- 历史数据备份
 
 #### [English](https://github.com/0xcregis/easynode/blob/main/README.md)|[简体中文](https://github.com/0xcregis/easynode/blob/main/README_zh.md)
 
-## Getting Started
+## 入门指引
 
-### 1. Prerequisites
+### 1. 必要条件
 
-#### Hardware Requirements
+#### 硬件要求
 
 - CPU With 4+ Cores
 - 16GB+ RAM
-- 200GB of free storage,Recommended that high performance SSD with at least 512GB free space
+- 200GB 存储空间,推荐使用SSD且至少512GB空间 
 
-#### Software Requirements
+#### 软件要求
 
-- go version>=1.20  [install](https://golang.google.cn/doc/install)
-- git : Install the latest version of git if it is not already
-  installed. [install](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
-- cURL :Install the latest version of cURL if it is not already installed. [install](https://everything.curl.dev/get)
-- docker : Install the latest version of Docker if it is not already
-  installed. [install](https://docs.docker.com/desktop/install/linux-install/)
-- docker-compose: Install the latest version of Docker-compose if it is not already
-  installed. [install](https://docs.docker.com/compose/install/)
+- go 版本 需要 v1.20及以上  [install](https://golang.google.cn/doc/install)
+- git : 安装最新版本git
+   [install](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+- cURL :安装最新版本cURL. [install](https://everything.curl.dev/get)
+- docker : 安装最新版本docker
+   [install](https://docs.docker.com/desktop/install/linux-install/)
+- docker-compose: 安装最新版本docker-compose
+   [install](https://docs.docker.com/compose/install/)
 
-### 2. Download The Source
+### 2. 源码下载
 
 ``````
  mkdir easynode && cd easynode
@@ -43,7 +59,7 @@
  cd easynode
 ``````
 
-### 3. Init Config & Database
+### 3. 初始化配置文件和数据库脚本
 
 - ./scripts :数据库初始化脚本,主要修改数据库名称即可（database）默认:ether2
 - ./config :系统启动需要的配置文件,以下文件和字段常需要修改
@@ -54,7 +70,7 @@
 1. clickhouse的工具 [Dbeaver](https://dbeaver.io/download/)
 2. config 中每个配置文件 [详细说明](https://github.com/0xcregis/easynode/blob/main/cmd/easynode/README.md)
 
-### 4. Start Dependent Environment
+### 4. 运行依赖环境
 
 - 初始化easynode 运行需要的环境
 
@@ -92,7 +108,7 @@ notes:
 
 - clickhouse 的默认：账户：test,密码：test
 
-### 5. Build & Run Application
+### 5. 构建和运行easynode
 
 为提高easynode适用范围，采用组件化的设计思想，因此我们为easynode提供如下三种运行和部署方式。
 
@@ -118,7 +134,7 @@ notes:
 
 #### docker 模式
 
-- build image
+- 构建镜像
 
 ``````
    #创建image
@@ -129,7 +145,7 @@ notes:
    
 ``````
 
-- run easynode
+- 运行 easynode
 
 ``````
     docker run --name easynode -p 9001:9001 -p 9002:9002 -p 9003:9003 --network easynode_easynode_net -v /root/easy_node/easynode/config/:/app/config/ -v /root/app/log/:/app/log/ -v /root/app/data:/app/data/ -d easynode:1.0  
@@ -141,8 +157,7 @@ notes:
 
 2. -v 文件挂载 : 容器的路径不可变，宿主路径改成本机可用的绝对路径
 
-3.
-./config的目录结构如下，每个配置文件的具体配置 [详见](https://github.com/0xcregis/easynode/blob/main/cmd/easynode/README.md)
+3. ./config的目录结构如下，每个配置文件的具体配置 [详见](https://github.com/0xcregis/easynode/blob/main/cmd/easynode/README.md)
 且文件名称不可变
 
   ``````
@@ -169,17 +184,17 @@ notes:
 
 - 配置服务
 
-根据具体场景需要，增加或删除相关服务 [learn ](https://github.com/0xcregis/easynode/wiki/Overall-Design-For-Easynode)
+    根据具体场景需要，增加或删除相关服务 [learn ](https://github.com/0xcregis/easynode/wiki/Overall-Design-For-Easynode)
+
 
 - 运行集群
 
-``````
-docker-compose -f docker-compose-cluster-easynode.yml up -d
-``````
+    ``````
+    docker-compose -f docker-compose-cluster-easynode.yml up -d
+    ``````
+    每个服务的使用和作用，[详见](https://github.com/0xcregis/easynode/blob/main/cmd/easynode/README.md)
 
-每个服务的使用和作用，[详见](https://github.com/0xcregis/easynode/blob/main/cmd/easynode/README.md)
-
-### 6. Check
+### 6. 检测
 
 - 检查运行环境是否启动
 
@@ -215,7 +230,7 @@ notes:
 - easynode的 9002 端口 [使用说明](https://github.com/0xcregis/easynode/blob/main/cmd/blockchain/README.md)
 - easynode的 9003 端口 [使用说明](https://github.com/0xcregis/easynode/blob/main/cmd/store/README.md)
 
-## Usage
+### 7.使用
 
 1. 添加监控地址
 

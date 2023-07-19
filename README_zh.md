@@ -1,4 +1,6 @@
 # Easynode
+[![Go](https://github.com/0xcregis/easynode/actions/workflows/go.yml/badge.svg)](https://github.com/0xcregis/easynode/actions/workflows/go.yml)
+
 多链一站式服务平台，通过API可快速对接各种链上服务，NFT、Defi、transfer、查询等，
 让所有开发者都能使用链上服务，不需要部署节点、不需要了解专业知识,包含以下核心服务：
 

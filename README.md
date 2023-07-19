@@ -1,6 +1,8 @@
 # Easynode
 [![Go](https://github.com/0xcregis/easynode/actions/workflows/go.yml/badge.svg)](https://github.com/0xcregis/easynode/actions/workflows/go.yml)
 
+##### [English](https://github.com/0xcregis/easynode/blob/main/README.md)|[Simplified Chinese](https://github.com/0xcregis/easynode/blob/main/README_zh.md)
+
 Multi-chain one-stop service platform, through API, can quickly connect to various on-chain services, such as NFT, Defi, transfer, query, etc.
 Allow all developers to use on-chain services without deploying nodes or knowing professional knowledge, including the following core services:
 
@@ -29,7 +31,6 @@ Allow all developers to use on-chain services without deploying nodes or knowing
 - Support subscription for various business scenarios: asset transaction, token transfer, pledge, activation, etc.
 - Historical data backup
 
-#### [English](https://github.com/0xcregis/easynode/blob/main/README.md)|[简体中文](https://github.com/0xcregis/easynode/blob/main/README_zh.md)
 
 ## Getting Started
 

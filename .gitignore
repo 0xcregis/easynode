@@ -33,3 +33,4 @@ go.work
 /easynode
 /build/bin/
 /build/_workspace/
+/dist/

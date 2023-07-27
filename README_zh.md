@@ -30,6 +30,13 @@
 - 支持订阅多种业务场景：资产交易，代币转移，质押，激活等
 - 历史数据备份
 
+## 公链表
+
+| blockchain  | chaincode |  desc   |
+|:------------|:---------:|:-------:|
+| ethereum    |    200    |   ETH   |
+| tron        |    205    |  TRON   |
+| polygon-pos |    201    | POLYGON |
 
 ## 入门指引
 

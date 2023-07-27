@@ -31,7 +31,6 @@ func NewChainClient() chain.BlockChain {
 }
 
 func (t *Tron) SendRequestToChain(host string, token string, query string) (string, error) {
-
 	//host = fmt.Sprintf("%v/%v", host, "jsonrpc")
 	payload := strings.NewReader(query)
 
@@ -102,7 +101,6 @@ func (t *Tron) SendRequestToChainByHttp(host string, token string, query string)
 }
 
 func (t *Tron) GetTokenBalanceByHttp(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
-
 	mp := make(map[string]interface{}, 2)
 
 	if !strings.HasPrefix(userAddress, "0x41") && !strings.HasPrefix(userAddress, "41") {
@@ -141,10 +139,8 @@ func (t *Tron) GetTokenBalanceByHttp(host string, token string, contractAddress 
 }
 
 func (t *Tron) GetTokenDecimalsByHttp(host string, token string, contractAddress string, userAddress string) (string, error) {
-
-	var query string
-
-	query = `
+	//var query string
+	query := `
 			{
 			  "owner_address": "%v",
 			  "contract_address": "%v",

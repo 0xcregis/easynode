@@ -10,6 +10,8 @@ func NewApi(blockchain int64, cluster []*config.NodeCluster, xlog *xlog.XLog) AP
 		return NewEth(cluster, xlog)
 	} else if blockchain == 205 {
 		return NewTron(cluster, xlog)
+	} else if blockchain == 201 {
+		return NewPolygonPos(cluster, xlog)
 	}
 	return nil
 }

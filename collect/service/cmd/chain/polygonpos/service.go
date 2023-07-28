@@ -22,6 +22,7 @@ type Service struct {
 	log                *xlog.XLog
 	chain              *config.Chain
 	nodeId             string
+	transferTopic      string
 	store              service.StoreTaskInterface
 	txChainClient      chainService.API
 	blockChainClient   chainService.API
@@ -319,7 +320,7 @@ func (s *Service) buildContract(receipt *service.Receipt) *service.Receipt {
 	for _, g := range receipt.Logs {
 
 		//erc20
-		if len(g.Topics) == 3 && g.Topics[0] == service.EthTopic {
+		if len(g.Topics) == 3 && g.Topics[0] == s.transferTopic {
 			//处理 普通资产和 20 协议 资产转移
 			mp := make(map[string]interface{}, 2)
 			token, err := s.getToken(int64(s.chain.BlockChainCode), receipt.From, g.Address)
@@ -415,7 +416,7 @@ func (s *Service) CheckAddress(tx []byte, addrList map[string]int64) bool {
 		for _, v := range list {
 			topics := v.Get("topics").Array()
 			//Transfer()
-			if len(topics) >= 3 && topics[0].String() == service.EthTopic {
+			if len(topics) >= 3 && topics[0].String() == s.transferTopic {
 				from, _ := util.Hex2Address(topics[1].String())
 				if len(from) > 0 {
 					txAddressList[getCoreAddr(from)] = 1
@@ -445,7 +446,7 @@ func (s *Service) CheckAddress(tx []byte, addrList map[string]int64) bool {
 	return has
 }
 
-func NewService(c *config.Chain, x *xlog.XLog, store service.StoreTaskInterface, nodeId string) service.BlockChainInterface {
+func NewService(c *config.Chain, x *xlog.XLog, store service.StoreTaskInterface, nodeId string, transferTopic string) service.BlockChainInterface {
 
 	var blockClient chainService.API
 	if c.BlockTask != nil {
@@ -498,5 +499,6 @@ func NewService(c *config.Chain, x *xlog.XLog, store service.StoreTaskInterface,
 		blockChainClient:   blockClient,
 		receiptChainClient: receiptClient,
 		nodeId:             nodeId,
+		transferTopic:      transferTopic,
 	}
 }

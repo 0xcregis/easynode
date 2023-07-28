@@ -17,11 +17,11 @@ func GetBlockchain(blockchain int, c *config.Chain, store service.StoreTaskInter
 	x := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/chain_info", logConfig.Path), 24*time.Hour)
 	var srv service.BlockChainInterface
 	if blockchain == 200 {
-		srv = ether.NewService(c, x, store, nodeId)
+		srv = ether.NewService(c, x, store, nodeId, service.EthTopic)
 	} else if blockchain == 205 {
-		srv = tron2.NewService(c, x, store, nodeId)
+		srv = tron2.NewService(c, x, store, nodeId, service.TronTopic)
 	} else if blockchain == 201 {
-		srv = polygonpos.NewService(c, x, store, nodeId)
+		srv = polygonpos.NewService(c, x, store, nodeId, service.PolygonTopic)
 	}
 
 	return srv

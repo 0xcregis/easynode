@@ -24,6 +24,7 @@ type Service struct {
 	log                *xlog.XLog
 	chain              *config.Chain
 	nodeId             string
+	transferTopic      string
 	store              service.StoreTaskInterface
 	txChainClient      chainService.API
 	blockChainClient   chainService.API
@@ -327,7 +328,7 @@ func (s *Service) buildContract(receipt *service.TronReceipt) *service.TronRecei
 	for _, g := range receipt.Log {
 
 		//trc20合约
-		if len(g.Topics) == 3 && g.Topics[0] == service.TronTopic {
+		if len(g.Topics) == 3 && g.Topics[0] == s.transferTopic {
 			mp := make(map[string]interface{}, 2)
 			contractAddr := fmt.Sprintf("41%v", g.Address)
 			token, err := s.getToken(int64(s.chain.BlockChainCode), contractAddr, contractAddr)
@@ -468,7 +469,7 @@ func (s *Service) CheckAddress(txValue []byte, addrList map[string]int64) bool {
 			for _, v := range logs {
 				topics := v.Get("topics").Array()
 				//Transfer()
-				if len(topics) >= 3 && topics[0].String() == service.TronTopic {
+				if len(topics) >= 3 && topics[0].String() == s.transferTopic {
 					from, _ := util.Hex2Address(topics[1].String())
 					if len(from) > 0 {
 						txAddressList[getCoreAddr(from)] = 1
@@ -509,7 +510,7 @@ func (s *Service) CheckAddress(txValue []byte, addrList map[string]int64) bool {
 	return has
 }
 
-func NewService(c *config.Chain, x *xlog.XLog, store service.StoreTaskInterface, nodeId string) service.BlockChainInterface {
+func NewService(c *config.Chain, x *xlog.XLog, store service.StoreTaskInterface, nodeId string, transferTopic string) service.BlockChainInterface {
 
 	var blockClient chainService.API
 	if c.BlockTask != nil {
@@ -561,5 +562,6 @@ func NewService(c *config.Chain, x *xlog.XLog, store service.StoreTaskInterface,
 		blockChainClient:   blockClient,
 		receiptChainClient: receiptClient,
 		nodeId:             nodeId,
+		transferTopic:      transferTopic,
 	}
 }

@@ -15,7 +15,7 @@ func Init() (service.BlockChainInterface, config.Config, *xlog.XLog) {
 	cfg := config.LoadConfig("./../../../../../cmd/collect/config.json")
 	x := xlog.NewXLogger()
 	store := db.NewTaskCacheService(cfg.Chains[0], x)
-	return NewService(cfg.Chains[0], x, store, "9587acc2-04ab-4154-ae11-f6d588c6493f"), cfg, x
+	return NewService(cfg.Chains[0], x, store, "9587acc2-04ab-4154-ae11-f6d588c6493f",service.EthTopic), cfg, x
 }
 
 func TestService_GetBlockByNumber(t *testing.T) {

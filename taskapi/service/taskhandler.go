@@ -7,6 +7,7 @@ import (
 	"time"
 
 	kafkaClient "github.com/0xcregis/easynode/common/kafka"
+	"github.com/0xcregis/easynode/taskapi"
 	"github.com/0xcregis/easynode/taskapi/config"
 	"github.com/segmentio/kafka-go"
 	"github.com/sunjiangjun/xlog"
@@ -18,7 +19,7 @@ type TaskHandler struct {
 	sendCh      chan []*kafka.Message
 }
 
-func NewTaskHandler(cfg *config.Config, log *xlog.XLog) TaskApiInterface {
+func NewTaskHandler(cfg *config.Config, log *xlog.XLog) taskapi.TaskApiInterface {
 	kf := kafkaClient.NewEasyKafka(log)
 	sendCh := make(chan []*kafka.Message, 10)
 
@@ -41,7 +42,7 @@ func (m *TaskHandler) startKafka() {
 	m.kafkaClient.Write(kafkaClient.Config{Brokers: []string{broker}}, m.sendCh, nil, ctx)
 }
 
-func (m *TaskHandler) SendNodeTask(task *NodeTask) error {
+func (m *TaskHandler) SendNodeTask(task *taskapi.NodeTask) error {
 	task.CreateTime = time.Now()
 	task.LogTime = time.Now()
 	task.Id = time.Now().UnixNano()

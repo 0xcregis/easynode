@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0xcregis/easynode/collect"
 	"github.com/0xcregis/easynode/collect/config"
-	"github.com/0xcregis/easynode/collect/service"
 	"github.com/0xcregis/easynode/common/util"
 	"github.com/segmentio/kafka-go"
 )
@@ -42,7 +42,7 @@ func TestService_CheckErrTx(t *testing.T) {
 			}
 
 			//todo 重发交易任务
-			var v service.NodeTask
+			var v collect.NodeTask
 			_ = json.Unmarshal([]byte(data), &v)
 
 			//清理 已经重试成功的交易

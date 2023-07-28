@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/0xcregis/easynode/collect"
 	"github.com/0xcregis/easynode/collect/config"
-	"github.com/0xcregis/easynode/collect/service"
 	"github.com/0xcregis/easynode/collect/service/cmd/chain"
 	"github.com/0xcregis/easynode/collect/service/db"
 	kafkaClient "github.com/0xcregis/easynode/common/kafka"
@@ -26,23 +26,23 @@ const (
 )
 
 type Cmd struct {
-	blockChain  service.BlockChainInterface
+	blockChain  collect.BlockChainInterface
 	log         *xlog.XLog
-	taskStore   service.StoreTaskInterface
+	taskStore   collect.StoreTaskInterface
 	chain       *config.Chain
 	kafka       *kafkaClient.EasyKafka
-	txChan      chan *service.NodeTask
-	blockChan   chan *service.NodeTask
-	receiptChan chan *service.NodeTask
+	txChan      chan *collect.NodeTask
+	blockChan   chan *collect.NodeTask
+	receiptChan chan *collect.NodeTask
 	nodeId      string
 	kafkaCh     chan []*kafka.Message
 }
 
 func NewService(cfg *config.Chain, logConfig *config.LogConfig, nodeId string) *Cmd {
 	log := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/cmd", logConfig.Path), 24*time.Hour)
-	txChan := make(chan *service.NodeTask, 10)
-	receiptChan := make(chan *service.NodeTask, 10)
-	blockChan := make(chan *service.NodeTask, 10)
+	txChan := make(chan *collect.NodeTask, 10)
+	receiptChan := make(chan *collect.NodeTask, 10)
+	blockChan := make(chan *collect.NodeTask, 10)
 	kafkaCh := make(chan []*kafka.Message, 100)
 	store := db.NewTaskCacheService(cfg, log)
 	kf := kafkaClient.NewEasyKafka(log)
@@ -62,7 +62,7 @@ func NewService(cfg *config.Chain, logConfig *config.LogConfig, nodeId string) *
 	}
 }
 
-func getBlockChainApi(c *config.Chain, logConfig *config.LogConfig, store service.StoreTaskInterface, nodeId string) service.BlockChainInterface {
+func getBlockChainApi(c *config.Chain, logConfig *config.LogConfig, store collect.StoreTaskInterface, nodeId string) collect.BlockChainInterface {
 	srv := chain.GetBlockchain(c.BlockChainCode, c, store, logConfig, nodeId)
 	//第三方节点监控
 	srv.Monitor()
@@ -101,7 +101,7 @@ func (c *Cmd) Start(ctx context.Context) {
 	c.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker, broker2}}, c.kafkaCh, c.HandlerKafkaRespMessage, ctx, 10)
 }
 
-func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan *service.NodeTask, txCh chan *service.NodeTask, receiptChan chan *service.NodeTask, ctx context.Context) {
+func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan *collect.NodeTask, txCh chan *collect.NodeTask, receiptChan chan *collect.NodeTask, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
 	broker := fmt.Sprintf("%v:%v", c.chain.TaskKafka.Host, c.chain.TaskKafka.Port)
 
@@ -144,7 +144,7 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 		}
 		msg := <-receiver
 		//log.Printf("Read NodeTask offset=%v,topic=%v,value=%v", msg.Offset, msg.Topic, string(msg.Value))
-		task := service.NodeTask{}
+		task := collect.NodeTask{}
 		err := json.Unmarshal(msg.Value, &task)
 		if err != nil {
 			log.Errorf("Read NodeTask offset=%v,error=%v", msg.Offset, err.Error())
@@ -251,7 +251,7 @@ func (c *Cmd) HandlerKafkaRespMessage(msList []*kafka.Message) {
 
 }
 
-func (c *Cmd) ExecReceiptTask(receiptChan chan *service.NodeTask, kf chan []*kafka.Message) {
+func (c *Cmd) ExecReceiptTask(receiptChan chan *collect.NodeTask, kf chan []*kafka.Message) {
 	buffCh := make(chan struct{}, 10)
 	for {
 		//控制协程数量
@@ -264,7 +264,7 @@ func (c *Cmd) ExecReceiptTask(receiptChan chan *service.NodeTask, kf chan []*kaf
 		})
 		//log.Printf("receiptTask=%+v", receiptTask)
 
-		go func(taskReceipt *service.NodeTask, buffCh chan struct{}, kf chan []*kafka.Message, log *logrus.Entry) {
+		go func(taskReceipt *collect.NodeTask, buffCh chan struct{}, kf chan []*kafka.Message, log *logrus.Entry) {
 			defer func() {
 				<-buffCh
 			}()
@@ -290,7 +290,7 @@ func (c *Cmd) ExecReceiptTask(receiptChan chan *service.NodeTask, kf chan []*kaf
 
 }
 
-func (c *Cmd) execMultiReceipt(taskReceipt *service.NodeTask, log *logrus.Entry) []*kafka.Message {
+func (c *Cmd) execMultiReceipt(taskReceipt *collect.NodeTask, log *logrus.Entry) []*kafka.Message {
 	//根据区块
 	key := fmt.Sprintf(KeyReceipt, taskReceipt.BlockChain, taskReceipt.BlockHash+taskReceipt.BlockNumber)
 	_ = c.taskStore.UpdateNodeTaskStatus(key, 3)
@@ -308,7 +308,7 @@ func (c *Cmd) execMultiReceipt(taskReceipt *service.NodeTask, log *logrus.Entry)
 	kafkaMsgList := make([]*kafka.Message, 0, 10)
 
 	for _, receipt := range receiptList {
-		t := &service.NodeTask{NodeId: taskReceipt.NodeId, BlockNumber: taskReceipt.BlockNumber, BlockHash: taskReceipt.BlockHash, TxHash: receipt.TransactionHash, TaskType: 3, BlockChain: taskReceipt.BlockChain, TaskStatus: 3, Id: time.Now().UnixNano(), CreateTime: time.Now(), LogTime: time.Now()}
+		t := &collect.NodeTask{NodeId: taskReceipt.NodeId, BlockNumber: taskReceipt.BlockNumber, BlockHash: taskReceipt.BlockHash, TxHash: receipt.TransactionHash, TaskType: 3, BlockChain: taskReceipt.BlockChain, TaskStatus: 3, Id: time.Now().UnixNano(), CreateTime: time.Now(), LogTime: time.Now()}
 		//receiptTaskList = append(receiptTaskList, t)
 		m, err := c.HandlerReceipt(receipt)
 		if err != nil {
@@ -330,7 +330,7 @@ func (c *Cmd) execMultiReceipt(taskReceipt *service.NodeTask, log *logrus.Entry)
 	}
 }
 
-func (c *Cmd) execSingleReceipt(taskReceipt *service.NodeTask, log *logrus.Entry) []*kafka.Message {
+func (c *Cmd) execSingleReceipt(taskReceipt *collect.NodeTask, log *logrus.Entry) []*kafka.Message {
 	if len(taskReceipt.TxHash) > 1 {
 		key := fmt.Sprintf(KeyReceipt, taskReceipt.BlockChain, taskReceipt.TxHash)
 		_ = c.taskStore.UpdateNodeTaskStatus(key, 3)
@@ -362,7 +362,7 @@ func (c *Cmd) execSingleReceipt(taskReceipt *service.NodeTask, log *logrus.Entry
 	return nil
 }
 
-func (c *Cmd) ExecTxTask(txCh chan *service.NodeTask, kf chan []*kafka.Message) {
+func (c *Cmd) ExecTxTask(txCh chan *collect.NodeTask, kf chan []*kafka.Message) {
 	buffCh := make(chan struct{}, 20)
 	for {
 		//控制协程数量
@@ -378,7 +378,7 @@ func (c *Cmd) ExecTxTask(txCh chan *service.NodeTask, kf chan []*kafka.Message) 
 
 		if txTask.TaskType == 1 && len(txTask.TxHash) > 10 {
 			//单个交易
-			go func(taskTx *service.NodeTask, buffCh chan struct{}, kf chan []*kafka.Message, log *logrus.Entry) {
+			go func(taskTx *collect.NodeTask, buffCh chan struct{}, kf chan []*kafka.Message, log *logrus.Entry) {
 				defer func() {
 					<-buffCh
 				}()
@@ -393,7 +393,7 @@ func (c *Cmd) ExecTxTask(txCh chan *service.NodeTask, kf chan []*kafka.Message) 
 
 		if txTask.TaskType == 4 && (len(txTask.BlockHash) > 10 || len(txTask.BlockNumber) > 2) {
 			//批量交易
-			go func(taskTx *service.NodeTask, buffCh chan struct{}, kf chan []*kafka.Message, log *logrus.Entry) {
+			go func(taskTx *collect.NodeTask, buffCh chan struct{}, kf chan []*kafka.Message, log *logrus.Entry) {
 				defer func() {
 					<-buffCh
 				}()
@@ -412,7 +412,7 @@ func (c *Cmd) ExecTxTask(txCh chan *service.NodeTask, kf chan []*kafka.Message) 
 
 }
 
-func (c *Cmd) execMultiTx(taskTx *service.NodeTask, log *logrus.Entry) []*kafka.Message {
+func (c *Cmd) execMultiTx(taskTx *collect.NodeTask, log *logrus.Entry) []*kafka.Message {
 
 	start := time.Now()
 	defer func() {
@@ -427,8 +427,8 @@ func (c *Cmd) execMultiTx(taskTx *service.NodeTask, log *logrus.Entry) []*kafka.
 		return nil
 	}
 
-	var block *service.BlockInterface
-	var txList []*service.TxInterface
+	var block *collect.BlockInterface
+	var txList []*collect.TxInterface
 	if len(taskTx.BlockNumber) > 5 {
 		block, txList = c.blockChain.GetBlockByNumber(taskTx.BlockNumber, log, true)
 	} else if len(taskTx.BlockHash) > 10 {
@@ -443,17 +443,17 @@ func (c *Cmd) execMultiTx(taskTx *service.NodeTask, log *logrus.Entry) []*kafka.
 	//发出tx
 	txMessageList := make([]*kafka.Message, 0, len(txList))
 	//txTaskList := make([]*service.NodeTask, 0, len(txList))
-	receiptsTaskList := make([]*service.NodeTask, 0, len(txList))
+	receiptsTaskList := make([]*collect.NodeTask, 0, len(txList))
 
 	if len(txList) > 0 {
 
 		for _, v := range txList {
 			//交易任务
-			t := &service.NodeTask{NodeId: taskTx.NodeId, BlockNumber: taskTx.BlockNumber, BlockHash: taskTx.BlockHash, TxHash: v.TxHash, TaskType: 1, BlockChain: taskTx.BlockChain, TaskStatus: 3, Id: time.Now().UnixNano(), CreateTime: time.Now(), LogTime: time.Now()}
+			t := &collect.NodeTask{NodeId: taskTx.NodeId, BlockNumber: taskTx.BlockNumber, BlockHash: taskTx.BlockHash, TxHash: v.TxHash, TaskType: 1, BlockChain: taskTx.BlockChain, TaskStatus: 3, Id: time.Now().UnixNano(), CreateTime: time.Now(), LogTime: time.Now()}
 			//txTaskList = append(txTaskList, t)
 
 			//收据任务
-			s := &service.NodeTask{NodeId: taskTx.NodeId, BlockChain: c.chain.BlockChainCode, TxHash: v.TxHash, BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, TaskType: 3, TaskStatus: 0, Id: time.Now().UnixNano(), CreateTime: time.Now(), LogTime: time.Now()}
+			s := &collect.NodeTask{NodeId: taskTx.NodeId, BlockChain: c.chain.BlockChainCode, TxHash: v.TxHash, BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, TaskType: 3, TaskStatus: 0, Id: time.Now().UnixNano(), CreateTime: time.Now(), LogTime: time.Now()}
 			receiptsTaskList = append(receiptsTaskList, s)
 
 			//交易消息
@@ -482,8 +482,8 @@ func (c *Cmd) execMultiTx(taskTx *service.NodeTask, log *logrus.Entry) []*kafka.
 			//} else {
 			//	//其他公链，则 批量获取收据
 			//	//根据区块获取收据，则 tx_hash 必需未空
-			task := &service.NodeTask{BlockChain: c.chain.BlockChainCode, TxHash: "", BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, TaskType: 5, TaskStatus: 0, NodeId: taskTx.NodeId}
-			c.kafkaCh <- c.taskStore.SendNodeTask([]*service.NodeTask{task}, c.chain.TaskKafka.Partitions)
+			task := &collect.NodeTask{BlockChain: c.chain.BlockChainCode, TxHash: "", BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, TaskType: 5, TaskStatus: 0, NodeId: taskTx.NodeId}
+			c.kafkaCh <- c.taskStore.SendNodeTask([]*collect.NodeTask{task}, c.chain.TaskKafka.Partitions)
 			//}
 
 		}
@@ -500,7 +500,7 @@ func (c *Cmd) execMultiTx(taskTx *service.NodeTask, log *logrus.Entry) []*kafka.
 	}
 }
 
-func (c *Cmd) execSingleTx(taskTx *service.NodeTask, log *logrus.Entry) []*kafka.Message {
+func (c *Cmd) execSingleTx(taskTx *collect.NodeTask, log *logrus.Entry) []*kafka.Message {
 
 	start := time.Now()
 	defer func() {
@@ -516,7 +516,7 @@ func (c *Cmd) execSingleTx(taskTx *service.NodeTask, log *logrus.Entry) []*kafka
 		return nil
 	}
 
-	var tx *service.TxInterface
+	var tx *collect.TxInterface
 	if len(taskTx.TxHash) > 1 {
 		tx = c.blockChain.GetTx(taskTx.TxHash, log)
 	}
@@ -534,7 +534,7 @@ func (c *Cmd) execSingleTx(taskTx *service.NodeTask, log *logrus.Entry) []*kafka
 
 	//写入receipt task
 	if c.chain.PullReceipt {
-		c.kafkaCh <- c.taskStore.SendNodeTask([]*service.NodeTask{{BlockChain: c.chain.BlockChainCode, TxHash: tx.TxHash, BlockHash: "", BlockNumber: "", TaskType: 3, TaskStatus: 0, NodeId: taskTx.NodeId}}, c.chain.TaskKafka.Partitions)
+		c.kafkaCh <- c.taskStore.SendNodeTask([]*collect.NodeTask{{BlockChain: c.chain.BlockChainCode, TxHash: tx.TxHash, BlockHash: "", BlockNumber: "", TaskType: 3, TaskStatus: 0, NodeId: taskTx.NodeId}}, c.chain.TaskKafka.Partitions)
 	}
 
 	//update status
@@ -548,7 +548,7 @@ func (c *Cmd) execSingleTx(taskTx *service.NodeTask, log *logrus.Entry) []*kafka
 	return []*kafka.Message{m}
 }
 
-func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Message) {
+func (c *Cmd) ExecBlockTask(blockCh chan *collect.NodeTask, kf chan []*kafka.Message) {
 	buffCh := make(chan struct{}, 10)
 	for {
 		//控制协程数量
@@ -562,7 +562,7 @@ func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Mes
 		})
 		//log.Printf("taskBlock=%+v", blockTask)
 
-		go func(taskBlock *service.NodeTask, buffCh chan struct{}, kf chan []*kafka.Message, log *logrus.Entry) {
+		go func(taskBlock *collect.NodeTask, buffCh chan struct{}, kf chan []*kafka.Message, log *logrus.Entry) {
 			start := time.Now()
 			defer func() {
 				<-buffCh
@@ -583,7 +583,7 @@ func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Mes
 				return
 			}
 
-			var block *service.BlockInterface
+			var block *collect.BlockInterface
 			//var txList []*service.Tx
 			if len(taskBlock.BlockNumber) > 5 {
 				block, _ = c.blockChain.GetBlockByNumber(taskBlock.BlockNumber, log, false)
@@ -599,8 +599,8 @@ func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Mes
 
 			//发出批量交易任务
 			if c.chain.PullTx {
-				s := &service.NodeTask{NodeId: taskBlock.NodeId, BlockChain: taskBlock.BlockChain, BlockNumber: taskBlock.BlockNumber, BlockHash: taskBlock.BlockHash, TaskType: 4, TaskStatus: 0}
-				c.kafkaCh <- c.taskStore.SendNodeTask([]*service.NodeTask{s}, c.chain.TaskKafka.Partitions)
+				s := &collect.NodeTask{NodeId: taskBlock.NodeId, BlockChain: taskBlock.BlockChain, BlockNumber: taskBlock.BlockNumber, BlockHash: taskBlock.BlockHash, TaskType: 4, TaskStatus: 0}
+				c.kafkaCh <- c.taskStore.SendNodeTask([]*collect.NodeTask{s}, c.chain.TaskKafka.Partitions)
 			}
 
 			//发出block
@@ -628,12 +628,12 @@ func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Mes
 
 }
 
-func (c *Cmd) HandlerBlock(block *service.BlockInterface) (*kafka.Message, error) {
+func (c *Cmd) HandlerBlock(block *collect.BlockInterface) (*kafka.Message, error) {
 	k := c.chain.BlockTask.Kafka
 	var r []byte
 	if v, ok := block.Block.(string); ok {
 		r = []byte(v)
-	} else if v, ok := block.Block.(*service.Block); ok {
+	} else if v, ok := block.Block.(*collect.Block); ok {
 		b, err := json.Marshal(v)
 		if err != nil {
 			return nil, err
@@ -643,13 +643,13 @@ func (c *Cmd) HandlerBlock(block *service.BlockInterface) (*kafka.Message, error
 	return &kafka.Message{Topic: k.Topic, Partition: k.Partition, Time: time.Now(), Key: []byte(block.BlockHash), Value: r}, nil
 }
 
-func (c *Cmd) HandlerTx(tx *service.TxInterface) (*kafka.Message, error) {
+func (c *Cmd) HandlerTx(tx *collect.TxInterface) (*kafka.Message, error) {
 	k := c.chain.TxTask.Kafka
 
 	var r []byte
 	if v, ok := tx.Tx.(string); ok {
 		r = []byte(v)
-	} else if v, ok := tx.Tx.(*service.Tx); ok {
+	} else if v, ok := tx.Tx.(*collect.Tx); ok {
 		b, err := json.Marshal(v)
 		if err != nil {
 			return nil, err
@@ -666,18 +666,18 @@ func (c *Cmd) HandlerTx(tx *service.TxInterface) (*kafka.Message, error) {
 	return &kafka.Message{Topic: k.Topic, Partition: k.Partition, Time: time.Now(), Key: []byte(tx.TxHash), Value: r}, nil
 }
 
-func (c *Cmd) HandlerReceipt(receipt *service.ReceiptInterface) (*kafka.Message, error) {
+func (c *Cmd) HandlerReceipt(receipt *collect.ReceiptInterface) (*kafka.Message, error) {
 	k := c.chain.ReceiptTask.Kafka
 	var r []byte
 	if v, ok := receipt.Receipt.(string); ok {
 		r = []byte(v)
-	} else if v, ok := receipt.Receipt.(*service.Receipt); ok {
+	} else if v, ok := receipt.Receipt.(*collect.Receipt); ok {
 		b, err := json.Marshal(v)
 		if err != nil {
 			return nil, err
 		}
 		r = b
-	} else if v, ok := receipt.Receipt.(*service.TronReceipt); ok {
+	} else if v, ok := receipt.Receipt.(*collect.TronReceipt); ok {
 		b, err := json.Marshal(v)
 		if err != nil {
 			return nil, err

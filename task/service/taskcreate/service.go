@@ -7,8 +7,8 @@ import (
 	"time"
 
 	kafkaClient "github.com/0xcregis/easynode/common/kafka"
+	"github.com/0xcregis/easynode/task"
 	"github.com/0xcregis/easynode/task/config"
-	"github.com/0xcregis/easynode/task/service"
 	"github.com/0xcregis/easynode/task/service/taskcreate/db"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -17,11 +17,11 @@ import (
 
 type Service struct {
 	config      *config.Config
-	store       service.StoreTaskInterface
+	store       task.StoreTaskInterface
 	log         *xlog.XLog
 	kafkaClient *kafkaClient.EasyKafka
 	sendCh      chan []*kafka.Message
-	api         map[int64]service.BlockChainInterface
+	api         map[int64]task.BlockChainInterface
 }
 
 func (s *Service) Start(ctx context.Context) {
@@ -141,7 +141,7 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 	if UsedMaxNumber >= v.BlockMax {
 		return fmt.Errorf("UsedMaxNumber more than BlockMax,UsedMaxNumber:%v,BlockMax:%v", UsedMaxNumber, v.BlockMax)
 	}
-	list := make([]*service.NodeTask, 0)
+	list := make([]*task.NodeTask, 0)
 
 	UsedMaxNumber++
 
@@ -155,7 +155,7 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 
 	for UsedMaxNumber <= v.BlockMax {
 		index := rand.Intn(l)
-		task := &service.NodeTask{
+		task := &task.NodeTask{
 			NodeId:      nodeIdList[index],
 			BlockNumber: fmt.Sprintf("%v", UsedMaxNumber),
 			BlockChain:  v.BlockChainCode,
@@ -198,7 +198,7 @@ func NewService(config *config.Config) *Service {
 	//receiverCh := make(chan []*kafka.Message, 5)
 	store := db.NewFileTaskCreateService(config, xg)
 
-	blockClient := make(map[int64]service.BlockChainInterface, 2)
+	blockClient := make(map[int64]task.BlockChainInterface, 2)
 
 	for _, v := range config.BlockConfigs {
 		api := NewApi(v.BlockChainCode, xg, v)

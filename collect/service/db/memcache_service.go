@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0xcregis/easynode/collect"
 	"github.com/0xcregis/easynode/collect/config"
-	"github.com/0xcregis/easynode/collect/service"
 	"github.com/redis/go-redis/v9"
 	"github.com/segmentio/kafka-go"
 	"github.com/sunjiangjun/xlog"
@@ -156,7 +156,7 @@ func (s *Service) GetMonitorAddress(blockChain int64) ([]string, error) {
 	return list, nil
 }
 
-func (s *Service) DelNodeTask(blockchain int64, key string) (int64, *service.NodeTask, error) {
+func (s *Service) DelNodeTask(blockchain int64, key string) (int64, *collect.NodeTask, error) {
 	c, task, err := s.GetNodeTask(blockchain, key)
 	if err != nil {
 		return c, nil, err
@@ -232,7 +232,7 @@ func (s *Service) StoreErrTxNodeTask(blockchain int64, key string, data any) err
 	}
 
 	if c > 0 && len(d) > 10 {
-		var task service.NodeTask
+		var task collect.NodeTask
 		_ = json.Unmarshal([]byte(d), &task)
 		task.LogTime = time.Now()
 		data = task
@@ -291,7 +291,7 @@ func (s *Service) GetContract(blockchain int64, contract string) (string, error)
 	return task, nil
 }
 
-func (s *Service) SendNodeTask(list []*service.NodeTask, partitions []int64) []*kafka.Message {
+func (s *Service) SendNodeTask(list []*collect.NodeTask, partitions []int64) []*kafka.Message {
 	resultList := make([]*kafka.Message, 0)
 	for _, v := range list {
 		v.CreateTime = time.Now()
@@ -312,7 +312,7 @@ func (s *Service) SendNodeTask(list []*service.NodeTask, partitions []int64) []*
 	return resultList
 }
 
-func (s *Service) GetNodeTask(blockchain int64, key string) (int64, *service.NodeTask, error) {
+func (s *Service) GetNodeTask(blockchain int64, key string) (int64, *collect.NodeTask, error) {
 	has, err := s.cacheClient.HExists(context.Background(), fmt.Sprintf(NodeTaskKey, blockchain), key).Result()
 	if err != nil {
 		return 0, nil, err
@@ -331,13 +331,13 @@ func (s *Service) GetNodeTask(blockchain int64, key string) (int64, *service.Nod
 	count := r.Get("count").Int()
 	data := r.Get("data").String()
 
-	t := service.NodeTask{}
+	t := collect.NodeTask{}
 	_ = json.Unmarshal([]byte(data), &t)
 	return count, &t, nil
 }
 
 // StoreNodeTask StoreExecTask key which tx:tx_txHash,receipt:receipt_txHash, block: block_number_blockHash
-func (s *Service) StoreNodeTask(key string, task *service.NodeTask) {
+func (s *Service) StoreNodeTask(key string, task *collect.NodeTask) {
 	c, d, _ := s.GetNodeTask(int64(task.BlockChain), key)
 	//已存在且错误超过5次 忽略
 	if c > 5 {
@@ -409,7 +409,7 @@ func (s *Service) UpdateNodeTaskStatusWithBatch(keys []string, status int) error
 	return nil
 }
 
-func NewTaskCacheService(cfg *config.Chain, x *xlog.XLog) service.StoreTaskInterface {
+func NewTaskCacheService(cfg *config.Chain, x *xlog.XLog) collect.StoreTaskInterface {
 	client := redis.NewClient(&redis.Options{
 		Addr:        fmt.Sprintf("%v:%v", cfg.Redis.Addr, cfg.Redis.Port),
 		Password:    "", // no password set

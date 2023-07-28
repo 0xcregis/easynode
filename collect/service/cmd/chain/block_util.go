@@ -1,4 +1,4 @@
-package service
+package chain
 
 import (
 	"encoding/json"
@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/0xcregis/easynode/collect"
 	"github.com/tidwall/gjson"
 )
 
@@ -91,8 +92,8 @@ import (
 	    "baseFeePerGas": "0x2aedb2837"
 	}
 */
-func GetBlockFromJson(json string) (*Block, []*Tx) {
-	block := Block{Id: time.Now().UnixNano()}
+func GetBlockFromJson(json string) (*collect.Block, []*collect.Tx) {
+	block := collect.Block{Id: time.Now().UnixNano()}
 	r := gjson.Parse(json)
 	number := r.Get("number").String()
 	block.BlockNumber = number
@@ -123,7 +124,7 @@ func GetBlockFromJson(json string) (*Block, []*Tx) {
 	block.BaseFee = r.Get("baseFeePerGas").String()
 	txs := r.Get("transactions").Array()
 	txId := make([]string, 0)
-	txList := make([]*Tx, 0)
+	txList := make([]*collect.Tx, 0)
 	for _, tx := range txs {
 		if tx.IsObject() {
 			x := GetTxFromJson(tx.String())
@@ -164,8 +165,8 @@ func GetBlockFromJson(json string) (*Block, []*Tx) {
 	        "value": "0x0"
 	    }
 */
-func GetTxFromJson(json string) *Tx {
-	tx := Tx{Id: time.Now().UnixNano()}
+func GetTxFromJson(json string) *collect.Tx {
+	tx := collect.Tx{Id: time.Now().UnixNano()}
 	r := gjson.Parse(json)
 	tx.BlockHash = r.Get("blockHash").String()
 	//tx.BlockNumber = r.Get("blockNumber").String()
@@ -225,12 +226,12 @@ func GetTxFromJson(json string) *Tx {
     }
 */
 
-func GetReceiptFromJson(js string) *Receipt {
-	var receipt Receipt
+func GetReceiptFromJson(js string) *collect.Receipt {
+	var receipt collect.Receipt
 	r := gjson.Parse(js)
 
 	logs := r.Get("logs").String()
-	var temp []*Logs
+	var temp []*collect.Logs
 	_ = json.Unmarshal([]byte(logs), &temp)
 	receipt.Logs = temp
 	receipt.TransactionHash = r.Get("transactionHash").String()
@@ -258,13 +259,13 @@ func GetReceiptFromJson(js string) *Receipt {
 	return &receipt
 }
 
-func GetReceiptListFromJson(js string) []*Receipt {
+func GetReceiptListFromJson(js string) []*collect.Receipt {
 	array := gjson.Parse(js).Array()
-	list := make([]*Receipt, 0, len(array))
+	list := make([]*collect.Receipt, 0, len(array))
 	for _, r := range array {
-		var receipt Receipt
+		var receipt collect.Receipt
 		logs := r.Get("logs").String()
-		var temp []*Logs
+		var temp []*collect.Logs
 		_ = json.Unmarshal([]byte(logs), &temp)
 		receipt.Logs = temp
 		receipt.TransactionHash = r.Get("transactionHash").String()

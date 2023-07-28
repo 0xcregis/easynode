@@ -2,12 +2,12 @@
   "RootPath": "/api/chain",
   "Port": 9002,
   "BlockChain": [
-    201
+    200
   ],
   "Cluster": {
-    "201": [
+    "200": [
       {
-        "NodeUrl": "https://polygon-bor.publicnode.com",
+        "NodeUrl": "https://ethereum-mainnet-rpc.allthatnode.com",
         "NodeToken": ""
       }
     ]

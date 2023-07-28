@@ -1,4 +1,4 @@
-package service
+package collect
 
 import (
 	"github.com/segmentio/kafka-go"

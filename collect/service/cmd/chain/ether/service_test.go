@@ -4,18 +4,18 @@ import (
 	"log"
 	"testing"
 
+	"github.com/0xcregis/easynode/collect"
 	"github.com/0xcregis/easynode/collect/config"
-	"github.com/0xcregis/easynode/collect/service"
 	"github.com/0xcregis/easynode/collect/service/db"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 )
 
-func Init() (service.BlockChainInterface, config.Config, *xlog.XLog) {
+func Init() (collect.BlockChainInterface, config.Config, *xlog.XLog) {
 	cfg := config.LoadConfig("./../../../../../cmd/collect/config.json")
 	x := xlog.NewXLogger()
 	store := db.NewTaskCacheService(cfg.Chains[0], x)
-	return NewService(cfg.Chains[0], x, store, "9587acc2-04ab-4154-ae11-f6d588c6493f",service.EthTopic), cfg, x
+	return NewService(cfg.Chains[0], x, store, "9587acc2-04ab-4154-ae11-f6d588c6493f", "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"), cfg, x
 }
 
 func TestService_GetBlockByNumber(t *testing.T) {
@@ -37,10 +37,6 @@ func TestService_GetReceipt(t *testing.T) {
 		panic(err)
 	}
 	log.Printf("%+v", r)
-}
-
-func TestService_BalanceCluster(t *testing.T) {
-
 }
 
 func TestService_Monitor(t *testing.T) {

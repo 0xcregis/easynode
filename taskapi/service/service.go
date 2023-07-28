@@ -7,6 +7,7 @@ import (
 	"io"
 	"math/rand"
 
+	"github.com/0xcregis/easynode/taskapi"
 	"github.com/0xcregis/easynode/taskapi/config"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -22,7 +23,7 @@ type Server struct {
 	log        *xlog.XLog
 	blockChain []int64
 	cfg        *config.Config
-	handler    TaskApiInterface
+	handler    taskapi.TaskApiInterface
 	client     *redis.Client
 }
 
@@ -109,7 +110,7 @@ func (s *Server) PushBlockTask(c *gin.Context) {
 		}
 	}
 
-	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 2, TaskStatus: 0, NodeId: nodeId}
+	task := &taskapi.NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 2, TaskStatus: 0, NodeId: nodeId}
 	err = s.handler.SendNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -160,7 +161,7 @@ func (s *Server) PushTxTask(c *gin.Context) {
 		}
 	}
 
-	task := &NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 1, TaskStatus: 0, NodeId: nodeId}
+	task := &taskapi.NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 1, TaskStatus: 0, NodeId: nodeId}
 	err = s.handler.SendNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -212,7 +213,7 @@ func (s *Server) PushTxsTask(c *gin.Context) {
 		}
 	}
 
-	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 4, TaskStatus: 0, NodeId: nodeId}
+	task := &taskapi.NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 4, TaskStatus: 0, NodeId: nodeId}
 	err = s.handler.SendNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -264,7 +265,7 @@ func (s *Server) PushReceiptTask(c *gin.Context) {
 		}
 	}
 
-	task := &NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 3, TaskStatus: 0, NodeId: nodeId}
+	task := &taskapi.NodeTask{BlockChain: blockChain, TxHash: txHash, TaskType: 3, TaskStatus: 0, NodeId: nodeId}
 	err = s.handler.SendNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -317,7 +318,7 @@ func (s *Server) PushReceiptsTask(c *gin.Context) {
 		}
 	}
 
-	task := &NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 5, TaskStatus: 0, NodeId: nodeId}
+	task := &taskapi.NodeTask{BlockChain: blockChain, BlockHash: blockHash, BlockNumber: blockNumber, TaskType: 5, TaskStatus: 0, NodeId: nodeId}
 	err = s.handler.SendNodeTask(task)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())

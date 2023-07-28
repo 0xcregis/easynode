@@ -1,0 +1,15 @@
+{
+  "RootPath": "/api/chain",
+  "Port": 9002,
+  "BlockChain": [
+    201
+  ],
+  "Cluster": {
+    "201": [
+      {
+        "NodeUrl": "https://polygon-bor.publicnode.com",
+        "NodeToken": ""
+      }
+    ]
+  }
+}

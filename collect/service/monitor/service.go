@@ -7,10 +7,11 @@ import (
 	"path"
 	"time"
 
+	"github.com/0xcregis/easynode/blockchain"
 	chainConfig "github.com/0xcregis/easynode/blockchain/config"
 	chainService "github.com/0xcregis/easynode/blockchain/service"
+	"github.com/0xcregis/easynode/collect"
 	"github.com/0xcregis/easynode/collect/config"
-	"github.com/0xcregis/easynode/collect/service"
 	"github.com/0xcregis/easynode/collect/service/db"
 	kafkaClient "github.com/0xcregis/easynode/common/kafka"
 	"github.com/0xcregis/easynode/common/util"
@@ -19,13 +20,17 @@ import (
 	"github.com/sunjiangjun/xlog"
 )
 
+const (
+	DateFormat = "20060102"
+)
+
 type Service struct {
 	cfg         config.Config
 	log         *logrus.Entry
 	nodeId      string
-	taskStore   map[int64]service.StoreTaskInterface
+	taskStore   map[int64]collect.StoreTaskInterface
 	kafka       *kafkaClient.EasyKafka
-	apis        map[int64]chainService.API
+	apis        map[int64]blockchain.API
 	kafkaSender map[int64]chan []*kafka.Message
 }
 
@@ -79,7 +84,7 @@ func (s *Service) CheckClusterHealth() {
 	}()
 }
 
-func (s *Service) rebuildCluster(t service.StoreTaskInterface, blockChain int64, prefix string, r map[string]int64) {
+func (s *Service) rebuildCluster(t collect.StoreTaskInterface, blockChain int64, prefix string, r map[string]int64) {
 	m1, _ := t.GetClusterNode(blockChain, prefix)
 	for k, v := range m1 {
 		if o, ok := r[k]; ok {
@@ -194,7 +199,7 @@ func (s *Service) CheckErrTx() {
 					}
 
 					//todo 重发交易任务
-					var v service.NodeTask
+					var v collect.NodeTask
 					_ = json.Unmarshal([]byte(data), &v)
 
 					//清理 已经重试成功的交易
@@ -240,7 +245,7 @@ func (s *Service) clearLog() {
 			t := time.Now().Add(-h)
 
 			for i := 0; i < 5; i++ {
-				datePath := t.Format(service.DateFormat)
+				datePath := t.Format(DateFormat)
 
 				datePath = fmt.Sprintf("%v%v", datePath, "0000")
 				cmdLog := fmt.Sprintf("%v_%v", "cmd_log", datePath)
@@ -282,7 +287,7 @@ func (s *Service) getToken(blockChain int64, from string, contract string) {
 
 func NewService(config *config.Config, nodeId string) *Service {
 	log := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/monitor", config.LogConfig.Path), 24*time.Hour)
-	mp := make(map[int64]service.StoreTaskInterface, 2)
+	mp := make(map[int64]collect.StoreTaskInterface, 2)
 	sender := make(map[int64]chan []*kafka.Message, 2)
 	for _, v := range config.Chains {
 		store := db.NewTaskCacheService(v, log)
@@ -291,7 +296,7 @@ func NewService(config *config.Config, nodeId string) *Service {
 	}
 	kf := kafkaClient.NewEasyKafka(log)
 
-	apis := make(map[int64]chainService.API, 2)
+	apis := make(map[int64]blockchain.API, 2)
 
 	for _, v := range config.Chains {
 		if v.TxTask != nil {

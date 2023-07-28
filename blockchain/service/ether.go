@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/0xcregis/easynode/blockchain"
 	"github.com/0xcregis/easynode/blockchain/chain"
-	"github.com/0xcregis/easynode/blockchain/chain/ether"
 	"github.com/0xcregis/easynode/blockchain/config"
 	"github.com/gorilla/websocket"
 	"github.com/sunjiangjun/xlog"
@@ -21,7 +21,7 @@ import (
 type Ether struct {
 	log              *xlog.XLog
 	nodeCluster      []*config.NodeCluster
-	blockChainClient chain.BlockChain
+	blockChainClient blockchain.BlockChain
 }
 
 func (e *Ether) GetCode(chainCode int64, address string) (string, error) {
@@ -218,19 +218,21 @@ func (e *Ether) SendJsonRpc(chainCode int64, req string) (string, error) {
 	return e.SendEthReq(chainCode, req)
 }
 
-func NewEth(cluster []*config.NodeCluster, xlog *xlog.XLog) API {
-	blockChainClient := ether.NewChainClient()
-
+func NewEth(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.API {
+	blockChainClient := chain.NewChain(blockchain)
+	if blockChainClient == nil {
+		return nil
+	}
 	e := &Ether{
 		log:              xlog,
 		nodeCluster:      cluster,
 		blockChainClient: blockChainClient,
 	}
-	e.startWDT()
+	e.StartWDT()
 	return e
 }
 
-func (e *Ether) startWDT() {
+func (e *Ether) StartWDT() {
 	go func() {
 		t := time.NewTicker(10 * time.Minute)
 		for {
@@ -344,12 +346,12 @@ func (e *Ether) SendEthReqByWs(blockChain int64, receiverCh chan string, sendCh 
 			return "", err
 		}
 		defer conn.Close()
-		if err := conn.SetWriteDeadline(time.Now().Add(time.Second)); err != nil {
+		if err = conn.SetWriteDeadline(time.Now().Add(time.Second)); err != nil {
 			log.Fatalf("SetWriteDeadline: %v", err)
 			return "", err
 		}
 
-		if err := conn.SetReadDeadline(time.Now().Add(time.Second)); err != nil {
+		if err = conn.SetReadDeadline(time.Now().Add(time.Second)); err != nil {
 			log.Fatalf("SetReadDeadline: %v", err)
 			return "", err
 		}

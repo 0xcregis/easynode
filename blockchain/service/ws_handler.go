@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/0xcregis/easynode/blockchain"
 	"github.com/0xcregis/easynode/blockchain/config"
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
@@ -19,7 +20,7 @@ import (
 type WsHandler struct {
 	log               *logrus.Entry
 	nodeCluster       map[int64][]*config.NodeCluster
-	blockChainClients map[int64]API
+	blockChainClients map[int64]blockchain.API
 }
 
 func NewWsHandler(cluster map[int64][]*config.NodeCluster, xlog *xlog.XLog) *WsHandler {
@@ -66,12 +67,12 @@ func (s *WsHandler) Start(w http.ResponseWriter, r *http.Request) {
 func (s *WsHandler) handlerMessage(c *websocket.Conn, mt int, message []byte, log *logrus.Entry) {
 
 	//根据命令不同执行不同函数
-	var msg WsReqMessage
-	var returnMsg WsRespMessage
+	var msg blockchain.WsReqMessage
+	var returnMsg blockchain.WsRespMessage
 
 	err := json.Unmarshal(message, &msg)
 	if err != nil {
-		errMsg := &WsRespMessage{Id: msg.Id, Code: msg.Code, Err: err.Error(), Params: msg.Params, Status: 1, Resp: nil}
+		errMsg := &blockchain.WsRespMessage{Id: msg.Id, Code: msg.Code, Err: err.Error(), Params: msg.Params, Status: 1, Resp: nil}
 		s.returnMsg(errMsg, log, mt, c)
 		return
 	}
@@ -82,7 +83,7 @@ func (s *WsHandler) handlerMessage(c *websocket.Conn, mt int, message []byte, lo
 	returnMsg.Status = 0
 
 	//最终返回
-	defer func(r *WsRespMessage) {
+	defer func(r *blockchain.WsRespMessage) {
 		s.returnMsg(r, log, mt, c)
 	}(&returnMsg)
 
@@ -114,7 +115,7 @@ func (s *WsHandler) handlerMessage(c *websocket.Conn, mt int, message []byte, lo
 	}
 }
 
-func (s *WsHandler) requestMsg(msg *WsReqMessage, log *logrus.Entry, errCh chan error, returnCh chan interface{}, blockChain int64) {
+func (s *WsHandler) requestMsg(msg *blockchain.WsReqMessage, log *logrus.Entry, errCh chan error, returnCh chan interface{}, blockChain int64) {
 	switch msg.Code {
 	case 1: //单笔交易
 		{
@@ -363,7 +364,7 @@ func (s *WsHandler) requestMsg(msg *WsReqMessage, log *logrus.Entry, errCh chan 
 	}
 }
 
-func (s *WsHandler) returnMsg(r *WsRespMessage, log *logrus.Entry, mt int, c *websocket.Conn) {
+func (s *WsHandler) returnMsg(r *blockchain.WsRespMessage, log *logrus.Entry, mt int, c *websocket.Conn) {
 	bs, err := json.Marshal(r)
 	if err != nil {
 		log.Errorf("response|err=%v", err)

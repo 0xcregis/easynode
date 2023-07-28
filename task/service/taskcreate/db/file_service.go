@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/0xcregis/easynode/task"
 	"github.com/0xcregis/easynode/task/config"
-	"github.com/0xcregis/easynode/task/service"
 	"github.com/redis/go-redis/v9"
 	"github.com/segmentio/kafka-go"
 	"github.com/sunjiangjun/xlog"
@@ -25,7 +25,7 @@ type TaskCreateFile struct {
 	//sendCh chan []*kafka.Message
 }
 
-func NewFileTaskCreateService(config *config.Config, xg *xlog.XLog) service.StoreTaskInterface {
+func NewFileTaskCreateService(config *config.Config, xg *xlog.XLog) task.StoreTaskInterface {
 	client := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%v:%v", config.Redis.Addr, config.Redis.Port),
 		Password: "", // no password set
@@ -63,7 +63,7 @@ func (t *TaskCreateFile) GetAndDelNodeId(blockChainCode int64) ([]string, error)
 	return list, nil
 }
 
-func (t *TaskCreateFile) AddNodeTask(list []*service.NodeTask) ([]*kafka.Message, error) {
+func (t *TaskCreateFile) AddNodeTask(list []*task.NodeTask) ([]*kafka.Message, error) {
 	resultList := make([]*kafka.Message, 0, 5)
 	for _, v := range list {
 		bs, _ := json.Marshal(v)

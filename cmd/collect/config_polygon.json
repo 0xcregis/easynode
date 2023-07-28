@@ -1,0 +1,70 @@
+{
+  "Log": {
+    "Path": "./log/collect",
+    "Delay": 2
+  },
+  "KeyPath": "./data/temp/1",
+  "Chains": [
+    {
+      "TaskKafka": {
+        "Host": "192.168.2.9",
+        "Port": 9092,
+        "Group": "21",
+        "StartOffset": -1,
+        "Partition": 0,
+        "WritePartitions": [
+          0
+        ]
+      },
+      "Kafka": {
+        "Host": "192.168.2.9",
+        "Port": 9092
+      },
+      "Redis": {
+        "Addr": "192.168.2.9",
+        "Port": 6379,
+        "DB": 0
+      },
+      "BlockChainName": "polygon",
+      "BlockChainCode": 201,
+      "PullReceipt": false,
+      "PullTx": true,
+      "BlockTask": {
+        "FromCluster": [
+          {
+            "Host": "https://polygon-bor.publicnode.com",
+            "Key": ""
+          }
+        ],
+        "Kafka": {
+          "Topic": "polygon_block",
+          "Partition": 0
+        }
+      },
+      "TxTask": {
+        "FromCluster": [
+          {
+            "Host": "https://polygon-bor.publicnode.com",
+            "Key": ""
+          }
+        ],
+        "Kafka": {
+          "Topic": "polygon_tx",
+          "Partition": 0
+        }
+      },
+      "ReceiptTask": {
+        "FromCluster": [
+          {
+            "Host": "https://polygon-bor.publicnode.com",
+            "Key": ""
+          }
+        ],
+        "Kafka": {
+          "Topic": "polygon_receipt",
+          "Partition": 0
+        }
+      }
+    }
+  ]
+}

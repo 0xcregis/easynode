@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/0xcregis/easynode/blockchain"
 	chainConfig "github.com/0xcregis/easynode/blockchain/config"
 	"github.com/0xcregis/easynode/blockchain/service"
 	"github.com/0xcregis/easynode/common/util"
@@ -15,19 +16,17 @@ import (
 
 type Ether struct {
 	log        *xlog.XLog
-	api        service.API
+	api        blockchain.API
 	blockChain int64
 }
 
 func NewEther(log *xlog.XLog, v *config.BlockConfig) *Ether {
 	clusters := make([]*chainConfig.NodeCluster, 0, 2)
-
 	for _, v := range v.Cluster {
 		c := &chainConfig.NodeCluster{NodeUrl: v.NodeHost, NodeToken: v.NodeKey, Weight: v.Weight}
 		clusters = append(clusters, c)
 	}
-
-	api := service.NewEth(clusters, log)
+	api := service.NewApi(v.BlockChainCode, clusters, log)
 	return &Ether{
 		blockChain: v.BlockChainCode,
 		log:        log,

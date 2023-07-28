@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/0xcregis/easynode/blockchain"
 	chainConfig "github.com/0xcregis/easynode/blockchain/config"
 	"github.com/0xcregis/easynode/blockchain/service"
 	"github.com/0xcregis/easynode/task/config"
@@ -15,7 +16,7 @@ import (
 
 type Tron struct {
 	log        *xlog.XLog
-	api        service.API
+	api        blockchain.API
 	blockChain int64
 }
 
@@ -25,7 +26,7 @@ func NewTron(log *xlog.XLog, v *config.BlockConfig) *Tron {
 		c := &chainConfig.NodeCluster{NodeUrl: v.NodeHost, NodeToken: v.NodeKey, Weight: v.Weight}
 		clusters = append(clusters, c)
 	}
-	api := service.NewTron(clusters, log)
+	api := service.NewApi(v.BlockChainCode, clusters, log)
 	return &Tron{
 		log:        log,
 		api:        api,

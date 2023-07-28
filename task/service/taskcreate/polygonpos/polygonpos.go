@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/0xcregis/easynode/blockchain"
 	chainConfig "github.com/0xcregis/easynode/blockchain/config"
 	"github.com/0xcregis/easynode/blockchain/service"
 	"github.com/0xcregis/easynode/common/util"
@@ -15,7 +16,7 @@ import (
 
 type PolygonPos struct {
 	log        *xlog.XLog
-	api        service.API
+	api        blockchain.API
 	blockChain int64
 }
 
@@ -27,7 +28,7 @@ func NewPolygonPos(log *xlog.XLog, v *config.BlockConfig) *PolygonPos {
 		clusters = append(clusters, c)
 	}
 
-	api := service.NewEth(clusters, log)
+	api := service.NewApi(v.BlockChainCode, clusters, log)
 	return &PolygonPos{
 		blockChain: v.BlockChainCode,
 		log:        log,

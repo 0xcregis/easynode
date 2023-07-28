@@ -1,4 +1,4 @@
-package store
+package service
 
 import (
 	"context"
@@ -8,34 +8,35 @@ import (
 	"time"
 
 	kafkaClient "github.com/0xcregis/easynode/common/kafka"
+	"github.com/0xcregis/easynode/store"
+	"github.com/0xcregis/easynode/store/chain"
 	"github.com/0xcregis/easynode/store/config"
-	"github.com/0xcregis/easynode/store/service"
-	"github.com/0xcregis/easynode/store/service/db"
+	"github.com/0xcregis/easynode/store/db"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 )
 
-type Service struct {
-	core   service.DbMonitorAddressInterface
+type StoreHandler struct {
+	store  store.DbMonitorAddressInterface
 	log    *logrus.Entry
 	config *config.Config
 	kafka  *kafkaClient.EasyKafka
 }
 
-func NewStoreService(config *config.Config, log *xlog.XLog) *Service {
+func NewStoreHandler(config *config.Config, log *xlog.XLog) *StoreHandler {
 	ch := db.NewChService(config, log)
 	kfk := kafkaClient.NewEasyKafka(log)
 
-	return &Service{
+	return &StoreHandler{
 		config: config,
-		core:   ch,
+		store:  ch,
 		log:    log.WithField("model", "store"),
 		kafka:  kfk,
 	}
 }
 
-func (s *Service) Start(ctx context.Context) {
+func (s *StoreHandler) Start(ctx context.Context) {
 	for _, v := range s.config.Chains {
 		if v.TxStore {
 			go s.ReadTxFromKafka(v.BlockChain, v.KafkaCfg, ctx)
@@ -56,7 +57,7 @@ func (s *Service) Start(ctx context.Context) {
 
 }
 
-func (s *Service) ReadSubTxFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {
+func (s *StoreHandler) ReadSubTxFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
 	ctx2, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -67,7 +68,7 @@ func (s *Service) ReadSubTxFromKafka(blockChain int64, kafkaCfg map[string]*conf
 		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: Kafka.Topic, Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx2)
 	}()
 
-	list := make([]*service.SubTx, 0, 20)
+	list := make([]*store.SubTx, 0, 20)
 	tk := time.NewTicker(5 * time.Second)
 	lock := sync.RWMutex{}
 
@@ -79,7 +80,7 @@ func (s *Service) ReadSubTxFromKafka(blockChain int64, kafkaCfg map[string]*conf
 		case <-tk.C:
 			lock.Lock()
 			if len(list) > 0 {
-				err := s.core.NewSubTx(blockChain, list)
+				err := s.store.NewSubTx(blockChain, list)
 				if err != nil {
 					s.log.Errorf("ReadSubTxFromKafka|blockChain=%v,error=%v", blockChain, err.Error())
 				}
@@ -92,7 +93,7 @@ func (s *Service) ReadSubTxFromKafka(blockChain int64, kafkaCfg map[string]*conf
 			if msg.Value == nil || len(msg.Value) < 5 {
 				continue
 			}
-			var tx service.SubTx
+			var tx store.SubTx
 			err := json.Unmarshal(msg.Value, &tx)
 			if err != nil {
 				s.log.Errorf("ReadSubTxFromKafka|blockChain=%v,error=%v", blockChain, err.Error())
@@ -106,7 +107,7 @@ func (s *Service) ReadSubTxFromKafka(blockChain int64, kafkaCfg map[string]*conf
 	}
 }
 
-func (s *Service) ReadTxFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {
+func (s *StoreHandler) ReadTxFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
 	ctx2, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -117,7 +118,7 @@ func (s *Service) ReadTxFromKafka(blockChain int64, kafkaCfg map[string]*config.
 		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: Kafka.Topic, Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx2)
 	}()
 
-	list := make([]*service.Tx, 0, 20)
+	list := make([]*store.Tx, 0, 20)
 	tk := time.NewTicker(5 * time.Second)
 	lock := sync.RWMutex{}
 
@@ -129,7 +130,7 @@ func (s *Service) ReadTxFromKafka(blockChain int64, kafkaCfg map[string]*config.
 		case <-tk.C:
 			lock.Lock()
 			if len(list) > 0 {
-				err := s.core.NewTx(blockChain, list)
+				err := s.store.NewTx(blockChain, list)
 				if err != nil {
 					s.log.Errorf("ReadTxFromKafka|blockChain=%v,error=%v", blockChain, err.Error())
 				}
@@ -143,7 +144,7 @@ func (s *Service) ReadTxFromKafka(blockChain int64, kafkaCfg map[string]*config.
 				continue
 			}
 
-			tx, err := GetTxFromKafka(msg.Value, blockChain)
+			tx, err := chain.GetTxFromKafka(msg.Value, blockChain)
 			if err != nil {
 				s.log.Errorf("ReadTxFromKafka|blockChain=%v,error=%v", blockChain, err.Error())
 				continue
@@ -156,7 +157,7 @@ func (s *Service) ReadTxFromKafka(blockChain int64, kafkaCfg map[string]*config.
 	}
 }
 
-func (s *Service) ReadBlockFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {
+func (s *StoreHandler) ReadBlockFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
 	ctx2, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -167,7 +168,7 @@ func (s *Service) ReadBlockFromKafka(blockChain int64, kafkaCfg map[string]*conf
 		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: Kafka.Topic, Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx2)
 	}()
 
-	list := make([]*service.Block, 0, 20)
+	list := make([]*store.Block, 0, 20)
 	tk := time.NewTicker(5 * time.Second)
 	lock := sync.RWMutex{}
 	for {
@@ -178,7 +179,7 @@ func (s *Service) ReadBlockFromKafka(blockChain int64, kafkaCfg map[string]*conf
 		case <-tk.C:
 			lock.Lock()
 			if len(list) > 0 {
-				err := s.core.NewBlock(blockChain, list)
+				err := s.store.NewBlock(blockChain, list)
 				if err != nil {
 					s.log.Errorf("ReadBlockFromKafka|blockChain=%v,error=%v", blockChain, err.Error())
 				}
@@ -190,7 +191,7 @@ func (s *Service) ReadBlockFromKafka(blockChain int64, kafkaCfg map[string]*conf
 				continue
 			}
 
-			block, err := GetBlockFromKafka(msg.Value, blockChain)
+			block, err := chain.GetBlockFromKafka(msg.Value, blockChain)
 			if err != nil {
 				s.log.Errorf("ReadBlockFromKafka|blockChain=%v,error=%v", blockChain, err.Error())
 				continue
@@ -203,7 +204,7 @@ func (s *Service) ReadBlockFromKafka(blockChain int64, kafkaCfg map[string]*conf
 	}
 }
 
-func (s *Service) ReadReceiptFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {
+func (s *StoreHandler) ReadReceiptFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {
 	receiver := make(chan *kafka.Message)
 	ctx2, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -214,7 +215,7 @@ func (s *Service) ReadReceiptFromKafka(blockChain int64, kafkaCfg map[string]*co
 		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: Kafka.Topic, Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx2)
 	}()
 
-	list := make([]*service.Receipt, 0, 20)
+	list := make([]*store.Receipt, 0, 20)
 	tk := time.NewTicker(5 * time.Second)
 	lock := sync.RWMutex{}
 
@@ -226,7 +227,7 @@ func (s *Service) ReadReceiptFromKafka(blockChain int64, kafkaCfg map[string]*co
 		case <-tk.C:
 			lock.Lock()
 			if len(list) > 0 {
-				err := s.core.NewReceipt(blockChain, list)
+				err := s.store.NewReceipt(blockChain, list)
 				if err != nil {
 					s.log.Errorf("ReadReceiptFromKafka|blockChain=%v,error=%v", blockChain, err.Error())
 				}
@@ -239,7 +240,7 @@ func (s *Service) ReadReceiptFromKafka(blockChain int64, kafkaCfg map[string]*co
 				continue
 			}
 
-			receipt, err := GetReceiptFromKafka(msg.Value, blockChain)
+			receipt, err := chain.GetReceiptFromKafka(msg.Value, blockChain)
 			if err != nil {
 				s.log.Errorf("ReadReceiptFromKafka|blockChain=%v,error=%v", blockChain, err.Error())
 				continue

@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	"github.com/0xcregis/easynode/common/driver"
+	"github.com/0xcregis/easynode/store"
 	"github.com/0xcregis/easynode/store/config"
-	"github.com/0xcregis/easynode/store/service"
 	"github.com/sunjiangjun/xlog"
 	"gorm.io/gorm"
 )
@@ -19,8 +19,8 @@ type ClickhouseDb struct {
 	baseConfig *config.Config
 }
 
-func (m *ClickhouseDb) GetAddressByToken2(token string) ([]*service.MonitorAddress, error) {
-	var list []*service.MonitorAddress
+func (m *ClickhouseDb) GetAddressByToken2(token string) ([]*store.MonitorAddress, error) {
+	var list []*store.MonitorAddress
 	err := m.baseDb.Table(m.baseConfig.BaseDb.AddressTable).Select("address,block_chain").Where("token=?", token).Group("address,block_chain").Scan(&list).Error
 	if err != nil || len(list) < 1 {
 		return nil, errors.New("no record")
@@ -29,23 +29,23 @@ func (m *ClickhouseDb) GetAddressByToken2(token string) ([]*service.MonitorAddre
 }
 
 func (m *ClickhouseDb) DelMonitorAddress(blockchain int64, token string, address string) error {
-	err := m.baseDb.Table(m.baseConfig.BaseDb.AddressTable).Where("token=? and address=? and block_chain=?", token, address, blockchain).Delete(service.MonitorAddress{}).Error
+	err := m.baseDb.Table(m.baseConfig.BaseDb.AddressTable).Where("token=? and address=? and block_chain=?", token, address, blockchain).Delete(store.MonitorAddress{}).Error
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m *ClickhouseDb) NewToken(token *service.NodeToken) error {
+func (m *ClickhouseDb) NewToken(token *store.NodeToken) error {
 	return m.baseDb.Table(m.baseConfig.BaseDb.TokenTable).Create(token).Error
 }
 
-func (m *ClickhouseDb) UpdateToken(token string, nodeToken *service.NodeToken) error {
+func (m *ClickhouseDb) UpdateToken(token string, nodeToken *store.NodeToken) error {
 	return m.baseDb.Table(m.baseConfig.BaseDb.TokenTable).Where("token=?", token).UpdateColumn("email", nodeToken.Email).Error
 }
 
-func (m *ClickhouseDb) GetNodeTokenByEmail(email string) (error, *service.NodeToken) {
-	var r service.NodeToken
+func (m *ClickhouseDb) GetNodeTokenByEmail(email string) (error, *store.NodeToken) {
+	var r store.NodeToken
 	err := m.baseDb.Table(m.baseConfig.BaseDb.TokenTable).Where("email=?", email).First(&r).Error
 	if err != nil {
 		return err, nil
@@ -55,7 +55,7 @@ func (m *ClickhouseDb) GetNodeTokenByEmail(email string) (error, *service.NodeTo
 	}
 	return nil, &r
 }
-func (m *ClickhouseDb) NewSubTx(blockchain int64, txs []*service.SubTx) error {
+func (m *ClickhouseDb) NewSubTx(blockchain int64, txs []*store.SubTx) error {
 	if _, ok := m.chDb[blockchain]; !ok {
 		return errors.New("the server has not support this blockchain")
 	}
@@ -78,7 +78,7 @@ func (m *ClickhouseDb) NewSubTx(blockchain int64, txs []*service.SubTx) error {
 	return m.chDb[blockchain].Table(m.cfg[blockchain].ClickhouseDb.SubTxTable).Create(txs).Error
 }
 
-func (m *ClickhouseDb) NewTx(blockchain int64, txs []*service.Tx) error {
+func (m *ClickhouseDb) NewTx(blockchain int64, txs []*store.Tx) error {
 	if _, ok := m.chDb[blockchain]; !ok {
 		return errors.New("the server has not support this blockchain")
 	}
@@ -88,7 +88,7 @@ func (m *ClickhouseDb) NewTx(blockchain int64, txs []*service.Tx) error {
 	return m.chDb[blockchain].Table(m.cfg[blockchain].ClickhouseDb.TxTable).Create(txs).Error
 }
 
-func (m *ClickhouseDb) NewBlock(blockchain int64, blocks []*service.Block) error {
+func (m *ClickhouseDb) NewBlock(blockchain int64, blocks []*store.Block) error {
 	if _, ok := m.chDb[blockchain]; !ok {
 		return errors.New("the server has not support this blockchain")
 	}
@@ -103,7 +103,7 @@ func (m *ClickhouseDb) NewBlock(blockchain int64, blocks []*service.Block) error
 	return m.chDb[blockchain].Table(m.cfg[blockchain].ClickhouseDb.BlockTable).Create(blocks).Error
 }
 
-func (m *ClickhouseDb) NewReceipt(blockchain int64, receipts []*service.Receipt) error {
+func (m *ClickhouseDb) NewReceipt(blockchain int64, receipts []*store.Receipt) error {
 	if _, ok := m.chDb[blockchain]; !ok {
 		return errors.New("the server has not support this blockchain")
 	}
@@ -117,7 +117,7 @@ func (m *ClickhouseDb) NewReceipt(blockchain int64, receipts []*service.Receipt)
 	return m.chDb[blockchain].Table(m.cfg[blockchain].ClickhouseDb.BlockTable).Create(receipts).Error
 }
 
-func NewChService(cfg *config.Config, log *xlog.XLog) service.DbMonitorAddressInterface {
+func NewChService(cfg *config.Config, log *xlog.XLog) store.DbMonitorAddressInterface {
 	dbs := make(map[int64]*gorm.DB, 2)
 	cs := make(map[int64]*config.Chain, 2)
 	for _, v := range cfg.Chains {
@@ -144,12 +144,12 @@ func NewChService(cfg *config.Config, log *xlog.XLog) service.DbMonitorAddressIn
 	return m
 }
 
-func (m *ClickhouseDb) AddMonitorAddress(blockchain int64, address *service.MonitorAddress) error {
+func (m *ClickhouseDb) AddMonitorAddress(blockchain int64, address *store.MonitorAddress) error {
 	return m.baseDb.Table(m.baseConfig.BaseDb.AddressTable).Create(address).Error
 }
 
-func (m *ClickhouseDb) GetAddressByToken(blockchain int64, token string) ([]*service.MonitorAddress, error) {
-	var list []*service.MonitorAddress
+func (m *ClickhouseDb) GetAddressByToken(blockchain int64, token string) ([]*store.MonitorAddress, error) {
+	var list []*store.MonitorAddress
 	err := m.baseDb.Table(m.baseConfig.BaseDb.AddressTable).Select("address").Where("token=? and block_chain in (?)", token, []int64{blockchain, 0}).Group("address").Scan(&list).Error
 	if err != nil || len(list) < 1 {
 		return nil, errors.New("no record")
@@ -157,8 +157,8 @@ func (m *ClickhouseDb) GetAddressByToken(blockchain int64, token string) ([]*ser
 	return list, nil
 }
 
-func (m *ClickhouseDb) GetAddressByToken3(blockchain int64) ([]*service.MonitorAddress, error) {
-	var list []*service.MonitorAddress
+func (m *ClickhouseDb) GetAddressByToken3(blockchain int64) ([]*store.MonitorAddress, error) {
+	var list []*store.MonitorAddress
 	err := m.baseDb.Table(m.baseConfig.BaseDb.AddressTable).Select("address").Where("block_chain in (?)", []int64{blockchain, 0}).Group("address").Scan(&list).Error
 	if err != nil || len(list) < 1 {
 		return nil, errors.New("no record")

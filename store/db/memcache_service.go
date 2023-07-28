@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/0xcregis/easynode/store"
 	"github.com/0xcregis/easynode/store/config"
-	"github.com/0xcregis/easynode/store/service"
 	"github.com/redis/go-redis/v9"
 	"github.com/sunjiangjun/xlog"
 )
@@ -38,7 +38,7 @@ func (s *CacheService) GetMonitorAddress(blockChain int64) ([]string, error) {
 	return list, nil
 }
 
-func (s *CacheService) SetMonitorAddress(blockChain int64, addrList []*service.MonitorAddress) error {
+func (s *CacheService) SetMonitorAddress(blockChain int64, addrList []*store.MonitorAddress) error {
 	if _, ok := s.cacheClient[blockChain]; !ok {
 		return fmt.Errorf("blockChain:%v does not support", blockChain)
 	}

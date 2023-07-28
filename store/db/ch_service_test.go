@@ -5,19 +5,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0xcregis/easynode/store"
 	"github.com/0xcregis/easynode/store/config"
-	"github.com/0xcregis/easynode/store/service"
 	"github.com/sunjiangjun/xlog"
 )
 
-func Init() service.DbMonitorAddressInterface {
+func Init() store.DbMonitorAddressInterface {
 	cfg := config.LoadConfig("./../../../cmd/store/config.json")
 	return NewChService(&cfg, xlog.NewXLogger())
 }
 
 func TestClickhouseDb_AddMonitorAddress(t *testing.T) {
 	s := Init()
-	log.Println(s.AddMonitorAddress(0, &service.MonitorAddress{Address: "0xe5cB067E90D5Cd1F8052B83562Ae670bA4A211a8", Token: "5fe5f231-7051-4caf-9b52-108db92edbb4", BlockChain: 0, TxType: "0x2", Id: time.Now().UnixMilli()}))
+	log.Println(s.AddMonitorAddress(0, &store.MonitorAddress{Address: "0xe5cB067E90D5Cd1F8052B83562Ae670bA4A211a8", Token: "5fe5f231-7051-4caf-9b52-108db92edbb4", BlockChain: 0, TxType: "0x2", Id: time.Now().UnixMilli()}))
 }
 
 func TestClickhouseDb_GetAddressByToken(t *testing.T) {
@@ -27,7 +27,7 @@ func TestClickhouseDb_GetAddressByToken(t *testing.T) {
 
 func TestClickhouseDb_NewToken(t *testing.T) {
 	s := Init()
-	log.Println(s.NewToken(&service.NodeToken{
+	log.Println(s.NewToken(&store.NodeToken{
 		Token: "1231token",
 		Email: "123@qq.com",
 		Id:    time.Now().UnixMilli(),
@@ -37,7 +37,7 @@ func TestClickhouseDb_NewToken(t *testing.T) {
 func TestClickhouseDb_UpdateToken(t *testing.T) {
 
 	s := Init()
-	log.Println(s.UpdateToken("1231token", &service.NodeToken{
+	log.Println(s.UpdateToken("1231token", &store.NodeToken{
 		Token: "1231token",
 		Email: "125@qq.com",
 		Id:    time.Now().UnixMilli(),

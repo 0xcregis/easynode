@@ -1,4 +1,4 @@
-package store
+package service
 
 import (
 	"context"
@@ -10,11 +10,11 @@ import (
 	"github.com/sunjiangjun/xlog"
 )
 
-func Init() *Service {
-	cfg := storeConfig.LoadConfig("./../../../cmd/store/config.json")
+func Init() *StoreHandler {
+	cfg := storeConfig.LoadConfig("./../../cmd/store/config.json")
 	log.Printf("%+v\n", cfg)
 	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/store/store", 24*time.Hour)
-	return NewStoreService(&cfg, xLog)
+	return NewStoreHandler(&cfg, xLog)
 }
 func TestService_ReadTxFromKafka(t *testing.T) {
 	s := Init()

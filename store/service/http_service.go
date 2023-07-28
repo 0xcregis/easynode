@@ -1,4 +1,4 @@
-package network
+package service
 
 import (
 	"errors"
@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/0xcregis/easynode/common/util"
+	"github.com/0xcregis/easynode/store"
 	"github.com/0xcregis/easynode/store/config"
-	"github.com/0xcregis/easynode/store/service"
-	db2 "github.com/0xcregis/easynode/store/service/db"
+	"github.com/0xcregis/easynode/store/db"
 	"github.com/gin-gonic/gin"
 	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
@@ -18,26 +18,26 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-type Server struct {
+type HttpHandler struct {
 	log    *logrus.Entry
 	chains map[int64]*config.Chain
-	db     service.DbMonitorAddressInterface
+	store  store.DbMonitorAddressInterface
 }
 
-func NewServer(cfg *config.Config, log *xlog.XLog) *Server {
-	db := db2.NewChService(cfg, log)
+func NewHttpHandler(cfg *config.Config, log *xlog.XLog) *HttpHandler {
+	s := db.NewChService(cfg, log)
 	mp := make(map[int64]*config.Chain, 2)
 	for _, v := range cfg.Chains {
 		mp[v.BlockChain] = v
 	}
-	return &Server{
-		db:     db,
+	return &HttpHandler{
+		store:  s,
 		log:    log.WithField("model", "httpSrv"),
 		chains: mp,
 	}
 }
 
-func (s *Server) NewToken(c *gin.Context) {
+func (s *HttpHandler) NewToken(c *gin.Context) {
 	bs, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -53,7 +53,7 @@ func (s *Server) NewToken(c *gin.Context) {
 		return
 	}
 
-	err, _ = s.db.GetNodeTokenByEmail(email)
+	err, _ = s.store.GetNodeTokenByEmail(email)
 
 	if err == nil {
 		//已存在
@@ -62,7 +62,7 @@ func (s *Server) NewToken(c *gin.Context) {
 	}
 
 	//保存token
-	err = s.db.NewToken(&service.NodeToken{Token: token.String(), Email: email, Id: time.Now().UnixMicro()})
+	err = s.store.NewToken(&store.NodeToken{Token: token.String(), Email: email, Id: time.Now().UnixMicro()})
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, errors.New("create token failure").Error())
 		return
@@ -71,7 +71,7 @@ func (s *Server) NewToken(c *gin.Context) {
 	s.Success(c, token.String(), c.Request.URL.Path)
 }
 
-func (s *Server) DelMonitorAddress(c *gin.Context) {
+func (s *HttpHandler) DelMonitorAddress(c *gin.Context) {
 	bs, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -82,7 +82,7 @@ func (s *Server) DelMonitorAddress(c *gin.Context) {
 	token := r.Get("token").String()
 	address := r.Get("address").String()
 	blockchain := r.Get("blockChain").Int()
-	err = s.db.DelMonitorAddress(blockchain, token, address)
+	err = s.store.DelMonitorAddress(blockchain, token, address)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
@@ -91,7 +91,7 @@ func (s *Server) DelMonitorAddress(c *gin.Context) {
 	s.Success(c, nil, c.Request.URL.Path)
 }
 
-func (s *Server) GetMonitorAddress(c *gin.Context) {
+func (s *HttpHandler) GetMonitorAddress(c *gin.Context) {
 	bs, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -101,7 +101,7 @@ func (s *Server) GetMonitorAddress(c *gin.Context) {
 	r := gjson.ParseBytes(bs)
 	token := r.Get("token").String()
 
-	list, err := s.db.GetAddressByToken2(token)
+	list, err := s.store.GetAddressByToken2(token)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
@@ -110,7 +110,7 @@ func (s *Server) GetMonitorAddress(c *gin.Context) {
 	s.Success(c, list, c.Request.URL.Path)
 }
 
-func (s *Server) MonitorAddress(c *gin.Context) {
+func (s *HttpHandler) MonitorAddress(c *gin.Context) {
 	bs, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
@@ -147,8 +147,8 @@ func (s *Server) MonitorAddress(c *gin.Context) {
 	}
 
 	//address:hex string
-	addressTask := &service.MonitorAddress{BlockChain: blockChain, Address: addr, Token: token, TxType: fmt.Sprintf("%v", 0), Id: time.Now().UnixNano()}
-	err = s.db.AddMonitorAddress(blockChain, addressTask)
+	addressTask := &store.MonitorAddress{BlockChain: blockChain, Address: addr, Token: token, TxType: fmt.Sprintf("%v", 0), Id: time.Now().UnixNano()}
+	err = s.store.AddMonitorAddress(blockChain, addressTask)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
@@ -162,7 +162,7 @@ const (
 	FAIL    = 1
 )
 
-func (s *Server) Success(c *gin.Context, resp interface{}, path string) {
+func (s *HttpHandler) Success(c *gin.Context, resp interface{}, path string) {
 	s.log.Printf("path=%v,body=%v\n", path, resp)
 	mp := make(map[string]interface{})
 	mp["code"] = SUCCESS
@@ -170,7 +170,7 @@ func (s *Server) Success(c *gin.Context, resp interface{}, path string) {
 	c.JSON(200, mp)
 }
 
-func (s *Server) Error(c *gin.Context, path string, err string) {
+func (s *HttpHandler) Error(c *gin.Context, path string, err string) {
 	s.log.Printf("path=%v,err=%v\n", path, err)
 	mp := make(map[string]interface{})
 	mp["code"] = FAIL

@@ -1,4 +1,4 @@
-package network
+package service
 
 import (
 	"context"
@@ -12,9 +12,10 @@ import (
 	"time"
 
 	kafkaClient "github.com/0xcregis/easynode/common/kafka"
+	"github.com/0xcregis/easynode/store"
+	"github.com/0xcregis/easynode/store/chain"
 	"github.com/0xcregis/easynode/store/config"
-	"github.com/0xcregis/easynode/store/service"
-	db2 "github.com/0xcregis/easynode/store/service/db"
+	"github.com/0xcregis/easynode/store/db"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -27,23 +28,23 @@ type WsHandler struct {
 	log     *logrus.Entry
 	cfg     map[int64]*config.Chain
 	kafka   *kafkaClient.EasyKafka
-	db      service.DbMonitorAddressInterface
-	cache   *db2.CacheService
-	connMap map[string]*websocket.Conn              //token:conn
-	cmdMap  map[string]map[int64]service.CmdMessage //token:code-wsReq
+	store   store.DbMonitorAddressInterface
+	cache   *db.CacheService
+	connMap map[string]*websocket.Conn            //token:conn
+	cmdMap  map[string]map[int64]store.CmdMessage //token:code-wsReq
 	//ctxMap         map[string]map[int64]context.CancelFunc
 	//monitorAddress map[int64]map[string]*TokenAddress //blockchain:token-tokenAddress
-	writer chan *service.WsPushMessage
+	writer chan *store.WsPushMessage
 }
 
 type TokenAddress struct {
 	Token string
-	List  map[string]*service.MonitorAddress
+	List  map[string]*store.MonitorAddress
 }
 
 func NewWsHandler(cfg *config.Config, log *xlog.XLog) *WsHandler {
 	kfk := kafkaClient.NewEasyKafka(log)
-	db := db2.NewChService(cfg, log)
+	ch := db.NewChService(cfg, log)
 	mp := make(map[int64]*config.Chain, 2)
 
 	//mp2 := make(map[int64]map[string]*TokenAddress, 2)
@@ -51,18 +52,18 @@ func NewWsHandler(cfg *config.Config, log *xlog.XLog) *WsHandler {
 		mp[v.BlockChain] = v
 		//mp2[v.BlockChain] = make(map[string]*TokenAddress, 2)
 	}
-	cache := db2.NewCacheService(cfg.Chains, log)
+	cache := db.NewCacheService(cfg.Chains, log)
 	return &WsHandler{
 		log:     log.WithField("model", "wsSrv"),
-		db:      db,
+		store:   ch,
 		cfg:     mp,
 		kafka:   kfk,
 		cache:   cache,
 		connMap: make(map[string]*websocket.Conn, 5),
-		cmdMap:  make(map[string]map[int64]service.CmdMessage, 5),
+		cmdMap:  make(map[string]map[int64]store.CmdMessage, 5),
 		//ctxMap:         make(map[string]map[int64]context.CancelFunc, 5),
 		//monitorAddress: mp2,
-		writer: make(chan *service.WsPushMessage),
+		writer: make(chan *store.WsPushMessage),
 	}
 }
 
@@ -72,7 +73,7 @@ func (ws *WsHandler) Start(kafkaCtx context.Context) {
 	go func() {
 		for {
 			for _, w := range ws.cfg {
-				l, err := ws.db.GetAddressByToken3(w.BlockChain)
+				l, err := ws.store.GetAddressByToken3(w.BlockChain)
 				if err != nil {
 					continue
 				}
@@ -84,7 +85,7 @@ func (ws *WsHandler) Start(kafkaCtx context.Context) {
 	}()
 
 	//push message
-	go func(ctx context.Context, writer chan *service.WsPushMessage) {
+	go func(ctx context.Context, writer chan *store.WsPushMessage) {
 		interrupt := true
 		for interrupt {
 			select {
@@ -295,10 +296,10 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 						}
 					}
 
-					ls, _ := ws.db.GetAddressByToken(blockChain, newToken)
-					addressMp := make(map[string]*service.MonitorAddress, len(ls))
+					ls, _ := ws.store.GetAddressByToken(blockChain, newToken)
+					addressMp := make(map[string]*store.MonitorAddress, len(ls))
 					for _, a := range ls {
-						addressMp[service.GetCoreAddress(blockChain, a.Address)] = a
+						addressMp[chain.GetCoreAddress(blockChain, a.Address)] = a
 					}
 
 					mp[token] = &TokenAddress{
@@ -357,7 +358,7 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 		}
 		lock.RUnlock()
 
-		tp, err := service.GetTxType(blockChain, msg)
+		tp, err := chain.GetTxType(blockChain, msg)
 		if err != nil {
 			continue
 		}
@@ -377,7 +378,7 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 			lock.RLock()
 			//if tokenMp, ok := ws.monitorAddress[blockChain]; ok {
 			if tokenAddress, ok := monitorAddress[token]; ok {
-				if !service.CheckAddress(blockChain, msg, tokenAddress.List) {
+				if !chain.CheckAddress(blockChain, msg, tokenAddress.List) {
 					lock.RUnlock()
 					continue
 				}
@@ -391,9 +392,9 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 		}
 
 		//parse tx
-		var tx *service.SubTx
+		var tx *store.SubTx
 		if len(pushMp) > 0 {
-			tx, err = service.ParseTx(blockChain, msg)
+			tx, err = chain.ParseTx(blockChain, msg)
 			if err != nil {
 				ws.log.Warnf("ParseTx|blockchain:%v,kafka.msg:%v,err:%v", blockChain, string(msg.Value), err)
 				continue
@@ -402,7 +403,7 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 
 		//push
 		for token, code := range pushMp {
-			wpm := &service.WsPushMessage{Code: code, BlockChain: blockChain, Data: tx, Token: token}
+			wpm := &store.WsPushMessage{Code: code, BlockChain: blockChain, Data: tx, Token: token}
 			ws.writer <- wpm
 		}
 
@@ -417,7 +418,7 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 
 }
 
-func (ws *WsHandler) CheckCode(mp map[int64]service.CmdMessage, tp uint64, blockChain int64) (int64, bool) {
+func (ws *WsHandler) CheckCode(mp map[int64]store.CmdMessage, tp uint64, blockChain int64) (int64, bool) {
 	push := false
 	var code int64
 	for c, q := range mp {
@@ -479,12 +480,12 @@ func (ws *WsHandler) CheckCode(mp map[int64]service.CmdMessage, tp uint64, block
 func (ws *WsHandler) handlerMessage(token string, c *websocket.Conn, mt int, message []byte, log *logrus.Entry) {
 
 	//根据命令不同执行不同函数
-	var msg service.WsReqMessage
-	var returnMsg service.WsRespMessage
+	var msg store.WsReqMessage
+	var returnMsg store.WsRespMessage
 
 	err := json.Unmarshal(message, &msg)
 	if err != nil {
-		errMsg := &service.WsRespMessage{Id: msg.Id, Code: msg.Code, Err: err.Error(), Params: msg.Params, Status: 1, BlockChain: msg.BlockChain, Resp: nil}
+		errMsg := &store.WsRespMessage{Id: msg.Id, Code: msg.Code, Err: err.Error(), Params: msg.Params, Status: 1, BlockChain: msg.BlockChain, Resp: nil}
 		ws.returnMsg(errMsg, log, mt, c)
 		return
 	}
@@ -497,7 +498,7 @@ func (ws *WsHandler) handlerMessage(token string, c *websocket.Conn, mt int, mes
 	returnMsg.Status = 0
 
 	//最终返回
-	defer func(r *service.WsRespMessage) {
+	defer func(r *store.WsRespMessage) {
 		ws.returnMsg(r, log, mt, c)
 	}(&returnMsg)
 
@@ -535,9 +536,9 @@ func (ws *WsHandler) handlerMessage(token string, c *websocket.Conn, mt int, mes
 			if !ok {
 				//未订阅时，则订阅成功
 				if _, ok := ws.cmdMap[token]; !ok {
-					ws.cmdMap[token] = map[int64]service.CmdMessage{c: {Id: msg.Id, Code: c, BlockChain: msg.BlockChain}}
+					ws.cmdMap[token] = map[int64]store.CmdMessage{c: {Id: msg.Id, Code: c, BlockChain: msg.BlockChain}}
 				} else {
-					ws.cmdMap[token][c] = service.CmdMessage{Id: msg.Id, Code: c, BlockChain: msg.BlockChain}
+					ws.cmdMap[token][c] = store.CmdMessage{Id: msg.Id, Code: c, BlockChain: msg.BlockChain}
 				}
 			}
 		} else if c == 2 || c == 4 || c == 6 || c == 8 || c == 10 || c == 12 || c == 14 {
@@ -549,7 +550,7 @@ func (ws *WsHandler) handlerMessage(token string, c *websocket.Conn, mt int, mes
 	}
 }
 
-func (ws *WsHandler) returnMsg(r *service.WsRespMessage, log *logrus.Entry, mt int, c *websocket.Conn) {
+func (ws *WsHandler) returnMsg(r *store.WsRespMessage, log *logrus.Entry, mt int, c *websocket.Conn) {
 	bs, err := json.Marshal(r)
 	if err != nil {
 		log.Errorf("response|err=%v", err)

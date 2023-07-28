@@ -8,8 +8,7 @@ import (
 	"time"
 
 	"github.com/0xcregis/easynode/store/config"
-	"github.com/0xcregis/easynode/store/service/network"
-	"github.com/0xcregis/easynode/store/service/store"
+	"github.com/0xcregis/easynode/store/service"
 	"github.com/gin-gonic/gin"
 	"github.com/sunjiangjun/xlog"
 )
@@ -31,12 +30,12 @@ func main() {
 	defer cancel()
 
 	//是否存盘
-	store.NewStoreService(&cfg, xLog).Start(kafkaCtx)
+	service.NewStoreHandler(&cfg, xLog).Start(kafkaCtx)
 
 	//http 协议
 	e := gin.Default()
 	root := e.Group(cfg.RootPath)
-	srv := network.NewServer(&cfg, xLog)
+	srv := service.NewHttpHandler(&cfg, xLog)
 	root.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: xLog.Out}))
 	root.POST("/monitor/token", srv.NewToken)
 	root.POST("/monitor/address", srv.MonitorAddress)
@@ -44,7 +43,7 @@ func main() {
 	root.POST("/monitor/address/delete", srv.DelMonitorAddress)
 
 	//ws 协议
-	wsServer := network.NewWsHandler(&cfg, xLog)
+	wsServer := service.NewWsHandler(&cfg, xLog)
 	wsServer.Start(kafkaCtx)
 	root.Handle("GET", "/ws/:token", func(ctx *gin.Context) {
 		wsServer.Sub2(ctx, ctx.Writer, ctx.Request)

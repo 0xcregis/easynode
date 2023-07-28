@@ -17,8 +17,7 @@ import (
 	collectMonitor "github.com/0xcregis/easynode/collect/service/monitor"
 	"github.com/0xcregis/easynode/common/util"
 	storeConfig "github.com/0xcregis/easynode/store/config"
-	"github.com/0xcregis/easynode/store/service/network"
-	"github.com/0xcregis/easynode/store/service/store"
+	"github.com/0xcregis/easynode/store/service"
 	taskConfig "github.com/0xcregis/easynode/task/config"
 	"github.com/0xcregis/easynode/task/service/taskcreate"
 	taskapiConfig "github.com/0xcregis/easynode/taskapi/config"
@@ -89,12 +88,12 @@ func startStore(configPath string, ctx context.Context) {
 	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/store/store", 24*time.Hour)
 
 	//是否存盘
-	store.NewStoreService(&cfg, xLog).Start(ctx)
+	service.NewStoreHandler(&cfg, xLog).Start(ctx)
 
 	//http 协议
 	e := gin.Default()
 	root := e.Group(cfg.RootPath)
-	srv := network.NewServer(&cfg, xLog)
+	srv := service.NewHttpHandler(&cfg, xLog)
 	root.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: xLog.Out}))
 	root.POST("/monitor/token", srv.NewToken)
 	root.POST("/monitor/address", srv.MonitorAddress)
@@ -102,7 +101,7 @@ func startStore(configPath string, ctx context.Context) {
 	root.POST("/monitor/address/delete", srv.DelMonitorAddress)
 
 	//ws 协议
-	wsServer := network.NewWsHandler(&cfg, xLog)
+	wsServer := service.NewWsHandler(&cfg, xLog)
 	wsServer.Start(ctx)
 	root.Handle("GET", "/ws/:token", func(ctx *gin.Context) {
 		wsServer.Sub2(ctx, ctx.Writer, ctx.Request)

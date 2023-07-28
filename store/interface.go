@@ -1,4 +1,4 @@
-package service
+package store
 
 type DbMonitorAddressInterface interface {
 	NewToken(token *NodeToken) error

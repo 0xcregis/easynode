@@ -13,7 +13,6 @@ import (
 	chainService "github.com/0xcregis/easynode/blockchain/service"
 	"github.com/0xcregis/easynode/collect"
 	"github.com/0xcregis/easynode/collect/config"
-	"github.com/0xcregis/easynode/collect/service/cmd/chain"
 	"github.com/0xcregis/easynode/common/util"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
@@ -75,7 +74,7 @@ func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool
 	resp = gjson.Parse(resp).Get("result").String()
 
 	//解析数据
-	block, txList := chain.GetBlockFromJson(resp)
+	block, txList := GetBlockFromJson(resp)
 
 	if len(block.BlockHash) < 1 {
 		eLog.Errorf("GetBlockByHash|BlockChainName=%v,err=%v,blockHash=%v", s.chain.BlockChainName, resp, blockHash)
@@ -143,7 +142,7 @@ func (s *Service) GetBlockByNumber(blockNumber string, eLog *logrus.Entry, flag 
 	resp = gjson.Parse(resp).Get("result").String()
 
 	//解析数据
-	block, txList := chain.GetBlockFromJson(resp)
+	block, txList := GetBlockFromJson(resp)
 
 	if len(block.BlockHash) < 1 {
 		eLog.Errorf("GetBlockByNumber|BlockChainName=%v,err=%v,blockNumber=%v", s.chain.BlockChainName, resp, blockNumber)
@@ -202,7 +201,7 @@ func (s *Service) GetTx(txHash string, eLog *logrus.Entry) *collect.TxInterface 
 	resp = gjson.Parse(resp).Get("result").String()
 
 	//解析数据
-	tx := chain.GetTxFromJson(resp)
+	tx := GetTxFromJson(resp)
 
 	if len(tx.TxHash) < 1 {
 		eLog.Errorf("GetTx|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, resp, txHash)
@@ -253,7 +252,7 @@ func (s *Service) GetReceiptByBlock(blockHash, number string, eLog *logrus.Entry
 
 	resp = gjson.Parse(resp).Get("result").String()
 	// 解析数据
-	receiptList := chain.GetReceiptListFromJson(resp)
+	receiptList := GetReceiptListFromJson(resp)
 
 	if len(receiptList) == 0 {
 		eLog.Errorf("GetReceiptByBlock|BlockChainName=%v,err=%v,blocknumber=%v, blockHash=%v", s.chain.BlockChainName, "receipts is null", number, blockHash)
@@ -296,7 +295,7 @@ func (s *Service) GetReceipt(txHash string, eLog *logrus.Entry) (*collect.Receip
 	resp = gjson.Parse(resp).Get("result").String()
 
 	// 解析数据
-	receipt := chain.GetReceiptFromJson(resp)
+	receipt := GetReceiptFromJson(resp)
 
 	if receipt == nil || len(receipt.TransactionHash) < 1 {
 		eLog.Errorf("GetReceipt|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, resp, txHash)

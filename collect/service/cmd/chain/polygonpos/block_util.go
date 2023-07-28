@@ -1,4 +1,4 @@
-package chain
+package polygonpos
 
 import (
 	"encoding/json"

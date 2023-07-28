@@ -20,7 +20,7 @@ func Init() (collect.BlockChainInterface, config.Config, *xlog.XLog) {
 
 func TestService_GetBlockByNumber(t *testing.T) {
 	s, _, x := Init()
-	b, _ := s.GetBlockByNumber("17658423", x.WithFields(logrus.Fields{}), true)
+	b, _ := s.GetBlockByNumber("17658423", x.WithFields(logrus.Fields{}), false)
 	log.Printf("%+v", b)
 }
 
@@ -39,24 +39,11 @@ func TestService_GetReceipt(t *testing.T) {
 	log.Printf("%+v", r)
 }
 
-func TestService_Monitor(t *testing.T) {
-	_, cfg, _ := Init()
-
-	c1 := cfg.Chains[0]
-	c2 := c1.CopyChain()
-
-	c1.BlockTask.FromCluster[0].ErrorCount = 11
-	c2.BlockTask.FromCluster[0].ErrorCount = 12
-
-	c1.TxTask.FromCluster[0].ErrorCount = 13
-	c2.TxTask.FromCluster[0].ErrorCount = 14
-
-	c1.ReceiptTask.FromCluster[0].ErrorCount = 15
-	c2.ReceiptTask.FromCluster[0].ErrorCount = 16
-
-	c1.BlockChainCode = 101
-	c2.BlockChainCode = 102
-
-	log.Println(c2)
-	log.Println(c1)
+func TestService_GetReceiptByBlock(t *testing.T) {
+	s, _, x := Init()
+	r, err := s.GetReceiptByBlock("", "17658423", x.WithFields(logrus.Fields{}))
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("%+v", r)
 }

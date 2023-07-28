@@ -17,6 +17,16 @@ all:
 test:
 	$(GORUN) build/ci.go test ./test
 
+test_blockchain:
+	$(GORUN) build/ci.go test ./blockchain/chain/ether
+	$(GORUN) build/ci.go test ./blockchain/chain/polygonpos
+	$(GORUN) build/ci.go test ./blockchain/chain/tron
+
+test_collect:
+	$(GORUN) build/ci.go test ./collect/service/cmd/chain/ether
+	$(GORUN) build/ci.go test ./collect/service/cmd/chain/polygonpos
+	$(GORUN) build/ci.go test ./collect/service/cmd/chain/tron2
+
 lint: ## Run linters.
 	$(GORUN) build/ci.go lint
 

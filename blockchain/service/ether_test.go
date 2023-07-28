@@ -5,14 +5,13 @@ import (
 	"testing"
 
 	"github.com/0xcregis/easynode/blockchain"
-	"github.com/0xcregis/easynode/blockchain/chain/ether"
 	"github.com/0xcregis/easynode/blockchain/config"
 	"github.com/sunjiangjun/xlog"
 )
 
 func Init3() blockchain.API {
 	cfg := config.LoadConfig("./../../cmd/blockchain/config_ether.json")
-	return NewEth(cfg.Cluster[200], ether.NewChainClient(), xlog.NewXLogger())
+	return NewEth(cfg.Cluster[200], 200, xlog.NewXLogger())
 }
 
 func TestEther_GetLatestBlock(t *testing.T) {

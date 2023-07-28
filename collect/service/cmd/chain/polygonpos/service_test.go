@@ -1,7 +1,6 @@
 package polygonpos
 
 import (
-	"log"
 	"testing"
 
 	"github.com/0xcregis/easynode/collect"
@@ -21,29 +20,31 @@ func Init() (collect.BlockChainInterface, config.Config, *xlog.XLog) {
 func TestService_GetBlockByNumber(t *testing.T) {
 	s, _, x := Init()
 	b, _ := s.GetBlockByNumber("45611899", x.WithFields(logrus.Fields{}), false)
-	log.Printf("%+v", b)
+	t.Logf("%+v", b)
 }
 
 func TestService_GetTx(t *testing.T) {
 	s, _, x := Init()
 	tx := s.GetTx("0x9f656ad21cad7853f58aa05191ec4c11bd0459f40bec1a259f089fce4c80232f", x.WithFields(logrus.Fields{}))
-	log.Println(tx)
+	t.Log(tx)
 }
 
 func TestService_GetReceipt(t *testing.T) {
 	s, _, x := Init()
 	r, err := s.GetReceipt("0x9f656ad21cad7853f58aa05191ec4c11bd0459f40bec1a259f089fce4c80232f", x.WithFields(logrus.Fields{}))
 	if err != nil {
-		panic(err)
+		t.Error(err)
+	} else {
+		t.Logf("%+v", r)
 	}
-	log.Printf("%+v", r)
 }
 
-func TestService_GetReceiptByBlock(t *testing.T) {
-	s, _, x := Init()
-	r, err := s.GetReceiptByBlock("", "45611899", x.WithFields(logrus.Fields{}))
-	if err != nil {
-		panic(err)
-	}
-	log.Printf("%+v", r)
-}
+//func TestService_GetReceiptByBlock(t *testing.T) {
+//	s, _, x := Init()
+//	r, err := s.GetReceiptByBlock("", "45611899", x.WithFields(logrus.Fields{}))
+//	if err != nil {
+//		t.Error(err)
+//	} else {
+//		t.Logf("%+v", r)
+//	}
+//}

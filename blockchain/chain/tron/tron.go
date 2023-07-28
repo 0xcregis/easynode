@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/0xcregis/easynode/blockchain/chain"
+	"github.com/0xcregis/easynode/blockchain"
 	"github.com/0xcregis/easynode/common/util"
 	"github.com/tidwall/gjson"
 )
@@ -26,7 +26,7 @@ func (t *Tron) EthUnSubscribe(host string, token string) (string, error) {
 	panic("implement me")
 }
 
-func NewChainClient() chain.BlockChain {
+func NewChainClient() blockchain.BlockChain {
 	return &Tron{}
 }
 

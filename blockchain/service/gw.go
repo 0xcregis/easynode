@@ -2,23 +2,17 @@ package service
 
 import (
 	"github.com/0xcregis/easynode/blockchain"
-	"github.com/0xcregis/easynode/blockchain/chain/ether"
-	"github.com/0xcregis/easynode/blockchain/chain/polygonpos"
-	"github.com/0xcregis/easynode/blockchain/chain/tron"
 	"github.com/0xcregis/easynode/blockchain/config"
 	"github.com/sunjiangjun/xlog"
 )
 
 func NewApi(blockchain int64, cluster []*config.NodeCluster, xlog *xlog.XLog) blockchain.API {
 	if blockchain == 200 {
-		blockChainClient := ether.NewChainClient()
-		return NewEth(cluster, blockChainClient, xlog)
+		return NewEth(cluster, blockchain, xlog)
 	} else if blockchain == 205 {
-		blockChainClient := tron.NewChainClient()
-		return NewTron(cluster, blockChainClient, xlog)
+		return NewTron(cluster, blockchain, xlog)
 	} else if blockchain == 201 {
-		blockChainClient := polygonpos.NewChainClient()
-		return NewPolygonPos(cluster, blockChainClient, xlog)
+		return NewPolygonPos(cluster, blockchain, xlog)
 	}
 	return nil
 }

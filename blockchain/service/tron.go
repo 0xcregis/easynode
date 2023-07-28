@@ -18,7 +18,7 @@ import (
 type Tron struct {
 	log              *xlog.XLog
 	nodeCluster      []*config.NodeCluster
-	blockChainClient chain.BlockChain
+	blockChainClient blockchain.BlockChain
 }
 
 func (t *Tron) StartWDT() {
@@ -108,7 +108,11 @@ func (t *Tron) GetTransactionReceiptByHash(chainCode int64, hash string) (string
 	return t.SendReq(chainCode, req, "wallet/gettransactioninfobyid")
 }
 
-func NewTron(cluster []*config.NodeCluster, blockChainClient chain.BlockChain, xlog *xlog.XLog) blockchain.API {
+func NewTron(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.API {
+	blockChainClient := chain.NewChain(blockchain)
+	if blockChainClient == nil {
+		return nil
+	}
 	t := &Tron{
 		log:              xlog,
 		nodeCluster:      cluster,

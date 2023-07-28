@@ -1,7 +1,6 @@
 package tron2
 
 import (
-	"log"
 	"testing"
 
 	"github.com/0xcregis/easynode/collect"
@@ -21,14 +20,13 @@ func Init() (collect.BlockChainInterface, config.Config, *xlog.XLog) {
 func TestService_GetTx(t *testing.T) {
 	s, _, x := Init()
 	tx := s.GetTx("76f1ff8be6b3cf041f29b67c3a5d025f232d2a48a6d0810f0f234fc73c16adcc", x.WithFields(logrus.Fields{}))
-	log.Printf("%+v\n", tx)
+	t.Logf("%+v\n", tx)
 }
 
 func TestService_GetBlockByNumber(t *testing.T) {
 	s, _, x := Init()
-	b, t1 := s.GetBlockByNumber("52642923", x.WithFields(logrus.Fields{}), false)
-	log.Println(b)
-	log.Println(len(t1))
+	b, _ := s.GetBlockByNumber("52642923", x.WithFields(logrus.Fields{}), false)
+	t.Log(b)
 }
 
 func TestService_GetReceiptByBlock(t *testing.T) {

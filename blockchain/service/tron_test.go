@@ -5,14 +5,13 @@ import (
 	"testing"
 
 	"github.com/0xcregis/easynode/blockchain"
-	"github.com/0xcregis/easynode/blockchain/chain/tron"
 	"github.com/0xcregis/easynode/blockchain/config"
 	"github.com/sunjiangjun/xlog"
 )
 
 func Init2() blockchain.API {
 	cfg := config.LoadConfig("./../../cmd/blockchain/config_tron.json")
-	return NewTron(cfg.Cluster[205], tron.NewChainClient(), xlog.NewXLogger())
+	return NewTron(cfg.Cluster[205], 205, xlog.NewXLogger())
 }
 
 func TestTron_Balance(t *testing.T) {

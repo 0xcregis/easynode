@@ -1,4 +1,4 @@
-package chain
+package blockchain
 
 type BlockChain interface {
 	SendRequestToChain(host string, token string, query string) (string, error)

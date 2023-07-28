@@ -5,14 +5,13 @@ import (
 	"testing"
 
 	"github.com/0xcregis/easynode/blockchain"
-	"github.com/0xcregis/easynode/blockchain/chain/polygonpos"
 	"github.com/0xcregis/easynode/blockchain/config"
 	"github.com/sunjiangjun/xlog"
 )
 
 func Init4() blockchain.API {
 	cfg := config.LoadConfig("./../../cmd/blockchain/config_polygon.json")
-	return NewPolygonPos(cfg.Cluster[201], polygonpos.NewChainClient(), xlog.NewXLogger())
+	return NewPolygonPos(cfg.Cluster[201], 201, xlog.NewXLogger())
 }
 
 func TestPolygonPos_GetLatestBlock(t *testing.T) {

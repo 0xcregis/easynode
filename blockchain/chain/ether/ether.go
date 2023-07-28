@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/0xcregis/easynode/blockchain/chain"
+	"github.com/0xcregis/easynode/blockchain"
 	"github.com/0xcregis/easynode/blockchain/chain/token"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -38,7 +38,7 @@ func (e *Ether) EthUnSubscribe(host string, token string) (string, error) {
 	panic("implement me")
 }
 
-func NewChainClient() chain.BlockChain {
+func NewChainClient() blockchain.BlockChain {
 	return &Ether{}
 }
 

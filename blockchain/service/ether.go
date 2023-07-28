@@ -21,7 +21,7 @@ import (
 type Ether struct {
 	log              *xlog.XLog
 	nodeCluster      []*config.NodeCluster
-	blockChainClient chain.BlockChain
+	blockChainClient blockchain.BlockChain
 }
 
 func (e *Ether) GetCode(chainCode int64, address string) (string, error) {
@@ -218,7 +218,11 @@ func (e *Ether) SendJsonRpc(chainCode int64, req string) (string, error) {
 	return e.SendEthReq(chainCode, req)
 }
 
-func NewEth(cluster []*config.NodeCluster, blockChainClient chain.BlockChain, xlog *xlog.XLog) blockchain.API {
+func NewEth(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.API {
+	blockChainClient := chain.NewChain(blockchain)
+	if blockChainClient == nil {
+		return nil
+	}
 	e := &Ether{
 		log:              xlog,
 		nodeCluster:      cluster,

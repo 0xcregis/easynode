@@ -21,7 +21,7 @@ import (
 type PolygonPos struct {
 	log              *xlog.XLog
 	nodeCluster      []*config.NodeCluster
-	blockChainClient chain.BlockChain
+	blockChainClient blockchain.BlockChain
 }
 
 func (e *PolygonPos) GetCode(chainCode int64, address string) (string, error) {
@@ -218,7 +218,11 @@ func (e *PolygonPos) SendJsonRpc(chainCode int64, req string) (string, error) {
 	return e.SendEthReq(chainCode, req)
 }
 
-func NewPolygonPos(cluster []*config.NodeCluster, blockChainClient chain.BlockChain, xlog *xlog.XLog) blockchain.API {
+func NewPolygonPos(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.API {
+	blockChainClient := chain.NewChain(blockchain)
+	if blockChainClient == nil {
+		return nil
+	}
 	e := &PolygonPos{
 		log:              xlog,
 		nodeCluster:      cluster,

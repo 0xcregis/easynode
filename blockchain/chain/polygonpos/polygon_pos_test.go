@@ -1,11 +1,28 @@
-package ether
+package polygonpos
 
 import (
-	"log"
 	"testing"
 )
 
-func TestPolygon_GetToken(t *testing.T) {
+func TestPolygonPos_GetToken(t *testing.T) {
 	c := NewChainClient()
-	log.Println(c.GetTokenBalance("https://nd-422-757-666.p2pify.com", "0a9d79d93fb2f4a4b1e04695da2b77a7", "0x05fe069626543842439ef90d9fa1633640c50cf1", "0xef743eab534bdeba2de7ab30c1117e8b8206d85e"))
+	resp, err := c.GetTokenBalance("https://polygon.rpc.blxrbdn.com", "", "0xc2132d05d31c914a87c6611c10748aeb04b58e8f", "0xa006b7ba6fb6fd1df91a6c0478bc126702299a47")
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log(resp)
+	}
+}
+
+func TestPolygonPos_SendRequestToChain(t *testing.T) {
+	c := NewChainClient()
+	query := `
+	{ "jsonrpc":"2.0", "method":"eth_blockNumber","params":[],"id":1}
+	`
+	resp, err := c.SendRequestToChain("https://polygon.rpc.blxrbdn.com", "", query)
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log(resp)
+	}
 }

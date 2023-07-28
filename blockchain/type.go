@@ -1,4 +1,4 @@
-package service
+package blockchain
 
 type WsReqMessage struct {
 	Id     int64

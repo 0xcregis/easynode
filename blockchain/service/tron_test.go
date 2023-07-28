@@ -4,18 +4,50 @@ import (
 	"log"
 	"testing"
 
+	"github.com/0xcregis/easynode/blockchain"
+	"github.com/0xcregis/easynode/blockchain/chain/tron"
 	"github.com/0xcregis/easynode/blockchain/config"
 	"github.com/sunjiangjun/xlog"
 )
 
-func Init2() API {
+func Init2() blockchain.API {
 	cfg := config.LoadConfig("./../../cmd/blockchain/config_tron.json")
-	return NewTron(cfg.Cluster[205], xlog.NewXLogger())
+	return NewTron(cfg.Cluster[205], tron.NewChainClient(), xlog.NewXLogger())
+}
+
+func TestTron_Balance(t *testing.T) {
+	s := Init2()
+	resp, err := s.Balance(205, "TXeZAknJe2gbqSJyZYXbNMVvQgsKQbSoxX", "latest")
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log(resp)
+	}
+}
+
+func TestTron_GetLatestBlock(t *testing.T) {
+	s := Init2()
+	resp, err := s.LatestBlock(205)
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log(resp)
+	}
+}
+
+func TestTron_GetTxByHash(t *testing.T) {
+	s := Init2()
+	resp, err := s.GetTxByHash(205, "d0ff91487dd11ab6bd2cffa4af97bb472ede4f1713786fa2b15bf32011d0b681")
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log(resp)
+	}
 }
 
 func TestTron_GetBlockByNumber(t *testing.T) {
 	c := Init2()
-	log.Println(c.GetBlockByNumber(205, "49477110", false))
+	log.Println(c.GetBlockByNumber(205, "45611899", false))
 }
 
 func TestTron_GetBlockByHash(t *testing.T) {
@@ -25,5 +57,5 @@ func TestTron_GetBlockByHash(t *testing.T) {
 
 func TestTron_GetBlockReceiptByBlockNumber(t *testing.T) {
 	c := Init2()
-	log.Println(c.GetBlockReceiptByBlockNumber(205, "34222872"))
+	log.Println(c.GetBlockReceiptByBlockNumber(205, "45611899"))
 }

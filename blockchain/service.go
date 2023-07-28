@@ -1,4 +1,4 @@
-package service
+package blockchain
 
 type API interface {
 	Balance(chainCode int64, address string, tag string) (string, error)
@@ -24,6 +24,6 @@ type API interface {
 	GetAddressType(chainCode int64, address string) (string, error)
 	GetCode(chainCode int64, address string) (string, error)
 
-	startWDT()
+	StartWDT()
 	MonitorCluster() any
 }

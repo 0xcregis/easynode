@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/0xcregis/easynode/blockchain"
 	"github.com/0xcregis/easynode/blockchain/chain"
-	"github.com/0xcregis/easynode/blockchain/chain/tron"
 	"github.com/0xcregis/easynode/blockchain/config"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
@@ -21,7 +21,7 @@ type Tron struct {
 	blockChainClient chain.BlockChain
 }
 
-func (t *Tron) startWDT() {
+func (t *Tron) StartWDT() {
 	go func() {
 		ticker := time.NewTicker(10 * time.Minute)
 		for {
@@ -108,14 +108,13 @@ func (t *Tron) GetTransactionReceiptByHash(chainCode int64, hash string) (string
 	return t.SendReq(chainCode, req, "wallet/gettransactioninfobyid")
 }
 
-func NewTron(cluster []*config.NodeCluster, xlog *xlog.XLog) API {
-	blockChainClient := tron.NewChainClient()
+func NewTron(cluster []*config.NodeCluster, blockChainClient chain.BlockChain, xlog *xlog.XLog) blockchain.API {
 	t := &Tron{
 		log:              xlog,
 		nodeCluster:      cluster,
 		blockChainClient: blockChainClient,
 	}
-	t.startWDT()
+	t.StartWDT()
 	return t
 }
 

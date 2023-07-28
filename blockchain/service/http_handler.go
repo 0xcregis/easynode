@@ -4,6 +4,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/0xcregis/easynode/blockchain"
 	"github.com/0xcregis/easynode/blockchain/config"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -14,7 +15,7 @@ import (
 type HttpHandler struct {
 	log               *logrus.Entry
 	nodeCluster       map[int64][]*config.NodeCluster
-	blockChainClients map[int64]API
+	blockChainClients map[int64]blockchain.API
 }
 
 func NewHttpHandler(cluster map[int64][]*config.NodeCluster, xlog *xlog.XLog) *HttpHandler {

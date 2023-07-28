@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/0xcregis/easynode/blockchain"
 	"github.com/0xcregis/easynode/blockchain/chain"
-	"github.com/0xcregis/easynode/blockchain/chain/ether"
 	"github.com/0xcregis/easynode/blockchain/config"
 	"github.com/gorilla/websocket"
 	"github.com/sunjiangjun/xlog"
@@ -218,19 +218,17 @@ func (e *Ether) SendJsonRpc(chainCode int64, req string) (string, error) {
 	return e.SendEthReq(chainCode, req)
 }
 
-func NewEth(cluster []*config.NodeCluster, xlog *xlog.XLog) API {
-	blockChainClient := ether.NewChainClient()
-
+func NewEth(cluster []*config.NodeCluster, blockChainClient chain.BlockChain, xlog *xlog.XLog) blockchain.API {
 	e := &Ether{
 		log:              xlog,
 		nodeCluster:      cluster,
 		blockChainClient: blockChainClient,
 	}
-	e.startWDT()
+	e.StartWDT()
 	return e
 }
 
-func (e *Ether) startWDT() {
+func (e *Ether) StartWDT() {
 	go func() {
 		t := time.NewTicker(10 * time.Minute)
 		for {

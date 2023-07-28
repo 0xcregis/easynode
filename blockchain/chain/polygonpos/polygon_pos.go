@@ -1,4 +1,4 @@
-package ether
+package polygonpos
 
 import (
 	"errors"

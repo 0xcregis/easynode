@@ -1,0 +1,26 @@
+{
+  "TaskKafka": {
+    "Host": "192.168.2.9",
+    "Port": 9092
+  },
+  "Redis": {
+    "Addr": "192.168.2.9",
+    "Port": 6379,
+    "DB": 0
+  },
+  "AutoCreateBlockTask": true,
+  "Chains": [
+    {
+      "Cluster": [
+        {
+          "NodeHost": "https://api.node.glif.io/rpc/v0",
+          "NodeKey": ""
+        }
+      ],
+      "BlockChainName": "filecoin",
+      "BlockChainCode": 301,
+      "BlockMin": 3091818,
+      "BlockMax": 0
+    }
+  ]
+}

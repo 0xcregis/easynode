@@ -228,10 +228,10 @@ func (e *FileCoin) GetBlockByNumber(chainCode int64, number string, flag bool) (
 	for index, r := range blocks {
 		m := make(map[string]any, 2)
 		m["BlockHead"] = r.String()
-		cid := cids[index].Get("/").String()
-		m["Cid"] = cid
+		blockId := cids[index].Get("/").String()
+		m["Cid"] = blockId
 		if flag { //blockhead
-			blockMsg, err := e.GetTxsByHash(chainCode, cid)
+			blockMsg, err := e.GetTxsByHash(chainCode, blockId)
 			if err != nil {
 				m["BlockMessages"] = err
 			} else {

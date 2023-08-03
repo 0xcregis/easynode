@@ -155,7 +155,7 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 
 	for UsedMaxNumber <= v.BlockMax {
 		index := rand.Intn(l)
-		task := &task.NodeTask{
+		t := &task.NodeTask{
 			NodeId:      nodeIdList[index],
 			BlockNumber: fmt.Sprintf("%v", UsedMaxNumber),
 			BlockChain:  v.BlockChainCode,
@@ -166,7 +166,7 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 			Id:          time.Now().UnixNano(),
 		}
 
-		list = append(list, task)
+		list = append(list, t)
 		UsedMaxNumber++
 	}
 

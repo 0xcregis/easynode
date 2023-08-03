@@ -1,0 +1,26 @@
+{
+  "TaskKafka": {
+    "Host": "192.168.2.9",
+    "Port": 9092
+  },
+  "Redis": {
+    "Addr": "192.168.2.9",
+    "Port": 6379,
+    "DB": 0
+  },
+  "AutoCreateBlockTask": true,
+  "Chains": [
+    {
+      "Cluster": [
+        {
+          "NodeHost": "https://polygon-bor.publicnode.com",
+          "NodeKey": ""
+        }
+      ],
+      "BlockChainName": "polygon",
+      "BlockChainCode": 201,
+      "BlockMin": 45856714,
+      "BlockMax": 0
+    }
+  ]
+}

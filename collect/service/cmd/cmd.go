@@ -296,7 +296,6 @@ func (c *Cmd) ExecReceiptTask(receiptChan chan *collect.NodeTask, kf chan []*kaf
 				if len(list) > 0 {
 					kf <- list
 				}
-
 			}
 
 		}(receiptTask, buffCh, kf, log)
@@ -764,6 +763,12 @@ func (c *Cmd) HandlerBlock(block *collect.BlockInterface) (*kafka.Message, error
 			return nil, err
 		}
 		r = b
+	} else if v, ok := block.Block.(map[string]interface{}); ok {
+		b, err := json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		r = b
 	}
 	return &kafka.Message{Topic: k.Topic, Partition: k.Partition, Time: time.Now(), Key: []byte(block.BlockHash), Value: r}, nil
 }
@@ -803,6 +808,12 @@ func (c *Cmd) HandlerReceipt(receipt *collect.ReceiptInterface) (*kafka.Message,
 		}
 		r = b
 	} else if v, ok := receipt.Receipt.(*collect.TronReceipt); ok {
+		b, err := json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		r = b
+	} else if v, ok := receipt.Receipt.(map[string]interface{}); ok {
 		b, err := json.Marshal(v)
 		if err != nil {
 			return nil, err

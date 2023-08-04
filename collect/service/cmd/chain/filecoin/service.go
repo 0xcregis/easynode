@@ -11,6 +11,7 @@ import (
 	chainService "github.com/0xcregis/easynode/blockchain/service"
 	"github.com/0xcregis/easynode/collect"
 	"github.com/0xcregis/easynode/collect/config"
+	"github.com/0xcregis/easynode/common/ethtypes"
 	"github.com/0xcregis/easynode/common/util"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
@@ -55,7 +56,11 @@ func (s *Service) GetMultiBlockByNumber(blockNumber string, log *logrus.Entry, f
 	for _, v := range list {
 		blockHash := v.Get("Cid").String()
 		block := v.Get("BlockHead").String()
-		r := &collect.BlockInterface{BlockHash: blockHash, BlockNumber: blockNumber, Block: block}
+		mp := make(map[string]any, 2)
+		mp["block"] = block
+		mp["number"] = blockNumber
+		mp["blockHash"] = blockHash
+		r := &collect.BlockInterface{BlockHash: blockHash, BlockNumber: blockNumber, Block: mp}
 		blockList = append(blockList, r)
 	}
 
@@ -162,6 +167,7 @@ func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool
 		m := make(map[string]any, 2)
 		m["tx"] = v.Tx
 		m["hash"] = v.TxHash
+		m["block"] = block
 		receipt, err := s.GetReceipt(v.TxHash, eLog)
 		if err != nil {
 			eLog.Errorf("GetBlockByHash|BlockChainCode=%v,err=%v,blockHash=%v,txHash=%v", s.chain.BlockChainCode, err.Error(), blockHash, v.TxHash)
@@ -172,7 +178,6 @@ func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool
 			}
 		}
 
-		//bs, _ := json.Marshal(m)
 		v.Tx = m
 	}
 
@@ -260,6 +265,36 @@ func (s *Service) GetReceipt(txHash string, eLog *logrus.Entry) (*collect.Receip
 
 	// 解析数据
 	receipt := GetReceiptFromJson(resp)
+
+	bh, err := ethtypes.ParseEthHash(receipt.BlockHash)
+	if err == nil {
+		receipt.BlockHash = bh.ToCid().String()
+	} else {
+		return nil, errors.New("receipt is error")
+	}
+
+	th, err := ethtypes.ParseEthHash(receipt.TransactionHash)
+	if err == nil {
+		receipt.TransactionHash = th.ToCid().String()
+	} else {
+		return nil, errors.New("receipt is error")
+	}
+
+	fromAddr, err := ethtypes.ParseEthAddress(receipt.From)
+	addr, err := fromAddr.ToFilecoinAddress()
+	if err == nil {
+		receipt.From = addr.String()
+	} else {
+		return nil, errors.New("receipt is error")
+	}
+
+	toAddr, err := ethtypes.ParseEthAddress(receipt.To)
+	addr1, err := toAddr.ToFilecoinAddress()
+	if err == nil {
+		receipt.To = addr1.String()
+	} else {
+		return nil, errors.New("receipt is error")
+	}
 
 	if receipt == nil || len(receipt.TransactionHash) < 1 {
 		eLog.Errorf("GetReceipt|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, resp, txHash)

@@ -40,6 +40,8 @@ func GetTxHashFromKafka(blockchain int, msg []byte) string {
 		txHash = gjson.Parse(tx).Get("txID").String()
 	} else if blockchain == 201 {
 		txHash = r.Get("hash").String()
+	} else if blockchain == 301 {
+		txHash = r.Get("hash").String()
 	}
 
 	return txHash
@@ -54,6 +56,8 @@ func GetBlockHashFromKafka(blockchain int, msg []byte) string {
 		blockHash = r.Get("blockID").String()
 	} else if blockchain == 201 {
 		blockHash = r.Get("hash").String()
+	} else if blockchain == 301 {
+		blockHash = r.Get("blockHash").String()
 	}
 	return blockHash
 }
@@ -66,6 +70,8 @@ func GetReceiptHashFromKafka(blockchain int, msg []byte) string {
 	} else if blockchain == 205 {
 		txHash = r.Get("id").String()
 	} else if blockchain == 201 {
+		txHash = r.Get("transactionHash").String()
+	} else if blockchain == 301 {
 		txHash = r.Get("transactionHash").String()
 	}
 	return txHash

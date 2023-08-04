@@ -8,6 +8,7 @@ import (
 	"github.com/0xcregis/easynode/blockchain"
 	chainConfig "github.com/0xcregis/easynode/blockchain/config"
 	"github.com/0xcregis/easynode/blockchain/service"
+	"github.com/0xcregis/easynode/task"
 	"github.com/0xcregis/easynode/task/config"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
@@ -18,6 +19,20 @@ type Tron struct {
 	log        *xlog.XLog
 	api        blockchain.API
 	blockChain int64
+}
+
+func (e *Tron) CreateNodeTask(nodeId string, blockChain int64, number string) (*task.NodeTask, error) {
+	t := &task.NodeTask{
+		NodeId:      nodeId,
+		BlockNumber: number,
+		BlockChain:  blockChain,
+		TaskType:    2,
+		TaskStatus:  0,
+		CreateTime:  time.Now(),
+		LogTime:     time.Now(),
+		Id:          time.Now().UnixNano(),
+	}
+	return t, nil
 }
 
 func NewTron(log *xlog.XLog, v *config.BlockConfig) *Tron {

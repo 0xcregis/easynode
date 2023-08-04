@@ -12,6 +12,7 @@ type Process interface {
 
 type BlockChainInterface interface {
 	GetLatestBlockNumber() (int64, error)
+	CreateNodeTask(nodeId string, blockChain int64, number string) (*NodeTask, error)
 }
 
 type StoreTaskInterface interface {

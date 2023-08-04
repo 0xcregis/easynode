@@ -1,4 +1,4 @@
-package polygonpos
+package filecoin
 
 import (
 	"encoding/json"

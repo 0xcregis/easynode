@@ -32,6 +32,10 @@ type Service struct {
 	receiptChainClient blockchain.API
 }
 
+func (s *Service) GetMultiBlockByNumber(blockNumber string, log *logrus.Entry, flag bool) ([]*collect.BlockInterface, []*collect.TxInterface) {
+	return nil, nil
+}
+
 func (s *Service) Monitor() {
 	go func() {
 		for {

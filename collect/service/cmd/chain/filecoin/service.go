@@ -1,10 +1,8 @@
-package polygonpos
+package filecoin
 
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -30,8 +28,68 @@ type Service struct {
 	receiptChainClient blockchain.API
 }
 
-func (s *Service) GetMultiBlockByNumber(blockNumber string, log *logrus.Entry, flag bool) (*[]collect.BlockInterface, []*collect.TxInterface) {
-	return nil,nil
+func (s *Service) GetMultiBlockByNumber(blockNumber string, log *logrus.Entry, flag bool) ([]*collect.BlockInterface, []*collect.TxInterface) {
+
+	start := time.Now()
+	defer func() {
+		log.Printf("GetMultiBlockByNumber.Duration =%v,blockNumber:%v", time.Since(start), blockNumber)
+	}()
+
+	//调用接口
+	resp, err := s.blockChainClient.GetBlockByNumber(int64(s.chain.BlockChainCode), blockNumber, flag)
+	if err != nil {
+		log.Errorf("GetBlockByNumber|BlockChainName=%v,err=%v,blockNumber=%v", s.chain.BlockChainName, err.Error(), blockNumber)
+		return nil, nil
+	}
+
+	//处理数据
+	if resp == "" {
+		log.Errorf("GetBlockByNumber|BlockChainName=%v,err=%v,blockNumber=%v", s.chain.BlockChainName, "block is empty", blockNumber)
+		return nil, nil
+	}
+
+	list := gjson.Parse(resp).Array()
+	blockList := make([]*collect.BlockInterface, 0, len(list))
+
+	//解析数据
+	for _, v := range list {
+		blockHash := v.Get("Cid").String()
+		block := v.Get("BlockHead").String()
+		r := &collect.BlockInterface{BlockHash: blockHash, BlockNumber: blockNumber, Block: block}
+		blockList = append(blockList, r)
+	}
+
+	if !flag { //仅区块数据，不涉及交易
+		return blockList, nil
+	}
+	//
+	////list := s.GetReceiptByBlock(block.BlockHash, block.BlockNumber, nil, eLog)
+	//for _, v := range txList {
+	//	receipt, err := s.GetReceipt(v.TxHash, log)
+	//	if err != nil {
+	//		log.Errorf("GetBlockByNumber|BlockChainCode=%v,err=%v,blockNumber=%v,txHash=%v", s.chain.BlockChainCode, err.Error(), blockNumber, v.TxHash)
+	//	} else {
+	//		if receipt != nil && v.TxHash == receipt.TransactionHash {
+	//			bs, _ := json.Marshal(receipt.Receipt)
+	//			v.Receipt = string(bs)
+	//		}
+	//	}
+	//}
+	//
+	//addressList, _ := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
+	//addressMp := rebuildAddress(addressList)
+	//txs := make([]*collect.TxInterface, 0, len(txList))
+	//for _, tx := range txList {
+	//	bs, _ := json.Marshal(tx)
+	//	if s.CheckAddress(bs, addressMp) {
+	//		t := &collect.TxInterface{TxHash: tx.TxHash, Tx: tx}
+	//		txs = append(txs, t)
+	//	} else {
+	//		log.Warnf("the tx is ignored,hash=%v", tx.TxHash)
+	//	}
+	//}
+	//r := &service.BlockInterface{BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, Block: block}
+	return nil, nil
 }
 
 func (s *Service) Monitor() {
@@ -75,116 +133,64 @@ func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool
 		return nil, nil
 	}
 
-	resp = gjson.Parse(resp).Get("result").String()
+	root := gjson.Parse(resp)
 
-	//解析数据
-	block, txList := GetBlockFromJson(resp)
-
-	if len(block.BlockHash) < 1 {
+	blockHash = root.Get("Cid").String()
+	if len(blockHash) < 1 {
 		eLog.Errorf("GetBlockByHash|BlockChainName=%v,err=%v,blockHash=%v", s.chain.BlockChainName, resp, blockHash)
 		return nil, nil
 	}
+	block := root.Get("BlockHead").String()
+	blockNumber := gjson.Parse(block).Get("Height").String()
 
-	r := &collect.BlockInterface{BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, Block: block}
+	r := &collect.BlockInterface{BlockHash: blockHash, BlockNumber: blockNumber, Block: block}
 	if !flag { //仅区块，不涉及交易
 		return r, nil
 	}
-	//list := s.GetReceiptByBlock(block.BlockHash, block.BlockNumber, nil, eLog)
+
+	txs := root.Get("BlockMessages").String()
+	msgList := gjson.Parse(txs).Array()
+	txList := make([]*collect.TxInterface, 0, len(msgList))
+	for _, v := range msgList {
+		hash := v.Get("CID./").String()
+		txStr := v.String()
+		tx := &collect.TxInterface{TxHash: hash, Tx: txStr}
+		txList = append(txList, tx)
+	}
 
 	for _, v := range txList {
+		m := make(map[string]any, 2)
+		m["tx"] = v.Tx
+		m["hash"] = v.TxHash
 		receipt, err := s.GetReceipt(v.TxHash, eLog)
 		if err != nil {
 			eLog.Errorf("GetBlockByHash|BlockChainCode=%v,err=%v,blockHash=%v,txHash=%v", s.chain.BlockChainCode, err.Error(), blockHash, v.TxHash)
 		} else {
-			if receipt != nil && v.TxHash == receipt.TransactionHash {
+			if receipt != nil {
 				bs, _ := json.Marshal(receipt.Receipt)
-				v.Receipt = string(bs)
+				m["receipt"] = string(bs)
 			}
 		}
+
+		//bs, _ := json.Marshal(m)
+		v.Tx = m
 	}
 
 	addressList, _ := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
 	addressMp := rebuildAddress(addressList)
-	txs := make([]*collect.TxInterface, 0, len(txList))
+	resultTxs := make([]*collect.TxInterface, 0, len(txList))
 	for _, tx := range txList {
-		bs, _ := json.Marshal(tx)
+		bs, _ := json.Marshal(tx.Tx)
 		if s.CheckAddress(bs, addressMp) {
-			t := &collect.TxInterface{TxHash: tx.TxHash, Tx: tx}
-			txs = append(txs, t)
+			//t := &collect.TxInterface{TxHash: tx.TxHash, Tx: tx.Tx}
+			resultTxs = append(resultTxs, tx)
 		}
 	}
-	//r := &service.BlockInterface{BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, Block: block}
-	return r, txs
+	return r, resultTxs
 }
 
 func (s *Service) GetBlockByNumber(blockNumber string, eLog *logrus.Entry, flag bool) (*collect.BlockInterface, []*collect.TxInterface) {
-
-	start := time.Now()
-	defer func() {
-		eLog.Printf("GetBlockByNumber.Duration =%v,blockNumber:%v", time.Since(start), blockNumber)
-	}()
-
-	if !strings.HasPrefix(blockNumber, "0x") {
-		n, _ := strconv.ParseInt(blockNumber, 10, 64)
-		blockNumber = fmt.Sprintf("0x%x", n)
-	}
-
-	//调用接口
-	resp, err := s.blockChainClient.GetBlockByNumber(int64(s.chain.BlockChainCode), blockNumber, flag)
-	//resp, err := ether.Eth_GetBlockByNumber(cluster.Host, cluster.Key, blockNumber, s.log)
-	if err != nil {
-		eLog.Errorf("GetBlockByNumber|BlockChainName=%v,err=%v,blockNumber=%v", s.chain.BlockChainName, err.Error(), blockNumber)
-		return nil, nil
-	}
-
-	//处理数据
-	if resp == "" {
-		eLog.Errorf("GetBlockByNumber|BlockChainName=%v,err=%v,blockNumber=%v", s.chain.BlockChainName, "block is empty", blockNumber)
-		return nil, nil
-	}
-
-	resp = gjson.Parse(resp).Get("result").String()
-
-	//解析数据
-	block, txList := GetBlockFromJson(resp)
-
-	if len(block.BlockHash) < 1 {
-		eLog.Errorf("GetBlockByNumber|BlockChainName=%v,err=%v,blockNumber=%v", s.chain.BlockChainName, resp, blockNumber)
-		return nil, nil
-	}
-
-	r := &collect.BlockInterface{BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, Block: block}
-	if !flag { //仅区块数据，不涉及交易
-		return r, nil
-	}
-
-	//list := s.GetReceiptByBlock(block.BlockHash, block.BlockNumber, nil, eLog)
-	for _, v := range txList {
-		receipt, err := s.GetReceipt(v.TxHash, eLog)
-		if err != nil {
-			eLog.Errorf("GetBlockByNumber|BlockChainCode=%v,err=%v,blockNumber=%v,txHash=%v", s.chain.BlockChainCode, err.Error(), blockNumber, v.TxHash)
-		} else {
-			if receipt != nil && v.TxHash == receipt.TransactionHash {
-				bs, _ := json.Marshal(receipt.Receipt)
-				v.Receipt = string(bs)
-			}
-		}
-	}
-
-	addressList, _ := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
-	addressMp := rebuildAddress(addressList)
-	txs := make([]*collect.TxInterface, 0, len(txList))
-	for _, tx := range txList {
-		bs, _ := json.Marshal(tx)
-		if s.CheckAddress(bs, addressMp) {
-			t := &collect.TxInterface{TxHash: tx.TxHash, Tx: tx}
-			txs = append(txs, t)
-		} else {
-			eLog.Warnf("the tx is ignored,hash=%v", tx.TxHash)
-		}
-	}
-	//r := &service.BlockInterface{BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, Block: block}
-	return r, txs
+	return nil, nil
 }
 
 func (s *Service) GetTx(txHash string, eLog *logrus.Entry) *collect.TxInterface {
@@ -202,82 +208,36 @@ func (s *Service) GetTx(txHash string, eLog *logrus.Entry) *collect.TxInterface 
 		eLog.Errorf("GetTx|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, "tx is empty", txHash)
 		return nil
 	}
-	resp = gjson.Parse(resp).Get("result").String()
+	root := gjson.Parse(resp).Get("result")
 
 	//解析数据
-	tx := GetTxFromJson(resp)
 
-	if len(tx.TxHash) < 1 {
+	hash := root.Get("CID./").String()
+	if len(hash) < 1 {
 		eLog.Errorf("GetTx|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, resp, txHash)
 		return nil
 	}
 
-	receipt, err := s.GetReceipt(tx.TxHash, eLog)
+	m := make(map[string]any, 2)
+	m["tx"] = root.String()
+	m["hash"] = hash
+
+	receipt, err := s.GetReceipt(hash, eLog)
 	if err != nil {
-		eLog.Errorf("GetTx|BlockChainCode=%v,err=%v,txHash=%v", s.chain.BlockChainCode, err.Error(), tx.TxHash)
+		eLog.Errorf("GetTx|BlockChainCode=%v,err=%v,txHash=%v", s.chain.BlockChainCode, err.Error(), hash)
 	} else {
 		if receipt != nil {
 			bs, _ := json.Marshal(receipt.Receipt)
-			tx.Receipt = string(bs)
+			m["receipt"] = string(bs)
 		}
 	}
-
-	r := &collect.TxInterface{TxHash: tx.TxHash, Tx: tx}
+	bs, _ := json.Marshal(m)
+	r := &collect.TxInterface{TxHash: hash, Tx: string(bs)}
 	return r
 }
 
 func (s *Service) GetReceiptByBlock(blockHash, number string, eLog *logrus.Entry) ([]*collect.ReceiptInterface, error) {
-
-	//调用接口
-	var resp string
-	var err error
-	if len(number) > 0 {
-		if !strings.HasPrefix(number, "0x") {
-			n, _ := strconv.ParseInt(number, 10, 64)
-			number = fmt.Sprintf("0x%x", n)
-		}
-		resp, err = s.receiptChainClient.GetBlockReceiptByBlockNumber(int64(s.chain.BlockChainCode), number)
-		//resp, err = ether.Eth_GetBlockReceiptByBlockNumber(cluster.Host, cluster.Key, number, s.log)
-	} else if len(number) == 0 && len(blockHash) > 0 {
-		resp, err = s.receiptChainClient.GetBlockReceiptByBlockHash(int64(s.chain.BlockChainCode), blockHash)
-		//resp, err = ether.Eth_GetBlockReceiptByBlockHash(cluster.Host, cluster.Key, blockHash, s.log)
-	}
-
-	if err != nil {
-		eLog.Errorf("GetReceiptByBlock|BlockChainName=%v,err=%v,blocknumber=%v, blockHash=%v", s.chain.BlockChainName, err.Error(), number, blockHash)
-		return nil, err
-	}
-
-	//处理数据
-	if resp == "" {
-		eLog.Errorf("GetReceiptByBlock|BlockChainName=%v,err=%v,blocknumber=%v, blockHash=%v", s.chain.BlockChainName, "receipts is null", number, blockHash)
-		return nil, errors.New("receipt is null")
-	}
-
-	resp = gjson.Parse(resp).Get("result").String()
-	// 解析数据
-	receiptList := GetReceiptListFromJson(resp)
-
-	if len(receiptList) == 0 {
-		eLog.Errorf("GetReceiptByBlock|BlockChainName=%v,err=%v,blocknumber=%v, blockHash=%v", s.chain.BlockChainName, "receipts is null", number, blockHash)
-		return nil, errors.New("receipt is null")
-	}
-
-	rs := make([]*collect.ReceiptInterface, 0, len(receiptList))
-	for _, v := range receiptList {
-		txHash := v.TransactionHash
-		v = s.buildContract(v)
-		if v != nil {
-			r := &collect.ReceiptInterface{TransactionHash: txHash, Receipt: v}
-			rs = append(rs, r)
-		} else {
-			//收据数据异常，则加入重试机制
-			//nodeId, _ := util.GetLocalNodeId()
-			task := collect.NodeTask{Id: time.Now().UnixNano(), BlockChain: s.chain.BlockChainCode, NodeId: s.nodeId, TxHash: txHash, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
-			_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), txHash, task)
-		}
-	}
-	return rs, nil
+	return nil, nil
 }
 
 func (s *Service) GetReceipt(txHash string, eLog *logrus.Entry) (*collect.ReceiptInterface, error) {
@@ -402,16 +362,19 @@ func rebuildAddress(addrList []string) map[string]int64 {
 func (s *Service) CheckAddress(tx []byte, addrList map[string]int64) bool {
 
 	if len(addrList) < 1 || len(tx) < 1 {
-		return false
+		return true
 	}
 
 	txAddressList := make(map[string]int64, 10)
 	root := gjson.ParseBytes(tx)
 
-	fromAddr := root.Get("from").String()
+	txBody := root.Get("tx").String()
+	txRoot := gjson.Parse(txBody)
+
+	fromAddr := txRoot.Get("From").String()
 	txAddressList[getCoreAddr(fromAddr)] = 1
 
-	toAddr := root.Get("to").String()
+	toAddr := txRoot.Get("To").String()
 	txAddressList[getCoreAddr(toAddr)] = 1
 
 	if root.Get("receipt").Exists() {

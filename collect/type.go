@@ -29,7 +29,7 @@ type NodeTask struct {
 	BlockNumber string    `json:"blockNumber" gorm:"column:block_number"`
 	BlockHash   string    `json:"blockHash" gorm:"column:block_hash"`
 	TxHash      string    `json:"txHash" gorm:"column:tx_hash"`
-	TaskType    int       `json:"taskType" gorm:"column:task_type"` // 0:保留 1:同步Tx. 2:同步Block 3:同步Receipt 4:区块Tx 5:区块Receipt
+	TaskType    int       `json:"taskType" gorm:"column:task_type"` // 0:保留 1:同步Tx. 2:同步Block 3:同步Receipt 4:区块Tx 5:区块Receipt 6: 批量区块
 	BlockChain  int       `json:"blockChain" gorm:"column:block_chain"`
 	TaskStatus  int       `json:"taskStatus" gorm:"column:task_status"` //0: 初始 1: 成功. 2: 失败.  3: 执行中 其他：重试次数
 	CreateTime  time.Time `json:"createTime" gorm:"column:create_time"`

@@ -7,6 +7,7 @@ import (
 	"github.com/0xcregis/easynode/collect"
 	"github.com/0xcregis/easynode/collect/config"
 	"github.com/0xcregis/easynode/collect/service/cmd/chain/ether"
+	"github.com/0xcregis/easynode/collect/service/cmd/chain/filecoin"
 	"github.com/0xcregis/easynode/collect/service/cmd/chain/polygonpos"
 	"github.com/0xcregis/easynode/collect/service/cmd/chain/tron2"
 	"github.com/sunjiangjun/xlog"
@@ -22,6 +23,8 @@ func GetBlockchain(blockchain int, c *config.Chain, store collect.StoreTaskInter
 		srv = tron2.NewService(c, x, store, nodeId, collect.TronTopic)
 	} else if blockchain == 201 {
 		srv = polygonpos.NewService(c, x, store, nodeId, collect.PolygonTopic)
+	} else if blockchain == 301 {
+		srv = filecoin.NewService(c, x, store, nodeId, collect.PolygonTopic)
 	}
 
 	return srv

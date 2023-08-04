@@ -175,15 +175,29 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 		}
 
 		//区块任务
-		if task.TaskType == 2 {
-			if len(task.BlockNumber) > 0 {
-				c.taskStore.StoreNodeTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockNumber), &task)
-			} else if len(task.BlockHash) > 0 {
-				c.taskStore.StoreNodeTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockHash), &task)
+		{
+
+			if task.TaskType == 2 { //单区块任务
+				if len(task.BlockNumber) > 0 {
+					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockNumber), &task)
+				} else if len(task.BlockHash) > 0 {
+					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockHash), &task)
+				}
+				_ = c.taskStore.StoreLatestBlock(int64(blockChain), "LatestBlock", task, task.BlockNumber)
+				log.Printf("Block:blockchain:%v,blockNumber:%v,blockHash:%v", task.BlockChain, task.BlockNumber, task.BlockHash)
+				blockCh <- &task
 			}
-			_ = c.taskStore.StoreLatestBlock(int64(blockChain), "LatestBlock", task, task.BlockNumber)
-			log.Printf("Block:blockchain:%v,blockNumber:%v,blockHash:%v", task.BlockChain, task.BlockNumber, task.BlockHash)
-			blockCh <- &task
+
+			if task.TaskType == 6 { //批量区块任务
+				if len(task.BlockNumber) > 0 {
+					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockNumber), &task)
+					_ = c.taskStore.StoreLatestBlock(int64(blockChain), "LatestBlock", task, task.BlockNumber)
+					log.Printf("Block:blockchain:%v,blockNumber:%v,blockHash:%v", task.BlockChain, task.BlockNumber, task.BlockHash)
+					blockCh <- &task
+				} else {
+					log.Warnf("Block:blockchain:%v,blockNumber:%v,error: blockNumber is not null if taskType=6", task.BlockChain, task.BlockNumber)
+				}
+			}
 		}
 
 		//收据任务
@@ -562,70 +576,181 @@ func (c *Cmd) ExecBlockTask(blockCh chan *collect.NodeTask, kf chan []*kafka.Mes
 		})
 		//log.Printf("taskBlock=%+v", blockTask)
 
-		go func(taskBlock *collect.NodeTask, buffCh chan struct{}, kf chan []*kafka.Message, log *logrus.Entry) {
-			start := time.Now()
-			defer func() {
-				<-buffCh
-				log.Printf("ExecBlockTask,Duration=%v,task:%+v", time.Since(start), taskBlock)
-			}()
+		if blockTask.TaskType == 2 {
+			go func(blockTask *collect.NodeTask, buffCh chan struct{}, kf chan []*kafka.Message, log *logrus.Entry) {
+				defer func() {
+					<-buffCh
+				}()
 
-			var key string
-			if len(taskBlock.BlockNumber) > 0 {
-				key = fmt.Sprintf(KeyBlock, taskBlock.BlockChain, taskBlock.BlockNumber)
-			} else if len(taskBlock.BlockHash) > 0 {
-				key = fmt.Sprintf(KeyBlock, taskBlock.BlockChain, taskBlock.BlockHash)
-			}
+				list := c.execSingleBlock(blockTask, log)
+				if len(list) > 0 {
+					kf <- list
+				}
 
-			err := c.taskStore.UpdateNodeTaskStatus(key, 3)
-			if err != nil {
-				log.Errorf("UpdateNodeTaskStatus|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err, taskBlock.Id)
-				_ = c.taskStore.UpdateNodeTaskStatus(key, 2) //失败
-				return
-			}
+			}(blockTask, buffCh, kf, log)
+		}
 
-			var block *collect.BlockInterface
-			//var txList []*service.Tx
-			if len(taskBlock.BlockNumber) > 5 {
-				block, _ = c.blockChain.GetBlockByNumber(taskBlock.BlockNumber, log, false)
-			} else if len(taskBlock.BlockHash) > 10 {
-				block, _ = c.blockChain.GetBlockByHash(taskBlock.BlockHash, log, false)
-			}
+		if blockTask.TaskType == 6 {
+			go func(blockTask *collect.NodeTask, buffCh chan struct{}, kf chan []*kafka.Message, log *logrus.Entry) {
+				defer func() {
+					<-buffCh
+				}()
 
-			if block == nil || len(block.BlockHash) < 1 {
-				_ = c.taskStore.UpdateNodeTaskStatus(key, 2) //失败
-				log.Errorf("GetBlockByHashOrGetBlockByNumber|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, "block is null", taskBlock.Id)
-				return
-			}
+				list := c.execMultiBlock(blockTask, log)
+				if len(list) > 0 {
+					kf <- list
+				}
 
-			//发出批量交易任务
-			if c.chain.PullTx {
-				s := &collect.NodeTask{NodeId: taskBlock.NodeId, BlockChain: taskBlock.BlockChain, BlockNumber: taskBlock.BlockNumber, BlockHash: taskBlock.BlockHash, TaskType: 4, TaskStatus: 0}
-				c.kafkaCh <- c.taskStore.SendNodeTask([]*collect.NodeTask{s}, c.chain.TaskKafka.Partitions)
-			}
+			}(blockTask, buffCh, kf, log)
+		}
 
-			//发出block
-			m, err := c.HandlerBlock(block)
-			if err != nil {
-				_ = c.taskStore.UpdateNodeTaskStatus(key, 2) //失败
-				log.Errorf("HandlerBlock|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err.Error(), taskBlock.Id)
-				return
-			}
-
-			err = c.taskStore.UpdateNodeTaskStatus(key, 4) //成功
-			if err != nil {
-				log.Errorf("UpdateNodeTaskStatus|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err.Error(), taskBlock.Id)
-				return
-			}
-
-			//重置缓存key
-			newKey := fmt.Sprintf(KeyBlockById, taskBlock.BlockChain, block.BlockHash)
-			_ = c.taskStore.ResetNodeTask(int64(taskBlock.BlockChain), key, newKey)
-
-			//区块发送到Kafka
-			kf <- []*kafka.Message{m}
-		}(blockTask, buffCh, kf, log)
 	}
 
+}
+
+func (c *Cmd) execMultiBlock(taskBlock *collect.NodeTask, log *logrus.Entry) []*kafka.Message {
+	start := time.Now()
+	defer func() {
+		log.Printf("execMultiBlock,Duration=%v,task:%+v", time.Since(start), taskBlock)
+	}()
+
+	var key string
+	if len(taskBlock.BlockNumber) > 0 {
+		key = fmt.Sprintf(KeyBlock, taskBlock.BlockChain, taskBlock.BlockNumber)
+	} else {
+		log.Warnf("execMultiBlock|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, "blockNumber is not null if taskType is MultiBlock", taskBlock.Id)
+		return nil
+	}
+
+	err := c.taskStore.UpdateNodeTaskStatus(key, 3)
+	if err != nil {
+		log.Errorf("UpdateNodeTaskStatus|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err, taskBlock.Id)
+		_ = c.taskStore.UpdateNodeTaskStatus(key, 2) //失败
+		return nil
+	}
+
+	var blockList []*collect.BlockInterface
+	//var txList []*service.Tx
+	if len(taskBlock.BlockNumber) > 5 {
+		blockList, _ = c.blockChain.GetMultiBlockByNumber(taskBlock.BlockNumber, log, false)
+	}
+
+	if blockList == nil || len(blockList) < 1 {
+		_ = c.taskStore.UpdateNodeTaskStatus(key, 2) //失败
+		log.Errorf("GetMultiBlockByNumber|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, "block is null", taskBlock.Id)
+		return nil
+	}
+
+	nodeTaskList := make([]*collect.NodeTask, 0, 10)
+	messageList := make([]*kafka.Message, 0, 10)
+	for _, v := range blockList {
+		if len(v.BlockHash) < 1 {
+			continue
+		}
+		s := &collect.NodeTask{Id: time.Now().UnixNano(), NodeId: taskBlock.NodeId, BlockChain: taskBlock.BlockChain, BlockNumber: "", BlockHash: v.BlockHash, TaskType: 4, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
+		nodeTaskList = append(nodeTaskList, s)
+
+		m, err := c.HandlerBlock(v)
+		if err != nil {
+			_ = c.taskStore.UpdateNodeTaskStatus(key, 2) //失败
+			log.Errorf("HandlerBlock|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err.Error(), taskBlock.Id)
+			return nil
+		}
+		messageList = append(messageList, m)
+	}
+
+	//发出批量交易任务
+	if c.chain.PullTx {
+		//s := &collect.NodeTask{NodeId: taskBlock.NodeId, BlockChain: taskBlock.BlockChain, BlockNumber: taskBlock.BlockNumber, BlockHash: taskBlock.BlockHash, TaskType: 4, TaskStatus: 0}
+		c.kafkaCh <- c.taskStore.SendNodeTask(nodeTaskList, c.chain.TaskKafka.Partitions)
+	}
+
+	//发出block
+	//m, err := c.HandlerBlock(block)
+	//if err != nil {
+	//	_ = c.taskStore.UpdateNodeTaskStatus(key, 2) //失败
+	//	log.Errorf("HandlerBlock|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err.Error(), taskBlock.Id)
+	//	return nil
+	//}
+
+	err = c.taskStore.UpdateNodeTaskStatus(key, 4) //成功
+	if err != nil {
+		log.Errorf("UpdateNodeTaskStatus|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err.Error(), taskBlock.Id)
+		return nil
+	}
+
+	//重置缓存key
+	_ = c.taskStore.UpdateNodeTaskStatus(key, 1)
+
+	for _, v := range nodeTaskList {
+		newKey := fmt.Sprintf(KeyBlockById, taskBlock.BlockChain, v.BlockHash)
+		c.taskStore.StoreNodeTask(newKey, v)
+	}
+
+	//区块发送到Kafka
+	return messageList
+}
+
+func (c *Cmd) execSingleBlock(taskBlock *collect.NodeTask, log *logrus.Entry) []*kafka.Message {
+	start := time.Now()
+	defer func() {
+		log.Printf("execSingleBlock,Duration=%v,task:%+v", time.Since(start), taskBlock)
+	}()
+
+	var key string
+	if len(taskBlock.BlockNumber) > 0 {
+		key = fmt.Sprintf(KeyBlock, taskBlock.BlockChain, taskBlock.BlockNumber)
+	} else if len(taskBlock.BlockHash) > 0 {
+		key = fmt.Sprintf(KeyBlock, taskBlock.BlockChain, taskBlock.BlockHash)
+	}
+
+	err := c.taskStore.UpdateNodeTaskStatus(key, 3)
+	if err != nil {
+		log.Errorf("UpdateNodeTaskStatus|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err, taskBlock.Id)
+		_ = c.taskStore.UpdateNodeTaskStatus(key, 2) //失败
+		return nil
+	}
+
+	var block *collect.BlockInterface
+	//var txList []*service.Tx
+	if len(taskBlock.BlockNumber) > 5 {
+		block, _ = c.blockChain.GetBlockByNumber(taskBlock.BlockNumber, log, false)
+	} else if len(taskBlock.BlockHash) > 10 {
+		block, _ = c.blockChain.GetBlockByHash(taskBlock.BlockHash, log, false)
+	}
+
+	if block == nil || len(block.BlockHash) < 1 {
+		_ = c.taskStore.UpdateNodeTaskStatus(key, 2) //失败
+		log.Errorf("GetBlockByHashOrGetBlockByNumber|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, "block is null", taskBlock.Id)
+		return nil
+	}
+
+	//发出批量交易任务
+	if c.chain.PullTx {
+		s := &collect.NodeTask{NodeId: taskBlock.NodeId, BlockChain: taskBlock.BlockChain, BlockNumber: taskBlock.BlockNumber, BlockHash: taskBlock.BlockHash, TaskType: 4, TaskStatus: 0}
+		c.kafkaCh <- c.taskStore.SendNodeTask([]*collect.NodeTask{s}, c.chain.TaskKafka.Partitions)
+	}
+
+	//发出block
+	m, err := c.HandlerBlock(block)
+	if err != nil {
+		_ = c.taskStore.UpdateNodeTaskStatus(key, 2) //失败
+		log.Errorf("HandlerBlock|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err.Error(), taskBlock.Id)
+		return nil
+	}
+
+	err = c.taskStore.UpdateNodeTaskStatus(key, 4) //成功
+	if err != nil {
+		log.Errorf("UpdateNodeTaskStatus|BlockChainName=%v,err=%v,taskId=%v", c.chain.BlockChainName, err.Error(), taskBlock.Id)
+		return nil
+	}
+
+	//重置缓存key
+	newKey := fmt.Sprintf(KeyBlockById, taskBlock.BlockChain, block.BlockHash)
+	_ = c.taskStore.ResetNodeTask(int64(taskBlock.BlockChain), key, newKey)
+
+	//区块发送到Kafka
+	return []*kafka.Message{m}
 }
 
 func (c *Cmd) HandlerBlock(block *collect.BlockInterface) (*kafka.Message, error) {

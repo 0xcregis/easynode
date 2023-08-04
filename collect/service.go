@@ -48,7 +48,8 @@ type BlockChainInterface interface {
 	GetReceipt(txHash string, log *logrus.Entry) (*ReceiptInterface, error)
 	GetReceiptByBlock(blockHash, number string, log *logrus.Entry) ([]*ReceiptInterface, error)
 	GetBlockByNumber(blockNumber string, log *logrus.Entry, flag bool) (*BlockInterface, []*TxInterface)
+	GetMultiBlockByNumber(blockNumber string, log *logrus.Entry, flag bool) ([]*BlockInterface, []*TxInterface)
 	GetBlockByHash(blockHash string, log *logrus.Entry, flag bool) (*BlockInterface, []*TxInterface)
-	Monitor()
 	CheckAddress(tx []byte, addrList map[string]int64) bool
+	Monitor()
 }

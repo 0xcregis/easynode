@@ -3,7 +3,7 @@
     "Path": "./log/collect",
     "Delay": 2
   },
-  "KeyPath": "./data/temp/1",
+  "KeyPath": "./data/temp/5",
   "Chains": [
     {
       "TaskKafka": {
@@ -25,43 +25,43 @@
         "Port": 6379,
         "DB": 0
       },
-      "BlockChainName": "polygon",
-      "BlockChainCode": 201,
+      "BlockChainName": "filecoin",
+      "BlockChainCode": 301,
       "PullReceipt": false,
       "PullTx": true,
       "BlockTask": {
         "FromCluster": [
           {
-            "Host": "https://polygon-bor.publicnode.com",
+            "Host": "https://api.node.glif.io/rpc/v0",
             "Key": ""
           }
         ],
         "Kafka": {
-          "Topic": "polygon_block",
+          "Topic": "filecoin_block",
           "Partition": 0
         }
       },
       "TxTask": {
         "FromCluster": [
           {
-            "Host": "https://polygon-bor.publicnode.com",
+            "Host": "https://api.node.glif.io/rpc/v0",
             "Key": ""
           }
         ],
         "Kafka": {
-          "Topic": "polygon_tx",
+          "Topic": "filecoin_tx",
           "Partition": 0
         }
       },
       "ReceiptTask": {
         "FromCluster": [
           {
-            "Host": "https://polygon-bor.publicnode.com",
+            "Host": "https://api.node.glif.io/rpc/v0",
             "Key": ""
           }
         ],
         "Kafka": {
-          "Topic": "polygon_receipt",
+          "Topic": "filecoin_receipt",
           "Partition": 0
         }
       }

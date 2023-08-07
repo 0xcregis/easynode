@@ -168,6 +168,8 @@ func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool
 		m["tx"] = v.Tx
 		m["hash"] = v.TxHash
 		m["block"] = block
+		m["blockNumber"] = blockNumber
+		m["blockHash"] = blockHash
 		receipt, err := s.GetReceipt(v.TxHash, eLog)
 		if err != nil {
 			eLog.Errorf("GetBlockByHash|BlockChainCode=%v,err=%v,blockHash=%v,txHash=%v", s.chain.BlockChainCode, err.Error(), blockHash, v.TxHash)
@@ -236,8 +238,8 @@ func (s *Service) GetTx(txHash string, eLog *logrus.Entry) *collect.TxInterface 
 			m["receipt"] = string(bs)
 		}
 	}
-	bs, _ := json.Marshal(m)
-	r := &collect.TxInterface{TxHash: hash, Tx: string(bs)}
+	//bs, _ := json.Marshal(m)
+	r := &collect.TxInterface{TxHash: hash, Tx: m}
 	return r
 }
 

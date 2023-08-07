@@ -60,7 +60,7 @@ func GetTxType(body []byte) (uint64, error) {
 func ParseTx(body []byte, transferTopic string) (*store.SubTx, error) {
 	var r store.SubTx
 	root := gjson.ParseBytes(body)
-	r.BlockChain = 200
+	r.BlockChain = 201
 	r.Id = uint64(time.Now().UnixNano())
 	blockHash := root.Get("blockHash").String()
 	r.BlockHash = blockHash

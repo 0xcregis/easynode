@@ -1,0 +1,72 @@
+{
+  "RootPath": "/api/store",
+  "Port": 9003,
+  "BaseDb": {
+    "Addr": "192.168.2.9",
+    "Port": 9000,
+    "User": "test",
+    "Password": "test",
+    "DbName": "base",
+    "AddressTable": "address",
+    "TokenTable": "token"
+  },
+  "Chains": [
+    {
+      "BlockChain": 205,
+      "BlockStore": false,
+      "TxStore": true,
+      "ReceiptStore": false,
+      "SubStore": true,
+      "Kafka": {
+        "SubTx": {
+          "Host": "192.168.2.9",
+          "Port": 9092,
+          "Topic": "tron_sub_tx",
+          "Group": "110",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "Tx": {
+          "Host": "192.168.2.9",
+          "Port": 9092,
+          "Topic": "tron_tx",
+          "Group": "108",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "Block": {
+          "Host": "192.168.2.9",
+          "Port": 9092,
+          "Topic": "tron_block",
+          "Group": "103",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "Receipt": {
+          "Host": "192.168.2.9",
+          "Port": 9092,
+          "Topic": "tron_receipt",
+          "Group": "2",
+          "StartOffset": -1,
+          "Partition": 0
+        }
+      },
+      "ChainDb": {
+        "Addr": "192.168.2.9",
+        "Port": 9000,
+        "User": "test",
+        "Password": "test",
+        "DbName": "tron",
+        "TxTable": "tx",
+        "BlockTable": "block",
+        "ReceiptTable": "receipt",
+        "SubTxTable": "sub_tx"
+      },
+      "Redis": {
+        "Addr": "192.168.2.9",
+        "Port": 6379,
+        "DB": 0
+      }
+    }
+  ]
+}

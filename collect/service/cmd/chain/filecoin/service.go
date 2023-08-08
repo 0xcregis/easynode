@@ -399,7 +399,7 @@ func rebuildAddress(addrList []string) map[string]int64 {
 func (s *Service) CheckAddress(tx []byte, addrList map[string]int64) bool {
 
 	if len(addrList) < 1 || len(tx) < 1 {
-		return true
+		return false
 	}
 
 	txAddressList := make(map[string]int64, 10)

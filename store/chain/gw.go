@@ -55,16 +55,16 @@ func GetTxFromKafka(value []byte, blockChain int64) (*store.Tx, error) {
 
 func ParseTx(blockchain int64, msg *kafka.Message) (*store.SubTx, error) {
 	if blockchain == 200 {
-		return ether.ParseTx(msg.Value, store.EthTopic)
+		return ether.ParseTx(msg.Value, store.EthTopic, blockchain)
 	}
 	if blockchain == 205 {
-		return tron.ParseTx(msg.Value, store.TronTopic)
+		return tron.ParseTx(msg.Value, store.TronTopic, blockchain)
 	}
 	if blockchain == 201 {
-		return polygonpos.ParseTx(msg.Value, store.PolygonTopic)
+		return polygonpos.ParseTx(msg.Value, store.PolygonTopic, blockchain)
 	}
 	if blockchain == 301 {
-		return filecoin.ParseTx(msg.Value, store.PolygonTopic)
+		return filecoin.ParseTx(msg.Value, store.PolygonTopic, blockchain)
 	}
 	return nil, nil
 }

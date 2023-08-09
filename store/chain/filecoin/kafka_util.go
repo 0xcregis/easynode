@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 	"strings"
 	"time"
 
@@ -38,6 +39,7 @@ func GetBlockFromKafka(value []byte) (*store.Block, error) {
 	parentHash := bookRoot.Get("Parents").String()
 	coinAddr := bookRoot.Get("Miner").String()
 	blockTime := bookRoot.Get("Timestamp").String()
+	baseFee := bookRoot.Get("ParentBaseFee").String()
 
 	block.Id = uint64(time.Now().UnixNano())
 	block.BlockHash = hash
@@ -45,6 +47,7 @@ func GetBlockFromKafka(value []byte) (*store.Block, error) {
 	block.BlockTime = blockTime
 	block.ParentHash = parentHash
 	block.Coinbase = coinAddr
+	block.BaseFee = baseFee
 	return &block, nil
 }
 
@@ -88,6 +91,8 @@ func GetTxFromKafka(value []byte) (*store.Tx, error) {
 	to := txRoot.Get("To").String()
 	input := txRoot.Get("Params").String()
 	txValue := txRoot.Get("Value").String()
+	gasPremium := txRoot.Get("GasPremium").String()
+	//gasFeeCap:=txRoot.Get("GasFeeCap").String()
 
 	var txType string
 	if len(input) > 1 {
@@ -107,6 +112,7 @@ func GetTxFromKafka(value []byte) (*store.Tx, error) {
 	tx.Type = txType
 	tx.InputData = input
 	tx.GasLimit = limit
+	tx.PriorityFee = gasPremium
 	receiptBody := root.Get("receipt").String()
 	if len(receiptBody) > 5 {
 		receiptRoot := gjson.Parse(receiptBody)
@@ -123,6 +129,7 @@ func GetTxFromKafka(value []byte) (*store.Tx, error) {
 	blockBody := root.Get("block").String()
 	if len(blockBody) > 5 {
 		blockRoot := gjson.Parse(blockBody)
+		tx.BaseFee = blockRoot.Get("ParentBaseFee").String()
 		tx.TxTime = blockRoot.Get("Timestamp").String()
 	}
 
@@ -141,11 +148,11 @@ func GetTxType(body []byte) (uint64, error) {
 		return 2, nil
 	}
 }
-func ParseTx(value []byte, transferTopic string) (*store.SubTx, error) {
+func ParseTx(value []byte, transferTopic string, blockchain int64) (*store.SubTx, error) {
 	var tx store.SubTx
 	root := gjson.ParseBytes(value)
 
-	tx.BlockChain = 301
+	tx.BlockChain = uint64(blockchain)
 	tx.Id = uint64(time.Now().UnixNano())
 	tx.Hash = root.Get("hash").String()
 	if root.Get("blockNumber").Exists() {
@@ -163,12 +170,13 @@ func ParseTx(value []byte, transferTopic string) (*store.SubTx, error) {
 	txRoot := gjson.Parse(txBody)
 
 	//todo
-	//limit := txRoot.Get("GasLimit").String()
-
+	gasLimit := txRoot.Get("GasLimit").String()
 	from := txRoot.Get("From").String()
 	to := txRoot.Get("To").String()
 	input := txRoot.Get("Params").String()
 	txValue := txRoot.Get("Value").String()
+	gasPremium := txRoot.Get("GasPremium").String()
+	//gasFeeCap:=txRoot.Get("GasFeeCap").String()
 
 	var txType uint64
 	if len(input) > 1 {
@@ -183,6 +191,9 @@ func ParseTx(value []byte, transferTopic string) (*store.SubTx, error) {
 	tx.From = from
 	tx.TxType = txType
 	tx.Input = input
+
+	var gasUsed, baseFee string
+
 	//tx = limit
 	receiptBody := root.Get("receipt").String()
 	if len(receiptBody) > 5 {
@@ -193,9 +204,8 @@ func ParseTx(value []byte, transferTopic string) (*store.SubTx, error) {
 		if len(tx.BlockNumber) < 1 {
 			tx.BlockNumber = receiptRoot.Get("blockNumber").String()
 		}
-		//todo
-		//tx.GasUsed = receiptRoot.Get("gasUsed").String()
-
+		gasUsed = receiptRoot.Get("gasUsed").String()
+		gasUsed, _ = util.HexToInt(gasUsed)
 		status := receiptRoot.Get("status").String()
 		if status == "0x0" {
 			tx.Status = 0
@@ -210,7 +220,26 @@ func ParseTx(value []byte, transferTopic string) (*store.SubTx, error) {
 		txTime := blockRoot.Get("Timestamp").String()
 		txTime = fmt.Sprintf("%v000", txTime)
 		tx.TxTime = txTime
+		baseFee = blockRoot.Get("ParentBaseFee").String()
 	}
+
+	if len(baseFee) > 0 && len(gasUsed) > 0 && len(gasLimit) > 0 && len(gasPremium) > 0 {
+		var ok bool
+		var bfee, used, limit, premium *big.Int
+		bfee, ok = new(big.Int).SetString(baseFee, 0)
+		used, ok = new(big.Int).SetString(gasUsed, 0)
+		limit, ok = new(big.Int).SetString(gasLimit, 0)
+		premium, ok = new(big.Int).SetString(gasPremium, 0)
+
+		if ok {
+			burn := bfee.Mul(bfee, used)
+			miner := limit.Mul(limit, premium)
+			fee := burn.Add(burn, miner)
+			tx.Fee = util.Div(fee.String(), 18)
+		}
+
+	}
+
 	return &tx, nil
 }
 func GetCoreAddr(addr string) string {
@@ -222,7 +251,7 @@ func GetCoreAddr(addr string) string {
 
 func CheckAddress(txValue []byte, addrList map[string]*store.MonitorAddress, transferTopic string) bool {
 	if len(addrList) < 1 || len(txValue) < 1 {
-		return true
+		return false
 	}
 
 	txAddressList := make(map[string]int64, 10)

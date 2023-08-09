@@ -25,13 +25,13 @@ func TestService_GetBlockByNumber(t *testing.T) {
 
 func TestService_GetMultiBlockByNumber(t *testing.T) {
 	s, _, x := Init()
-	list, _ := s.GetMultiBlockByNumber("3106211", x.WithFields(logrus.Fields{}), false)
+	list, _ := s.GetMultiBlockByNumber("3108614", x.WithFields(logrus.Fields{}), false)
 	t.Logf("block.list:%v", len(list))
 }
 
 func TestService_GetBlockByHash(t *testing.T) {
 	s, _, x := Init()
-	block, txList := s.GetBlockByHash("bafy2bzacecs5veov5flezd6eol7ezbnwrjr36jkym5q4i7yfbne5nnubctrps", x.WithFields(logrus.Fields{}), true)
+	block, txList := s.GetBlockByHash("bafy2bzacebonhqxuf2dzfcfdwpm3alql2olmhhylecubvtbf7iwzia4ukkemm", x.WithFields(logrus.Fields{}), true)
 	t.Logf("block.hash:%v, tx.list:%v", block.BlockHash, len(txList))
 }
 
@@ -43,7 +43,7 @@ func TestService_GetTx(t *testing.T) {
 
 func TestService_GetReceipt(t *testing.T) {
 	s, _, x := Init()
-	r, err := s.GetReceipt("bafy2bzacea22wldxdpp5nqvckkusyogyqggny3ycauzf2n7p3r7cuist4x7jm", x.WithFields(logrus.Fields{}))
+	r, err := s.GetReceipt("bafy2bzacec33ydeqirf7johbge4vwqjm65kx6fkqazms56yy5zompvkx5h67c", x.WithFields(logrus.Fields{}))
 	if err != nil {
 		t.Error(err)
 	} else {

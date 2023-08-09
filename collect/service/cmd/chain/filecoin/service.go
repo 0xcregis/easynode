@@ -289,12 +289,17 @@ func (s *Service) GetReceipt(txHash string, eLog *logrus.Entry) (*collect.Receip
 	}
 
 	//处理数据
-	if resp == "" {
+	if len(resp) < 1 {
 		eLog.Errorf("GetReceipt|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, "receipt is empty", txHash)
 		return nil, errors.New("receipt is null")
 	}
 
 	resp = gjson.Parse(resp).Get("result").String()
+
+	if len(resp) < 1 {
+		eLog.Errorf("GetReceipt|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, "receipt is empty", txHash)
+		return nil, errors.New("receipt is null")
+	}
 
 	// 解析数据
 	receipt := GetReceiptFromJson(resp)
@@ -303,14 +308,16 @@ func (s *Service) GetReceipt(txHash string, eLog *logrus.Entry) (*collect.Receip
 	if err == nil {
 		receipt.BlockHash = bh.ToCid().String()
 	} else {
-		return nil, errors.New("receipt is error")
+		eLog.Errorf("GetReceipt|BlockChainName=%v,parse.blockhash.err=%v,txHash=%v", s.chain.BlockChainName, err.Error(), txHash)
+		return nil, err
 	}
 
 	th, err := ethtypes.ParseEthHash(receipt.TransactionHash)
 	if err == nil {
 		receipt.TransactionHash = th.ToCid().String()
 	} else {
-		return nil, errors.New("receipt is error")
+		eLog.Errorf("GetReceipt|BlockChainName=%v,parse.TransactionHash.err=%v,txHash=%v", s.chain.BlockChainName, err.Error(), txHash)
+		return nil, err
 	}
 
 	fromAddr, err := ethtypes.ParseEthAddress(receipt.From)
@@ -318,7 +325,8 @@ func (s *Service) GetReceipt(txHash string, eLog *logrus.Entry) (*collect.Receip
 	if err == nil {
 		receipt.From = addr.String()
 	} else {
-		return nil, errors.New("receipt is error")
+		eLog.Errorf("GetReceipt|BlockChainName=%v,parse.from.err=%v,txHash=%v", s.chain.BlockChainName, err.Error(), txHash)
+		return nil, err
 	}
 
 	toAddr, err := ethtypes.ParseEthAddress(receipt.To)
@@ -326,7 +334,8 @@ func (s *Service) GetReceipt(txHash string, eLog *logrus.Entry) (*collect.Receip
 	if err == nil {
 		receipt.To = addr1.String()
 	} else {
-		return nil, errors.New("receipt is error")
+		eLog.Errorf("GetReceipt|BlockChainName=%v,parse.to.err=%v,txHash=%v", s.chain.BlockChainName, err.Error(), txHash)
+		return nil, err
 	}
 
 	if receipt == nil || len(receipt.TransactionHash) < 1 {

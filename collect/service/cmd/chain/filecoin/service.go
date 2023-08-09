@@ -126,7 +126,6 @@ func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool
 	}()
 	//调用接口
 	resp, err := s.blockChainClient.GetBlockByHash(int64(s.chain.BlockChainCode), blockHash, flag)
-	//resp, err := ether.Eth_GetBlockByHash(cluster.Host, cluster.Key, blockHash, s.log)
 	if err != nil {
 		eLog.Errorf("GetBlockByHash|BlockChainName=%v,err=%v,blockHash=%v", s.chain.BlockChainName, err.Error(), blockHash)
 		return nil, nil
@@ -233,7 +232,16 @@ func (s *Service) GetTx(txHash string, eLog *logrus.Entry) *collect.TxInterface 
 	if err != nil {
 		eLog.Errorf("GetTx|BlockChainCode=%v,err=%v,txHash=%v", s.chain.BlockChainCode, err.Error(), hash)
 	} else {
+
 		if receipt != nil {
+			if v, ok := receipt.Receipt.(*collect.Receipt); ok {
+				resp, err := s.getBlockByNumber(v.BlockNumber)
+				if err == nil {
+					m["block"] = resp
+					m["blockNumber"] = v.BlockNumber
+				}
+			}
+
 			bs, _ := json.Marshal(receipt.Receipt)
 			m["receipt"] = string(bs)
 		}
@@ -241,6 +249,29 @@ func (s *Service) GetTx(txHash string, eLog *logrus.Entry) *collect.TxInterface 
 	//bs, _ := json.Marshal(m)
 	r := &collect.TxInterface{TxHash: hash, Tx: m}
 	return r
+}
+
+func (s *Service) getBlockByNumber(number string) (any, error) {
+
+	resp, err := s.blockChainClient.GetBlockByNumber(int64(s.chain.BlockChainCode), number, false)
+
+	if err != nil {
+		return nil, err
+	}
+
+	//处理数据
+	if resp == "" {
+		return nil, errors.New("resp data is empty")
+	}
+
+	list := gjson.Parse(resp).Array()
+	if len(list) < 1 {
+		return nil, errors.New("resp data is empty")
+	}
+
+	//解析数据
+	r := list[0].Get("BlockHead").String()
+	return r, nil
 }
 
 func (s *Service) GetReceiptByBlock(blockHash, number string, eLog *logrus.Entry) ([]*collect.ReceiptInterface, error) {

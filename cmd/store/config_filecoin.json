@@ -12,8 +12,8 @@
   },
   "Chains": [
     {
-      "BlockChain": 205,
-      "BlockStore": false,
+      "BlockChain": 301,
+      "BlockStore": true,
       "TxStore": true,
       "ReceiptStore": false,
       "SubStore": true,
@@ -21,32 +21,32 @@
         "SubTx": {
           "Host": "192.168.2.9",
           "Port": 9092,
-          "Topic": "tron_sub_tx",
-          "Group": "110",
+          "Topic": "filecoin_sub_tx",
+          "Group": "22",
           "StartOffset": -1,
           "Partition": 0
         },
         "Tx": {
           "Host": "192.168.2.9",
           "Port": 9092,
-          "Topic": "tron_tx",
-          "Group": "108",
+          "Topic": "filecoin_tx",
+          "Group": "32",
           "StartOffset": -1,
           "Partition": 0
         },
         "Block": {
           "Host": "192.168.2.9",
           "Port": 9092,
-          "Topic": "tron_block",
-          "Group": "103",
-          "StartOffset": -1,
+          "Topic": "filecoin_block",
+          "Group": "42",
+          "StartOffset": -2,
           "Partition": 0
         },
         "Receipt": {
           "Host": "192.168.2.9",
           "Port": 9092,
-          "Topic": "tron_receipt",
-          "Group": "2",
+          "Topic": "filecoin_receipt",
+          "Group": "52",
           "StartOffset": -1,
           "Partition": 0
         }
@@ -56,7 +56,7 @@
         "Port": 9000,
         "User": "test",
         "Password": "test",
-        "DbName": "tron",
+        "DbName": "filecoin",
         "TxTable": "tx",
         "BlockTable": "block",
         "ReceiptTable": "receipt",

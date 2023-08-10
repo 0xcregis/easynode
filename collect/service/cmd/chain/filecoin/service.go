@@ -294,15 +294,15 @@ func (s *Service) GetReceipt(txHash string, eLog *logrus.Entry) (*collect.Receip
 		return nil, errors.New("receipt is null")
 	}
 
-	resp = gjson.Parse(resp).Get("result").String()
+	result := gjson.Parse(resp).Get("result").String()
 
-	if len(resp) < 1 {
-		eLog.Errorf("GetReceipt|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, "receipt is empty", txHash)
+	if len(result) < 1 {
+		eLog.Errorf("GetReceipt|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, resp, txHash)
 		return nil, errors.New("receipt is null")
 	}
 
 	// 解析数据
-	receipt := GetReceiptFromJson(resp)
+	receipt := GetReceiptFromJson(result)
 
 	bh, err := ethtypes.ParseEthHash(receipt.BlockHash)
 	if err == nil {

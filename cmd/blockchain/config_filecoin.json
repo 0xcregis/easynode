@@ -1,0 +1,15 @@
+{
+  "RootPath": "/api/chain",
+  "Port": 9002,
+  "BlockChain": [
+    301
+  ],
+  "Cluster": {
+    "301": [
+      {
+        "NodeUrl": "https://api.node.glif.io/rpc/v0",
+        "NodeToken": ""
+      }
+    ]
+  }
+}

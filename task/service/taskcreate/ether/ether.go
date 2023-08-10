@@ -8,6 +8,7 @@ import (
 	chainConfig "github.com/0xcregis/easynode/blockchain/config"
 	"github.com/0xcregis/easynode/blockchain/service"
 	"github.com/0xcregis/easynode/common/util"
+	"github.com/0xcregis/easynode/task"
 	"github.com/0xcregis/easynode/task/config"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
@@ -18,6 +19,20 @@ type Ether struct {
 	log        *xlog.XLog
 	api        blockchain.API
 	blockChain int64
+}
+
+func (e *Ether) CreateNodeTask(nodeId string, blockChain int64, number string) (*task.NodeTask, error) {
+	t := &task.NodeTask{
+		NodeId:      nodeId,
+		BlockNumber: number,
+		BlockChain:  blockChain,
+		TaskType:    2,
+		TaskStatus:  0,
+		CreateTime:  time.Now(),
+		LogTime:     time.Now(),
+		Id:          time.Now().UnixNano(),
+	}
+	return t, nil
 }
 
 func NewEther(log *xlog.XLog, v *config.BlockConfig) *Ether {

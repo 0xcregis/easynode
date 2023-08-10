@@ -7,6 +7,7 @@ import (
 	"github.com/0xcregis/easynode/collect"
 	"github.com/0xcregis/easynode/collect/config"
 	"github.com/0xcregis/easynode/collect/service/cmd/chain/ether"
+	"github.com/0xcregis/easynode/collect/service/cmd/chain/filecoin"
 	"github.com/0xcregis/easynode/collect/service/cmd/chain/polygonpos"
 	"github.com/0xcregis/easynode/collect/service/cmd/chain/tron2"
 	"github.com/sunjiangjun/xlog"
@@ -22,6 +23,8 @@ func GetBlockchain(blockchain int, c *config.Chain, store collect.StoreTaskInter
 		srv = tron2.NewService(c, x, store, nodeId, collect.TronTopic)
 	} else if blockchain == 201 {
 		srv = polygonpos.NewService(c, x, store, nodeId, collect.PolygonTopic)
+	} else if blockchain == 301 {
+		srv = filecoin.NewService(c, x, store, nodeId, collect.PolygonTopic)
 	}
 
 	return srv
@@ -37,6 +40,8 @@ func GetTxHashFromKafka(blockchain int, msg []byte) string {
 		txHash = gjson.Parse(tx).Get("txID").String()
 	} else if blockchain == 201 {
 		txHash = r.Get("hash").String()
+	} else if blockchain == 301 {
+		txHash = r.Get("hash").String()
 	}
 
 	return txHash
@@ -51,6 +56,8 @@ func GetBlockHashFromKafka(blockchain int, msg []byte) string {
 		blockHash = r.Get("blockID").String()
 	} else if blockchain == 201 {
 		blockHash = r.Get("hash").String()
+	} else if blockchain == 301 {
+		blockHash = r.Get("blockHash").String()
 	}
 	return blockHash
 }
@@ -63,6 +70,8 @@ func GetReceiptHashFromKafka(blockchain int, msg []byte) string {
 	} else if blockchain == 205 {
 		txHash = r.Get("id").String()
 	} else if blockchain == 201 {
+		txHash = r.Get("transactionHash").String()
+	} else if blockchain == 301 {
 		txHash = r.Get("transactionHash").String()
 	}
 	return txHash

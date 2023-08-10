@@ -1,4 +1,4 @@
-package polygonpos
+package filecoin
 
 import (
 	"errors"
@@ -15,18 +15,18 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-type PolygonPos struct {
+type FileCoin struct {
 	log        *xlog.XLog
 	api        blockchain.API
 	blockChain int64
 }
 
-func (e *PolygonPos) CreateNodeTask(nodeId string, blockChain int64, number string) (*task.NodeTask, error) {
+func (e *FileCoin) CreateNodeTask(nodeId string, blockChain int64, number string) (*task.NodeTask, error) {
 	t := &task.NodeTask{
 		NodeId:      nodeId,
 		BlockNumber: number,
 		BlockChain:  blockChain,
-		TaskType:    2,
+		TaskType:    6,
 		TaskStatus:  0,
 		CreateTime:  time.Now(),
 		LogTime:     time.Now(),
@@ -35,7 +35,7 @@ func (e *PolygonPos) CreateNodeTask(nodeId string, blockChain int64, number stri
 	return t, nil
 }
 
-func NewPolygonPos(log *xlog.XLog, v *config.BlockConfig) *PolygonPos {
+func NewFileCoin(log *xlog.XLog, v *config.BlockConfig) *FileCoin {
 	clusters := make([]*chainConfig.NodeCluster, 0, 2)
 
 	for _, v := range v.Cluster {
@@ -44,14 +44,14 @@ func NewPolygonPos(log *xlog.XLog, v *config.BlockConfig) *PolygonPos {
 	}
 
 	api := service.NewApi(v.BlockChainCode, clusters, log)
-	return &PolygonPos{
+	return &FileCoin{
 		blockChain: v.BlockChainCode,
 		log:        log,
 		api:        api,
 	}
 }
 
-func (e *PolygonPos) GetLatestBlockNumber() (int64, error) {
+func (e *FileCoin) GetLatestBlockNumber() (int64, error) {
 	log := e.log.WithFields(logrus.Fields{
 		"id":         time.Now().UnixMilli(),
 		"model":      "GetLatestBlockNumber",

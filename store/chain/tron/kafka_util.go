@@ -158,7 +158,7 @@ func GetTxType(body []byte) (uint64, error) {
 	}
 	return tx, nil
 }
-func ParseTx(body []byte, transferTopic string) (*store.SubTx, error) {
+func ParseTx(body []byte, transferTopic string, blockchain int64) (*store.SubTx, error) {
 	root := gjson.ParseBytes(body)
 
 	blockId := root.Get("blockId").String()
@@ -168,7 +168,7 @@ func ParseTx(body []byte, transferTopic string) (*store.SubTx, error) {
 	}
 	//r := make(map[string]interface{}, 10)
 	var r store.SubTx
-	r.BlockChain = 205
+	r.BlockChain = uint64(blockchain)
 	r.Id = uint64(time.Now().UnixNano())
 	txRoot := gjson.Parse(txBody)
 	status := txRoot.Get("ret.0.contractRet").String()

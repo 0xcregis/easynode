@@ -33,9 +33,9 @@ func (e *Ether) GetCode(chainCode int64, address string) (string, error) {
 					"%v",
 					"latest"
 				]
-			}`
+ 			}`
 	query = fmt.Sprintf(query, address)
-	return e.SendEthReq(chainCode, query)
+	return e.SendReq(chainCode, query)
 }
 
 func (e *Ether) GetAddressType(chainCode int64, address string) (string, error) {
@@ -53,7 +53,7 @@ func (e *Ether) GetAddressType(chainCode int64, address string) (string, error) 
 				]
 			}`
 	query = fmt.Sprintf(query, address)
-	resp, err := e.SendEthReq(chainCode, query)
+	resp, err := e.SendReq(chainCode, query)
 	if err != nil {
 		return "", err
 	}
@@ -76,7 +76,7 @@ func (e *Ether) SubscribePendingTx(chainCode int64, receiverCh chan string, send
 	var err error
 	go func() {
 		sendCh <- query
-		resp, err = e.SendEthReqByWs(chainCode, receiverCh, sendCh)
+		resp, err = e.SendReqByWs(chainCode, receiverCh, sendCh)
 		e.log.Errorf("func=%v,resp=%v,err=%v", "SubscribePendingTx", resp, err.Error())
 	}()
 	return resp, err
@@ -90,7 +90,7 @@ func (e *Ether) SubscribeLogs(chainCode int64, address string, topics []string, 
 	var err error
 	go func() {
 		sendCh <- query
-		resp, err = e.SendEthReqByWs(chainCode, receiverCh, sendCh)
+		resp, err = e.SendReqByWs(chainCode, receiverCh, sendCh)
 		e.log.Errorf("func=%v,resp=%v,err=%v", "SubscribeLogs", resp, err.Error())
 	}()
 	return resp, err
@@ -100,7 +100,7 @@ func (e *Ether) UnSubscribe(chainCode int64, subId string) (string, error) {
 	query := `{"id": 1, "method": "eth_unsubscribe", "params": ["%v"]}`
 
 	query = fmt.Sprintf(query, subId)
-	resp, err := e.SendEthReq(chainCode, query)
+	resp, err := e.SendReq(chainCode, query)
 	if err != nil {
 		return "", err
 	}
@@ -129,7 +129,7 @@ func (e *Ether) GetBlockReceiptByBlockNumber(chainCode int64, number string) (st
 				]
 			}`
 	query = fmt.Sprintf(query, number)
-	return e.SendEthReq(chainCode, query)
+	return e.SendReq(chainCode, query)
 }
 
 func (e *Ether) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string, error) {
@@ -143,7 +143,7 @@ func (e *Ether) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string
 			}`
 
 	query = fmt.Sprintf(query, hash)
-	return e.SendEthReq(chainCode, query)
+	return e.SendReq(chainCode, query)
 }
 
 func (e *Ether) GetTransactionReceiptByHash(chainCode int64, hash string) (string, error) {
@@ -160,7 +160,7 @@ func (e *Ether) GetTransactionReceiptByHash(chainCode int64, hash string) (strin
 				]
 			}`
 	query = fmt.Sprintf(query, hash)
-	return e.SendEthReq(chainCode, query)
+	return e.SendReq(chainCode, query)
 }
 
 func (e *Ether) GetBlockByHash(chainCode int64, hash string, flag bool) (string, error) {
@@ -176,7 +176,7 @@ func (e *Ether) GetBlockByHash(chainCode int64, hash string, flag bool) (string,
 		}`
 
 	req = fmt.Sprintf(req, hash, flag)
-	return e.SendEthReq(chainCode, req)
+	return e.SendReq(chainCode, req)
 }
 
 func (e *Ether) GetBlockByNumber(chainCode int64, number string, flag bool) (string, error) {
@@ -192,7 +192,7 @@ func (e *Ether) GetBlockByNumber(chainCode int64, number string, flag bool) (str
 			}
 			`
 	req = fmt.Sprintf(req, number, flag)
-	return e.SendEthReq(chainCode, req)
+	return e.SendReq(chainCode, req)
 }
 
 func (e *Ether) GetTxByHash(chainCode int64, hash string) (string, error) {
@@ -211,11 +211,11 @@ func (e *Ether) GetTxByHash(chainCode int64, hash string) (string, error) {
 		}
 		`
 	req = fmt.Sprintf(req, hash)
-	return e.SendEthReq(chainCode, req)
+	return e.SendReq(chainCode, req)
 }
 
 func (e *Ether) SendJsonRpc(chainCode int64, req string) (string, error) {
-	return e.SendEthReq(chainCode, req)
+	return e.SendReq(chainCode, req)
 }
 
 func NewEth(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.API {
@@ -267,7 +267,7 @@ func (e *Ether) Balance(chainCode int64, address string, tag string) (string, er
 			}`
 
 	req = fmt.Sprintf(req, address, tag)
-	return e.SendEthReq(chainCode, req)
+	return e.SendReq(chainCode, req)
 }
 
 func (e *Ether) TokenBalance(chainCode int64, address string, contractAddr string, abi string) (string, error) {
@@ -301,7 +301,7 @@ func (e *Ether) Nonce(chainCode int64, address string, tag string) (string, erro
 			}
 			`
 	req = fmt.Sprintf(req, address, tag)
-	return e.SendEthReq(chainCode, req)
+	return e.SendReq(chainCode, req)
 }
 
 func (e *Ether) LatestBlock(chainCode int64) (string, error) {
@@ -312,7 +312,7 @@ func (e *Ether) LatestBlock(chainCode int64) (string, error) {
 				 "method": "eth_blockNumber"
 			}
 			`
-	return e.SendEthReq(chainCode, req)
+	return e.SendReq(chainCode, req)
 }
 
 func (e *Ether) SendRawTransaction(chainCode int64, signedTx string) (string, error) {
@@ -325,10 +325,10 @@ func (e *Ether) SendRawTransaction(chainCode int64, signedTx string) (string, er
 					 "method": "eth_sendRawTransaction"
 				}`
 	req = fmt.Sprintf(req, signedTx)
-	return e.SendEthReq(chainCode, req)
+	return e.SendReq(chainCode, req)
 }
 
-func (e *Ether) SendEthReqByWs(blockChain int64, receiverCh chan string, sendCh chan string) (string, error) {
+func (e *Ether) SendReqByWs(blockChain int64, receiverCh chan string, sendCh chan string) (string, error) {
 	cluster := e.BalanceCluster()
 	if cluster == nil {
 		//不存在节点
@@ -437,7 +437,7 @@ func (e *Ether) SendEthReqByWs(blockChain int64, receiverCh chan string, sendCh 
 	return "", errors.New("blockChainCode is error")
 }
 
-func (e *Ether) SendEthReq(blockChain int64, reqBody string) (string, error) {
+func (e *Ether) SendReq(blockChain int64, reqBody string) (string, error) {
 	cluster := e.BalanceCluster()
 	if cluster == nil {
 		//不存在节点

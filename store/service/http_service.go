@@ -137,7 +137,7 @@ func (s *HttpHandler) MonitorAddress(c *gin.Context) {
 	}
 
 	//tron base58进制的地址处理
-	if !strings.HasPrefix(addr, "0x") && !strings.HasPrefix(addr, "41") && !strings.HasPrefix(addr, "0x41") {
+	if blockChain == 205 && !strings.HasPrefix(addr, "0x") && !strings.HasPrefix(addr, "41") && !strings.HasPrefix(addr, "0x41") {
 		base58Addr, err := util.Base58ToAddress(addr)
 		if err != nil {
 			s.Error(c, c.Request.URL.Path, err.Error())

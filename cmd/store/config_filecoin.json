@@ -1,0 +1,72 @@
+{
+  "RootPath": "/api/store",
+  "Port": 9003,
+  "BaseDb": {
+    "Addr": "192.168.2.9",
+    "Port": 9000,
+    "User": "test",
+    "Password": "test",
+    "DbName": "base",
+    "AddressTable": "address",
+    "TokenTable": "token"
+  },
+  "Chains": [
+    {
+      "BlockChain": 301,
+      "BlockStore": true,
+      "TxStore": true,
+      "ReceiptStore": false,
+      "SubStore": true,
+      "Kafka": {
+        "SubTx": {
+          "Host": "192.168.2.9",
+          "Port": 9092,
+          "Topic": "filecoin_sub_tx",
+          "Group": "22",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "Tx": {
+          "Host": "192.168.2.9",
+          "Port": 9092,
+          "Topic": "filecoin_tx",
+          "Group": "32",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "Block": {
+          "Host": "192.168.2.9",
+          "Port": 9092,
+          "Topic": "filecoin_block",
+          "Group": "42",
+          "StartOffset": -2,
+          "Partition": 0
+        },
+        "Receipt": {
+          "Host": "192.168.2.9",
+          "Port": 9092,
+          "Topic": "filecoin_receipt",
+          "Group": "52",
+          "StartOffset": -1,
+          "Partition": 0
+        }
+      },
+      "ChainDb": {
+        "Addr": "192.168.2.9",
+        "Port": 9000,
+        "User": "test",
+        "Password": "test",
+        "DbName": "filecoin",
+        "TxTable": "tx",
+        "BlockTable": "block",
+        "ReceiptTable": "receipt",
+        "SubTxTable": "sub_tx"
+      },
+      "Redis": {
+        "Addr": "192.168.2.9",
+        "Port": 6379,
+        "DB": 0
+      }
+    }
+  ]
+}

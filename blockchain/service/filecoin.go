@@ -351,9 +351,9 @@ func (e *FileCoin) Balance(chainCode int64, address string, tag string) (string,
 	defer func() {
 		e.log.Printf("Balance,Duration=%v", time.Since(start))
 	}()
-	if len(tag) < 1 {
-		tag = "latest"
-	}
+	//if len(tag) < 1 {
+	//	tag = "latest"
+	//}
 	req := `{
 			"jsonrpc": "2.0",
 			"method": "Filecoin.WalletBalance",

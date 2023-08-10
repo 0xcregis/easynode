@@ -33,7 +33,7 @@ func (e *Ether) GetCode(chainCode int64, address string) (string, error) {
 					"%v",
 					"latest"
 				]
-			}`
+ 			}`
 	query = fmt.Sprintf(query, address)
 	return e.SendReq(chainCode, query)
 }

@@ -224,14 +224,14 @@ func ParseTx(value []byte, transferTopic string, blockchain int64) (*store.SubTx
 	}
 
 	if len(baseFee) > 0 && len(gasUsed) > 0 && len(gasLimit) > 0 && len(gasPremium) > 0 {
-		var ok bool
+		var ok1, ok2, ok3, ok4 bool
 		var bfee, used, limit, premium *big.Int
-		bfee, ok = new(big.Int).SetString(baseFee, 0)
-		used, ok = new(big.Int).SetString(gasUsed, 0)
-		limit, ok = new(big.Int).SetString(gasLimit, 0)
-		premium, ok = new(big.Int).SetString(gasPremium, 0)
+		bfee, ok1 = new(big.Int).SetString(baseFee, 0)
+		used, ok2 = new(big.Int).SetString(gasUsed, 0)
+		limit, ok3 = new(big.Int).SetString(gasLimit, 0)
+		premium, ok4 = new(big.Int).SetString(gasPremium, 0)
 
-		if ok {
+		if ok1 && ok2 && ok3 && ok4 {
 			burn := bfee.Mul(bfee, used)
 			miner := limit.Mul(limit, premium)
 			fee := burn.Add(burn, miner)

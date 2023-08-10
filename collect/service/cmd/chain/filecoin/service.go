@@ -13,6 +13,7 @@ import (
 	"github.com/0xcregis/easynode/collect/config"
 	"github.com/0xcregis/easynode/common/ethtypes"
 	"github.com/0xcregis/easynode/common/util"
+	"github.com/filecoin-project/go-address"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
@@ -321,19 +322,28 @@ func (s *Service) GetReceipt(txHash string, eLog *logrus.Entry) (*collect.Receip
 	}
 
 	fromAddr, err := ethtypes.ParseEthAddress(receipt.From)
-	addr, err := fromAddr.ToFilecoinAddress()
 	if err == nil {
-		receipt.From = addr.String()
-	} else {
+		var addr address.Address
+		addr, err = fromAddr.ToFilecoinAddress()
+		if err == nil {
+			receipt.From = addr.String()
+		}
+	}
+
+	if err != nil {
 		eLog.Errorf("GetReceipt|BlockChainName=%v,parse.from.err=%v,txHash=%v", s.chain.BlockChainName, err.Error(), txHash)
 		return nil, err
 	}
 
 	toAddr, err := ethtypes.ParseEthAddress(receipt.To)
-	addr1, err := toAddr.ToFilecoinAddress()
 	if err == nil {
-		receipt.To = addr1.String()
-	} else {
+		var addr address.Address
+		addr, err = toAddr.ToFilecoinAddress()
+		if err == nil {
+			receipt.To = addr.String()
+		}
+	}
+	if err != nil {
 		eLog.Errorf("GetReceipt|BlockChainName=%v,parse.to.err=%v,txHash=%v", s.chain.BlockChainName, err.Error(), txHash)
 		return nil, err
 	}

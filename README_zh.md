@@ -261,6 +261,20 @@ notes:
         "token": "5fe5f231-7051-4caf-9b52-108db92edbb4"
     }'
     
+    //提交订阅规则
+    curl --location --request POST 'localhost:9003/api/store/filter/new' \
+    --header 'User-Agent: apifox/1.0.0 (https://www.apifox.cn)' \
+    --header 'Content-Type: application/json' \
+    --data-raw '[
+        {
+            "token": "afba013c-0072-4592-b8cd-304fa456f76e",
+            "blockChain": 205,
+            "txCode": "1",
+            "params": ""
+        }
+    
+    ]'
+    
  ``````
 
 2. 提交订阅并接受返回

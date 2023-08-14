@@ -28,7 +28,7 @@ type WsHandler struct {
 	log     *logrus.Entry
 	cfg     map[int64]*config.Chain
 	kafka   *kafkaClient.EasyKafka
-	store   store.DbMonitorAddressInterface
+	store   store.DbStoreInterface
 	cache   *db.CacheService
 	connMap map[string]*websocket.Conn            //token:conn
 	cmdMap  map[string]map[int64]store.CmdMessage //token:code-wsReq

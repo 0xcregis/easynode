@@ -44,6 +44,7 @@ type ClickhouseBaseDb struct {
 	DbName       string `json:"DbName"`
 	AddressTable string `json:"AddressTable"`
 	TokenTable   string `json:"TokenTable"`
+	FilterTable  string `json:"FilterTable"`
 }
 
 type KafkaConfig struct {

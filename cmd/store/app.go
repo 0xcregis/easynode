@@ -41,6 +41,9 @@ func main() {
 	root.POST("/monitor/address", srv.MonitorAddress)
 	root.POST("/monitor/address/get", srv.GetMonitorAddress)
 	root.POST("/monitor/address/delete", srv.DelMonitorAddress)
+	root.POST("/filter/new", srv.AddSubFilter)
+	root.POST("/filter/get", srv.QuerySubFilter)
+	root.POST("/filter/delete", srv.DelSubFilter)
 
 	//ws 协议
 	wsServer := service.NewWsHandler(&cfg, xLog)

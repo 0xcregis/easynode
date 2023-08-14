@@ -8,7 +8,8 @@
     "Password": "test",
     "DbName": "base",
     "AddressTable": "address",
-    "TokenTable": "token"
+    "TokenTable": "token",
+    "FilterTable": "sub_filter"
   },
   "Chains": [
     {

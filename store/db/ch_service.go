@@ -3,6 +3,8 @@ package db
 import (
 	"encoding/json"
 	"errors"
+	"strings"
+	"time"
 
 	"github.com/0xcregis/easynode/common/driver"
 	"github.com/0xcregis/easynode/store"
@@ -17,6 +19,77 @@ type ClickhouseDb struct {
 
 	baseDb     *gorm.DB
 	baseConfig *config.Config
+}
+
+func (m *ClickhouseDb) NewSubFilter(filters []*store.SubFilter) (err error) {
+	for _, v := range filters {
+		list, _ := m.GetSubFilter(v.Token, v.BlockChain, v.TxCode)
+		if len(list) > 0 {
+			continue
+		}
+		v.Id = time.Now().UnixNano()
+		err = m.baseDb.Table(m.baseConfig.BaseDb.FilterTable).Create(v).Error
+	}
+
+	return err
+}
+
+func (m *ClickhouseDb) DelSubFilter(id int64) error {
+	return m.baseDb.Table(m.baseConfig.BaseDb.FilterTable).Delete(store.SubFilter{Id: id}).Error
+}
+
+func (m *ClickhouseDb) DelSubFilter2(filter *store.SubFilter) error {
+
+	whereSql := make([]string, 0, 2)
+	valueSql := make([]any, 0, 2)
+	if len(filter.Token) > 0 {
+		whereSql = append(whereSql, "token=?")
+		valueSql = append(valueSql, filter.Token)
+	}
+
+	if filter.BlockChain > 0 {
+		whereSql = append(whereSql, "block_chain=?")
+		valueSql = append(valueSql, filter.BlockChain)
+	}
+
+	if len(filter.TxCode) > 0 {
+		whereSql = append(whereSql, "tx_code=?")
+		valueSql = append(valueSql, filter.TxCode)
+	}
+
+	where := strings.Join(whereSql, " and ")
+
+	return m.baseDb.Table(m.baseConfig.BaseDb.FilterTable).Where(where, valueSql...).Delete(store.SubFilter{}).Error
+}
+
+func (m *ClickhouseDb) GetSubFilter(token string, blockChain int64, txCode string) ([]*store.SubFilter, error) {
+
+	whereSql := make([]string, 0, 2)
+	valueSql := make([]any, 0, 2)
+	if len(token) > 0 {
+		whereSql = append(whereSql, "token=?")
+		valueSql = append(valueSql, token)
+	}
+
+	if blockChain > 0 {
+		whereSql = append(whereSql, "block_chain=?")
+		valueSql = append(valueSql, blockChain)
+	}
+
+	if len(txCode) > 0 {
+		whereSql = append(whereSql, "tx_code=?")
+		valueSql = append(valueSql, txCode)
+	}
+
+	where := strings.Join(whereSql, " and ")
+
+	var list []*store.SubFilter
+	err := m.baseDb.Table(m.baseConfig.BaseDb.FilterTable).Where(where, valueSql...).Scan(&list).Error
+
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
 }
 
 func (m *ClickhouseDb) GetAddressByToken2(token string) ([]*store.MonitorAddress, error) {
@@ -117,7 +190,7 @@ func (m *ClickhouseDb) NewReceipt(blockchain int64, receipts []*store.Receipt) e
 	return m.chDb[blockchain].Table(m.cfg[blockchain].ClickhouseDb.BlockTable).Create(receipts).Error
 }
 
-func NewChService(cfg *config.Config, log *xlog.XLog) store.DbMonitorAddressInterface {
+func NewChService(cfg *config.Config, log *xlog.XLog) store.DbStoreInterface {
 	dbs := make(map[int64]*gorm.DB, 2)
 	cs := make(map[int64]*config.Chain, 2)
 	for _, v := range cfg.Chains {

@@ -10,8 +10,8 @@ import (
 	"github.com/sunjiangjun/xlog"
 )
 
-func Init() store.DbMonitorAddressInterface {
-	cfg := config.LoadConfig("./../../../cmd/store/config.json")
+func Init() store.DbStoreInterface {
+	cfg := config.LoadConfig("./../../cmd/store/config.json")
 	return NewChService(&cfg, xlog.NewXLogger())
 }
 
@@ -57,4 +57,24 @@ func TestClickhouseDb_GetAddressByToken2(t *testing.T) {
 func TestClickhouseDb_DelMonitorAddress(t *testing.T) {
 	s := Init()
 	log.Println(s.DelMonitorAddress(200, "36ee0ad5-f4bc-4bca-a1dc-c51db006e249", "0x28c6c06298d514db089934071355e5743bf21d61"))
+}
+
+func TestClickhouseDb_NewSubFilter(t *testing.T) {
+	s := Init()
+	t.Log(s.NewSubFilter([]*store.SubFilter{{Token: "token", BlockChain: 205, TxCode: "1"}}))
+}
+
+func TestClickhouseDb_GetSubFilter(t *testing.T) {
+	s := Init()
+	t.Log(s.GetSubFilter("token", 205, "1"))
+}
+
+func TestClickhouseDb_DelSubFilter2(t *testing.T) {
+	s := Init()
+	t.Log(s.DelSubFilter2(&store.SubFilter{Token: "token"}))
+}
+
+func TestClickhouseDb_DelSubFilter(t *testing.T) {
+	s := Init()
+	t.Log(s.DelSubFilter(1691999490145550000))
 }

@@ -3,14 +3,15 @@ package service
 import (
 	"errors"
 	"fmt"
-	"github.com/segmentio/kafka-go"
-	"github.com/tidwall/gjson"
-	"github.com/uduncloud/easynode/collect/service"
-	"github.com/uduncloud/easynode/common/util"
 	"math/big"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/segmentio/kafka-go"
+	"github.com/tidwall/gjson"
+	"github.com/uduncloud/easynode/collect/service"
+	"github.com/uduncloud/easynode/common/util"
 )
 
 func ParseTx(blockchain int64, msg *kafka.Message) (*SubTx, error) {
@@ -77,7 +78,7 @@ func ParseTxForEther(body []byte) (*SubTx, error) {
 	if err != nil {
 		return nil, err
 	}
-	r.Value = div(v, 18)
+	r.Value = Div(v, 18)
 
 	tp, err := GetTxTypeForEther(body)
 	if err != nil {
@@ -110,7 +111,7 @@ func ParseTxForEther(body []byte) (*SubTx, error) {
 
 	if b && b2 {
 		fee := bigPrice.Mul(bigPrice, bigGas)
-		r.Fee = div(fmt.Sprintf("%v", fee), 18)
+		r.Fee = Div(fmt.Sprintf("%v", fee), 18)
 		r.FeeDetail = map[string]string{"gasPrice": fmt.Sprintf("%v", bigPrice.String()), "gasUsed": fmt.Sprintf("%v", bigGas.String())}
 	} else {
 		return nil, errors.New("price or gas is wrong")
@@ -143,7 +144,7 @@ func ParseTxForEther(body []byte) (*SubTx, error) {
 			fee := r.Get("data").String()
 			bigFee, err := util.HexToInt(fee)
 			if err == nil {
-				data = div(bigFee, decimals)
+				data = Div(bigFee, decimals)
 			} else {
 				return nil, errors.New("tx.log.contract is error")
 			}
@@ -274,7 +275,7 @@ func ParseTxForTron(body []byte) (*SubTx, error) {
 	r.Input = input
 
 	if r.TxType == 2 { //普通交易
-		r.Value = div(v.Get("amount").String(), 6)
+		r.Value = Div(v.Get("amount").String(), 6)
 	} else if r.TxType == 1 { //合约调用
 		r.Value = "0"
 	} else { //其他
@@ -289,7 +290,7 @@ func ParseTxForTron(body []byte) (*SubTx, error) {
 	if len(receiptBody) > 5 {
 		receiptRoot := gjson.Parse(receiptBody)
 		fee := receiptRoot.Get("fee").String()
-		r.Fee = div(fee, 6)
+		r.Fee = Div(fee, 6)
 		gasFee := receiptRoot.Get("receipt").Map()
 		delete(gasFee, "result")
 		r.FeeDetail = gasFee
@@ -323,7 +324,7 @@ func ParseTxForTron(body []byte) (*SubTx, error) {
 				bigFee, err := util.HexToInt(fee)
 				if err == nil {
 					//fmt.Sprintf("%.5f", new(big.Float).Quo(new(big.Float).SetFloat64(float64(bigFee)), new(big.Float).SetFloat64(bigDecimals)))
-					data = div(bigFee, decimals)
+					data = Div(bigFee, decimals)
 				} else {
 					return nil, errors.New("tx.log.contract is error")
 				}
@@ -359,7 +360,7 @@ func ParseTxForTron(body []byte) (*SubTx, error) {
 	return &r, nil
 }
 
-func div(str string, pos int) string {
+func Div(str string, pos int) string {
 
 	if str == "" || str == "0" {
 		return "0"
@@ -401,6 +402,7 @@ func div(str string, pos int) string {
 
 		if strings.HasSuffix(result, ".") {
 			result = strings.TrimSuffix(result, ".")
+			break
 		}
 	}
 	return result

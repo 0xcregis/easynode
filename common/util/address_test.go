@@ -6,7 +6,7 @@ import (
 )
 
 func TestBase58ToAddress(t *testing.T) {
-	a, err := Base58ToAddress("TE1CkRbrQro1bWGNXYUjPuohcKBJ8SSeeY")
+	a, err := Base58ToAddress("TUSoWxKf9cpQPm8TK4drGXjAHpWXqJggam")
 	if err != nil {
 		panic(err)
 	}

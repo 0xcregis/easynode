@@ -175,15 +175,14 @@ curl --location --request POST 'localhost:9003/api/store/filter/delete' \
 
 ``````
 
-//入参数据结构：
-type WsReqMessage struct {
-	Id         int64  `json:"id"` //客户端请求序列号
-	Code       []int64 `json:"code"`//1:订阅资产转移交易，2:取消订阅资产转移交易
-	BlockChain []int64 `json:"blockChain"` //订阅公链的代码
-	Params     map[string]string `json:"params"` //非必需
+//推送数据结构
+type WsPushMessage struct {
+	Code       int64  `json:"code"`//推送数据业务码
+	BlockChain int64 `json:"blockChain"` //公链代码
+	Data       interface{} `json:"data"`//推送的数据
 }
 
-//WsReqMessage.Code 说明
+//WsPushMessage.Code 说明
 	1:订阅资产转移交易，     2:取消订阅：资产转移交易 
 	3:质押资产             4:取消订阅：质押资产 
 	5:解锁资产             6:取消订阅：解锁资产 
@@ -193,23 +192,6 @@ type WsReqMessage struct {
 	13:激活账号            14:取消订阅：激活账号
 
 
-//返回数据结构：
-type WsRespMessage struct {
-	Id         int64  `json:"id"` //请求的序列号，和请求保持一致
-	Code       []int64  `json:"code"` //命名code，和请求保持一致
-	BlockChain []int64 `json:"blockChain"` //订阅公链的代码
-	Status     int   `json:"status"` //0:成功 1：失败
-	Err        string `json:"err"` //错误原因
-	Params     map[string]string `json:"params"` //请求参数，和请求保持一致
-	Resp       interface{} `json:"resp"` //返回的数据
-}
-//推送数据结构
-type WsPushMessage struct {
-	Code       int64  `json:"code"`//推送数据业务码
-	BlockChain int64 `json:"blockChain"` //公链代码
-	Data       interface{} `json:"data"`//推送的数据
-}
-
 ``````
 
 - 提交订阅并接受返回
@@ -218,31 +200,8 @@ type WsPushMessage struct {
    url: 
    
    ws://localhost:9003/api/store/ws/{token} 
-   
-   ws://localhost:9003/api/store/ws/{token}?serialId={serialId}
   
-   入参：
-            {
-             "id":1001,
-             "code":[1],
-             "blockChain":[200,205],
-             "params":{}
-            }
-   
-   订阅返回：
-   
-           {
-            "id": 1001,
-            "code": [1],
-            "blockChain": [
-              200,
-              205
-            ],
-            "status": 0,
-            "err": "",
-            "params": {},
-            "resp": null
-          }
+   ws://localhost:9003/api/store/ws/{token}?serialId={serialId}
             
    push 返回：
    

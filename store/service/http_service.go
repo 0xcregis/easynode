@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -21,7 +22,7 @@ import (
 type HttpHandler struct {
 	log    *logrus.Entry
 	chains map[int64]*config.Chain
-	store  store.DbMonitorAddressInterface
+	store  store.DbStoreInterface
 }
 
 func NewHttpHandler(cfg *config.Config, log *xlog.XLog) *HttpHandler {
@@ -35,6 +36,75 @@ func NewHttpHandler(cfg *config.Config, log *xlog.XLog) *HttpHandler {
 		log:    log.WithField("model", "httpSrv"),
 		chains: mp,
 	}
+}
+
+func (s *HttpHandler) AddSubFilter(c *gin.Context) {
+	bs, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		s.Error(c, c.Request.URL.Path, err.Error())
+		return
+	}
+
+	var list []*store.SubFilter
+
+	_ = json.Unmarshal(bs, &list)
+
+	err = s.store.NewSubFilter(list)
+	if err != nil {
+		s.Error(c, c.Request.URL.Path, err.Error())
+		return
+	}
+
+	s.Success(c, nil, c.Request.URL.Path)
+}
+
+func (s *HttpHandler) DelSubFilter(c *gin.Context) {
+	bs, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		s.Error(c, c.Request.URL.Path, err.Error())
+		return
+	}
+
+	root := gjson.ParseBytes(bs)
+
+	if root.Get("id").Exists() {
+		id := root.Get("id").Int()
+		err = s.store.DelSubFilter(id)
+	} else {
+		chainCode := root.Get("blockChain").Int()
+		token := root.Get("token").String()
+		txCode := root.Get("txCode").String()
+		sf := store.SubFilter{BlockChain: chainCode, Token: token, TxCode: txCode}
+		err = s.store.DelSubFilter2(&sf)
+	}
+
+	if err != nil {
+		s.Error(c, c.Request.URL.Path, err.Error())
+		return
+	}
+
+	s.Success(c, nil, c.Request.URL.Path)
+}
+
+func (s *HttpHandler) QuerySubFilter(c *gin.Context) {
+	bs, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		s.Error(c, c.Request.URL.Path, err.Error())
+		return
+	}
+
+	root := gjson.ParseBytes(bs)
+
+	chainCode := root.Get("blockChain").Int()
+	token := root.Get("token").String()
+	txCode := root.Get("txCode").String()
+	list, err := s.store.GetSubFilter(token, chainCode, txCode)
+	if err != nil {
+		s.Error(c, c.Request.URL.Path, err.Error())
+		return
+	}
+
+	s.Success(c, list, c.Request.URL.Path)
 }
 
 func (s *HttpHandler) NewToken(c *gin.Context) {

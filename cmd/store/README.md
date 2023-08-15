@@ -127,21 +127,62 @@ curl --location --request POST 'localhost:9003/api/store/monitor/address/delete'
     "token": "5fe5f231-7051-4caf-9b52-108db92edbb4"
 }'
 
+//提交订阅规则
+curl --location --request POST 'localhost:9003/api/store/filter/new' \
+--header 'User-Agent: apifox/1.0.0 (https://www.apifox.cn)' \
+--header 'Content-Type: application/json' \
+--data-raw '[
+    {
+        "token": "afba013c-0072-4592-b8cd-304fa456f76e",
+        "blockChain": 205,
+        "txCode": "1",
+        "params": ""
+    }
+
+]'
+
+//查询订阅规则
+curl --location --request POST 'localhost:9003/api/store/filter/get' \
+--header 'User-Agent: apifox/1.0.0 (https://www.apifox.cn)' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "token": "afba013c-0072-4592-b8cd-304fa456f76e",
+    "blockChain": 0,
+    "txCode": ""
+}'
+
+//删除订阅规则
+
+curl --location --request POST 'localhost:9003/api/store/filter/delete' \
+--header 'User-Agent: apifox/1.0.0 (https://www.apifox.cn)' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "id": 1692001339482287000
+}'
+
+curl --location --request POST 'localhost:9003/api/store/filter/delete' \
+--header 'User-Agent: apifox/1.0.0 (https://www.apifox.cn)' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "token": "afba013c-0072-4592-b8cd-304fa456f76e",
+    "blockChain": 205
+}'
+
+
 ``````
 
 - ws
 
 ``````
 
-//入参数据结构：
-type WsReqMessage struct {
-	Id         int64  `json:"id"` //客户端请求序列号
-	Code       []int64 `json:"code"`//1:订阅资产转移交易，2:取消订阅资产转移交易
-	BlockChain []int64 `json:"blockChain"` //订阅公链的代码
-	Params     map[string]string `json:"params"` //非必需
+//推送数据结构
+type WsPushMessage struct {
+	Code       int64  `json:"code"`//推送数据业务码
+	BlockChain int64 `json:"blockChain"` //公链代码
+	Data       interface{} `json:"data"`//推送的数据
 }
 
-//WsReqMessage.Code 说明
+//WsPushMessage.Code 说明
 	1:订阅资产转移交易，     2:取消订阅：资产转移交易 
 	3:质押资产             4:取消订阅：质押资产 
 	5:解锁资产             6:取消订阅：解锁资产 
@@ -151,23 +192,6 @@ type WsReqMessage struct {
 	13:激活账号            14:取消订阅：激活账号
 
 
-//返回数据结构：
-type WsRespMessage struct {
-	Id         int64  `json:"id"` //请求的序列号，和请求保持一致
-	Code       []int64  `json:"code"` //命名code，和请求保持一致
-	BlockChain []int64 `json:"blockChain"` //订阅公链的代码
-	Status     int   `json:"status"` //0:成功 1：失败
-	Err        string `json:"err"` //错误原因
-	Params     map[string]string `json:"params"` //请求参数，和请求保持一致
-	Resp       interface{} `json:"resp"` //返回的数据
-}
-//推送数据结构
-type WsPushMessage struct {
-	Code       int64  `json:"code"`//推送数据业务码
-	BlockChain int64 `json:"blockChain"` //公链代码
-	Data       interface{} `json:"data"`//推送的数据
-}
-
 ``````
 
 - 提交订阅并接受返回
@@ -176,31 +200,8 @@ type WsPushMessage struct {
    url: 
    
    ws://localhost:9003/api/store/ws/{token} 
-   
-   ws://localhost:9003/api/store/ws/{token}?serialId={serialId}
   
-   入参：
-            {
-             "id":1001,
-             "code":[1],
-             "blockChain":[200,205],
-             "params":{}
-            }
-   
-   订阅返回：
-   
-           {
-            "id": 1001,
-            "code": [1],
-            "blockChain": [
-              200,
-              205
-            ],
-            "status": 0,
-            "err": "",
-            "params": {},
-            "resp": null
-          }
+   ws://localhost:9003/api/store/ws/{token}?serialId={serialId}
             
    push 返回：
    
@@ -237,10 +238,13 @@ type WsPushMessage struct {
                      
 ``````
 
-- 交易类型说明：
+- 交易类型(txType)说明：
 
   1:合约调用，2:普通资产转移 3:资源代理 4:资源回收 5:激活 6:质押 7:解质押 8:解质押提现
 
+- 消息类型(code)说明:
+
+  1:订阅资产转移交易，2:取消订阅：资产转移交易 ，3:质押资产 4:取消订阅：质押资产 5:解锁资产 6:取消订阅：解锁资产 7:提取 8:取消订阅：提取 9:代理资源 10:取消订阅：代理资源 11:回收资源（取消代理） 12:取消订阅： 回收资源（取消代理） 13:激活账号  14:取消订阅：激活账号
 
 - notes
 

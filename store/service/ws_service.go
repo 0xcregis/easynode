@@ -216,16 +216,14 @@ func (ws *WsHandler) Sub(w http.ResponseWriter, r *http.Request, token string) {
 	interrupt := true
 	//read cmd
 	for interrupt {
-		select {
-		case <-cx.Done():
-			//清理
-			//delete(ws.cmdMap, token)
-			if c, ok := ws.connMap[token]; ok {
-				_ = c.Close()
-			}
-			delete(ws.connMap, token)
-			interrupt = false
+		<-cx.Done()
+		//清理
+		//delete(ws.cmdMap, token)
+		if c, ok := ws.connMap[token]; ok {
+			_ = c.Close()
 		}
+		delete(ws.connMap, token)
+		interrupt = false
 	}
 
 	//延迟时间，待其他服务清理
@@ -345,7 +343,7 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 				temp := make(map[string][]*store.SubFilter, 10)
 				for _, v := range list {
 					if l, ok := temp[v.Token]; ok {
-						l = append(l, v)
+						temp[v.Token] = append(l, v)
 					} else {
 						temp[v.Token] = []*store.SubFilter{v}
 					}

@@ -46,7 +46,10 @@ func Div(str string, pos int) string {
 
 	for strings.HasSuffix(result, "0") || strings.HasSuffix(result, ".") {
 		result = strings.TrimSuffix(result, "0")
-		result = strings.TrimSuffix(result, ".")
+		if strings.HasSuffix(result, ".") {
+			result = strings.TrimSuffix(result, ".")
+			break
+		}
 	}
 	return result
 }

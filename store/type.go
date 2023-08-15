@@ -20,6 +20,14 @@ type NodeToken struct {
 	Email string `json:"email" gorm:"column:email"`
 }
 
+type SubFilter struct {
+	Id         int64  `json:"id" gorm:"column:id"`
+	Token      string `json:"token" gorm:"column:token"`
+	BlockChain int64  `json:"blockChain" gorm:"column:block_chain"`
+	TxCode     string `json:"txCode" gorm:"column:tx_code"`
+	Params     string `json:"params" gorm:"column:params"`
+}
+
 /**
 CREATE TABLE IF NOT EXISTS ether.tx
 (

@@ -18,7 +18,7 @@ import (
 )
 
 type StoreHandler struct {
-	store  store.DbMonitorAddressInterface
+	store  store.DbStoreInterface
 	log    *logrus.Entry
 	config *config.Config
 	kafka  *kafkaClient.EasyKafka

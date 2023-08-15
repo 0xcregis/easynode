@@ -279,59 +279,35 @@ notes:
 
 ``````
    url: ws://localhost:9003/api/store/ws/{token}
-   
-   input：
-            {
-             "id":1001,
-             "code":[1],
-             "blockChain":[200,205],
-             "params":{}
-            }
-   
-   return of sub：
-   
-            {
-              "id": 1001,
-              "code": [1],
-              "blockChain": [
-                200,
-                205
-              ],
-              "status": 0,
-              "err": "",
-              "params": {},
-              "resp": null
-            }
-            
+               
    return of push：
-   
-            {
-               "code": 1, //message type, 1: transaction message
-               "blockChain": 200, //public chain code
-               "data": { //transaction data
-                 "id": 1685094437357929000,
-                 "blockHash": "0x067fbc694c5ca3540ee965b25c286e55d40f3e5e5fd336d1f398868dfc18feec", //block hash
-                 "blockNumber": "17284552", //block height
-                 "chainCode": 200,
-                 "contractTx": [ //EVM event during contract transaction
-                   {
-                     "contract": "0xdac17f958d2ee523a2206206994597c13d831ec7", //contract address
-                     "from": "0x54b50187becd0bbcfd52ec5d538433dab044d2a8", //from address
-                     "method": "Transfer", //contract method
-                     "to": "0x408be4b8a862c1a372976521401fd77f9a0178d7", //to address
-                     "value": "59.327379" //transaction content
-                   }
-                 ],
-                 "fee": "0.002053016771146819",//transaction fee
-                 "from": "0x54b50187becd0bbcfd52ec5d538433dab044d2a8", //from address
-                 "hash": "0x323c08a889ed99d8bfc6c72b1580432f7a13ca7c992fd1bac523e46bfe7ab98f", //transaction hash
-                 "status": "1", //transaction status 1: successful, 0: transaction failed
-                 "to": "0xdac17f958d2ee523a2206206994597c13d831ec7", //to address
-                 "txTime": "1684390019", //transaction time
-                 "txType": 1, //transaction type 1: contract call, 2: normal asset transfer
-                 "value": "0" //transaction amount
-               }
-            }        
+   {
+     "code": 1, //message type, 1: transaction message
+     "blockChain": 200, //public chain code
+     "data": { //transaction data
+       "id": 1685094437357929000,
+       "blockHash": "0x067fbc694c5ca3540ee965b25c286e55d40f3e5e5fd336d1f398868dfc18feec", //block hash
+       "blockNumber": "17284552", //block height
+       "chainCode": 200,
+       "contractTx": [ //EVM event during contract transaction
+         {
+           "contract": "0xdac17f958d2ee523a2206206994597c13d831ec7", //contract address
+           "from": "0x54b50187becd0bbcfd52ec5d538433dab044d2a8", //from address
+           "method": "Transfer", //contract method
+           "to": "0x408be4b8a862c1a372976521401fd77f9a0178d7", //to address
+           "value": "59.327379" //transaction content
+         }
+       ],
+       "fee": "0.002053016771146819",//transaction fee
+       "from": "0x54b50187becd0bbcfd52ec5d538433dab044d2a8", //from address
+       "hash": "0x323c08a889ed99d8bfc6c72b1580432f7a13ca7c992fd1bac523e46bfe7ab98f", //transaction hash
+       "status": "1", //transaction status 1: successful, 0: transaction failed
+       "to": "0xdac17f958d2ee523a2206206994597c13d831ec7", //to address
+       "txTime": "1684390019", //transaction time
+       "txType": 1, //transaction type 1: contract call, 2: normal asset transfer
+       "value": "0" //transaction amount
+     }
+  }        
                              
 ``````
 

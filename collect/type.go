@@ -202,7 +202,16 @@ type TronReceipt struct {
 		Result             string `json:"result"`
 		EnergyPenaltyTotal int64  `json:"energy_penalty_total"`
 	} `json:"receipt"`
-	Log []*Logs `json:"log"`
+	Log                  []*Logs `json:"log"`
+	InternalTransactions []struct {
+		CallerAddress     string `json:"caller_address"`
+		Note              string `json:"note"`
+		TransferToAddress string `json:"transferTo_address"`
+		CallValueInfo     any    `json:"callValueInfo" `
+		Hash              string `json:"hash"`
+		Extra             string `json:"extra"`
+		Rejected          bool   `json:"rejected"`
+	} `json:"internal_transactions"`
 }
 
 /**

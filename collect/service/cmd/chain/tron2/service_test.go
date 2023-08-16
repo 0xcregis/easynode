@@ -2,14 +2,14 @@ package tron2
 
 import (
 	"encoding/json"
+	"log"
+	"testing"
+
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 	"github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service"
 	"github.com/uduncloud/easynode/collect/service/db"
-	"log"
-	"strings"
-	"testing"
 )
 
 func Init() (service.BlockChainInterface, config.Config, *xlog.XLog) {
@@ -21,9 +21,9 @@ func Init() (service.BlockChainInterface, config.Config, *xlog.XLog) {
 
 func TestService_GetTx(t *testing.T) {
 
-	s, cfg, x := Init()
+	s, _, x := Init()
 
-	tx := s.GetTx("76f1ff8be6b3cf041f29b67c3a5d025f232d2a48a6d0810f0f234fc73c16adcc", cfg.Chains[0].TxTask, x.WithFields(logrus.Fields{}))
+	tx := s.GetTx("76f1ff8be6b3cf041f29b67c3a5d025f232d2a48a6d0810f0f234fc73c16adcc", x.WithFields(logrus.Fields{}))
 
 	log.Printf("%+v\n", tx)
 
@@ -33,21 +33,22 @@ func TestService_GetTx(t *testing.T) {
 
 func TestService_GetBlockByNumber(t *testing.T) {
 	s, _, x := Init()
-	b, t1 := s.GetBlockByNumber("52642923", nil, x.WithFields(logrus.Fields{}), true)
+	b, t1 := s.GetBlockByNumber("49469984", x.WithFields(logrus.Fields{}), true)
 	log.Println(b)
 	log.Println(t1[0])
 }
 
 func TestService_GetReceiptByBlock(t *testing.T) {
-	//s, cfg, x := Init()
-	////r := s.GetReceiptByBlock("", "0xF9CC56", cfg.Chains[0].ReceiptTask, x.WithFields(logrus.Fields{}))
-	//log.Println(r)
-
-	log.Println(strings.Replace("4224", "42", "", 1))
+	s, _, x := Init()
+	r, err := s.GetReceiptByBlock("", "0xF9CC56", x.WithFields(logrus.Fields{}))
+	log.Println(r, err)
 }
 
 func TestService_GetReceipt(t *testing.T) {
-	//s, cfg, x := Init()
-	////r := s.GetReceipt("0x72fd440ff0542c2c28db762b4268f126c57f0fdf6daf69258cb9a306e26723e8", cfg.Chains[0].ReceiptTask, x.WithFields(logrus.Fields{}))
-	//log.Printf("%+v", r)
+	s, _, x := Init()
+	r, err := s.GetReceipt("50e6dd05c37b8666cf4a689fe6c0d52053b76b53d8649b256e6b9dca8c9df098", x.WithFields(logrus.Fields{}))
+	if err != nil {
+		t.Error(err)
+	}
+	log.Printf("%+v", r)
 }

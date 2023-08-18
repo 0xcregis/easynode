@@ -37,6 +37,8 @@
 | ethereum    |    200    |   ETH   |
 | tron        |    205    |  TRON   |
 | polygon-pos |    201    | POLYGON |
+| bitcoin     |    300    |   BTC   |
+| filecoin    |    301    |   FIL   |
 
 ## 入门指引
 

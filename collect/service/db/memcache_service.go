@@ -5,17 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/redis/go-redis/v9"
 	"github.com/segmentio/kafka-go"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
 	"github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service"
-	"math/rand"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
 )
 
 var (
@@ -338,7 +339,7 @@ func (s *Service) GetNodeTask(blockchain int64, key string) (int64, *service.Nod
 }
 
 // StoreNodeTask StoreExecTask key which tx:tx_txHash,receipt:receipt_txHash, block: block_number_blockHash
-func (s *Service) StoreNodeTask(key string, task *service.NodeTask) {
+func (s *Service) StoreNodeTask(key string, task *service.NodeTask, append bool) {
 
 	c, d, err := s.GetNodeTask(int64(task.BlockChain), key)
 	//已存在且错误超过5次 忽略
@@ -354,7 +355,11 @@ func (s *Service) StoreNodeTask(key string, task *service.NodeTask) {
 	}
 
 	mp := make(map[string]any, 2)
-	mp["count"] = c + 1
+	if append {
+		mp["count"] = c + 1
+	} else {
+		mp["count"] = c
+	}
 	mp["data"] = d
 
 	bs, _ := json.Marshal(mp)
@@ -370,7 +375,7 @@ func (s *Service) ResetNodeTask(blockchain int64, oldKey, key string) error {
 		return err
 	}
 	_ = s.cacheClient.HDel(context.Background(), fmt.Sprintf(NodeTaskKey, task.BlockChain), oldKey)
-	s.StoreNodeTask(key, task)
+	s.StoreNodeTask(key, task, false)
 	return nil
 }
 
@@ -392,12 +397,11 @@ func (s *Service) UpdateNodeTaskStatus(key string, status int) error {
 			return err
 		}
 	} else {
-
 		_, task, err := s.GetNodeTask(blockchain, key)
 		if err == nil && task != nil {
 			task.TaskStatus = status
 			task.LogTime = time.Now()
-			s.StoreNodeTask(key, task)
+			s.StoreNodeTask(key, task, false)
 		}
 
 	}

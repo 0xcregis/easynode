@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/segmentio/kafka-go"
 	"github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service"
+	kafkaClient "github.com/uduncloud/easynode/common/kafka"
 	"github.com/uduncloud/easynode/common/util"
-	"testing"
-	"time"
 )
 
 func Init() *Service {
@@ -73,6 +75,13 @@ func TestService_CheckErrTx(t *testing.T) {
 
 func TestService_CheckNodeTask(t *testing.T) {
 	s := Init()
+	go func() {
+		for _, v := range s.cfg.Chains {
+			broker := fmt.Sprintf("%v:%v", v.TaskKafka.Host, v.TaskKafka.Port)
+			s.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker}}, s.kafkaSender[int64(v.BlockChainCode)], nil, context.Background(), 1)
+		}
+	}()
+
 	for blockchain, store := range s.taskStore {
 
 		list, err := store.GetAllKeyForNodeTask(blockchain)
@@ -106,13 +115,15 @@ func TestService_CheckNodeTask(t *testing.T) {
 			tempList = append(tempList, msg)
 
 			if len(tempList) > 10 {
-				//s.kafkaSender[blockchain] <- tempList
+				s.kafkaSender[blockchain] <- tempList
 				tempList = tempList[len(tempList):]
 			}
 		}
 
-		//s.kafkaSender[blockchain] <- tempList
+		s.kafkaSender[blockchain] <- tempList
 	}
+
+	time.Sleep(10 * time.Second)
 }
 
 func TestService_CheckContract(t *testing.T) {

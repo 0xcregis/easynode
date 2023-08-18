@@ -35,7 +35,7 @@
 | blockchain  | chaincode |  desc   |
 |:------------|:---------:|:-------:|
 | ethereum    |    200    |   ETH   |
-| tron        |    205    |  TRON   |
+| tron        |    205    |   TRX   |
 | polygon-pos |    201    | POLYGON |
 | bitcoin     |    300    |   BTC   |
 | filecoin    |    301    |   FIL   |

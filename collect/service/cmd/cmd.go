@@ -158,14 +158,14 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 		//交易任务
 		{
 			if task.TaskType == 1 { //单个交易
-				c.taskStore.StoreNodeTask(fmt.Sprintf(KeyTx, task.BlockChain, task.TxHash), &task)
+				c.taskStore.StoreNodeTask(fmt.Sprintf(KeyTx, task.BlockChain, task.TxHash), &task, true)
 				//_ = c.taskStore.StoreLatestBlock(int64(blockChain), "LatestTx", task)
 				log.Printf("Tx|blockchain:%v,txHash:%v", task.BlockChain, task.TxHash)
 				txCh <- &task
 			}
 
 			if task.TaskType == 4 { //区块所有交易
-				c.taskStore.StoreNodeTask(fmt.Sprintf(KeyTx, task.BlockChain, task.BlockHash+task.BlockNumber), &task)
+				c.taskStore.StoreNodeTask(fmt.Sprintf(KeyTx, task.BlockChain, task.BlockHash+task.BlockNumber), &task, true)
 				//save latest blockNumber for monitor
 				_ = c.taskStore.StoreLatestBlock(int64(blockChain), "LatestTx", task, task.BlockNumber)
 				log.Printf("Tx:blockchain:%v,blockNumber:%v,blockHash:%v", task.BlockChain, task.BlockNumber, task.BlockHash)
@@ -178,9 +178,9 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 
 			if task.TaskType == 2 { //单区块任务
 				if len(task.BlockNumber) > 0 {
-					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockNumber), &task)
+					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockNumber), &task, true)
 				} else if len(task.BlockHash) > 0 {
-					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockHash), &task)
+					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockHash), &task, true)
 				}
 				//save latest blockNumber for monitor
 				_ = c.taskStore.StoreLatestBlock(int64(blockChain), "LatestBlock", task, task.BlockNumber)
@@ -190,7 +190,7 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 
 			if task.TaskType == 6 { //批量区块任务
 				if len(task.BlockNumber) > 0 {
-					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockNumber), &task)
+					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockNumber), &task, true)
 					//save latest blockNumber for monitor
 					_ = c.taskStore.StoreLatestBlock(int64(blockChain), "LatestBlock", task, task.BlockNumber)
 					log.Printf("Block:blockchain:%v,blockNumber:%v,blockHash:%v", task.BlockChain, task.BlockNumber, task.BlockHash)
@@ -204,12 +204,12 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 		//收据任务
 		{
 			if task.TaskType == 3 { //单收据
-				c.taskStore.StoreNodeTask(fmt.Sprintf(KeyReceipt, task.BlockChain, task.TxHash), &task)
+				c.taskStore.StoreNodeTask(fmt.Sprintf(KeyReceipt, task.BlockChain, task.TxHash), &task, true)
 				receiptChan <- &task
 			}
 
 			if task.TaskType == 5 { //区块所有收据
-				c.taskStore.StoreNodeTask(fmt.Sprintf(KeyReceipt, task.BlockChain, task.BlockHash+task.BlockNumber), &task)
+				c.taskStore.StoreNodeTask(fmt.Sprintf(KeyReceipt, task.BlockChain, task.BlockHash+task.BlockNumber), &task, true)
 				receiptChan <- &task
 			}
 
@@ -332,7 +332,7 @@ func (c *Cmd) execMultiReceipt(taskReceipt *collect.NodeTask, log *logrus.Entry)
 			t.TaskStatus = 4
 			kafkaMsgList = append(kafkaMsgList, m)
 		}
-		c.taskStore.StoreNodeTask(fmt.Sprintf(KeyReceiptById, c.chain.BlockChainCode, receipt.TransactionHash), t)
+		c.taskStore.StoreNodeTask(fmt.Sprintf(KeyReceiptById, c.chain.BlockChainCode, receipt.TransactionHash), t, true)
 	}
 
 	_ = c.taskStore.UpdateNodeTaskStatus(key, 1) //成功、
@@ -483,7 +483,7 @@ func (c *Cmd) execMultiTx(taskTx *collect.NodeTask, log *logrus.Entry) []*kafka.
 				txMessageList = append(txMessageList, m)
 			}
 
-			c.taskStore.StoreNodeTask(fmt.Sprintf(KeyTxById, c.chain.BlockChainCode, t.TxHash), t)
+			c.taskStore.StoreNodeTask(fmt.Sprintf(KeyTxById, c.chain.BlockChainCode, t.TxHash), t, true)
 		}
 
 		//未分配的收据任务
@@ -684,7 +684,7 @@ func (c *Cmd) execMultiBlock(taskBlock *collect.NodeTask, log *logrus.Entry) []*
 
 	for _, v := range nodeTaskList {
 		newKey := fmt.Sprintf(KeyBlockById, taskBlock.BlockChain, v.BlockHash)
-		c.taskStore.StoreNodeTask(newKey, v)
+		c.taskStore.StoreNodeTask(newKey, v, true)
 	}
 
 	//区块发送到Kafka

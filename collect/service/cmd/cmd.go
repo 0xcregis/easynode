@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
@@ -12,7 +14,6 @@ import (
 	"github.com/uduncloud/easynode/collect/service/cmd/chain"
 	"github.com/uduncloud/easynode/collect/service/db"
 	kafkaClient "github.com/uduncloud/easynode/common/kafka"
-	"time"
 )
 
 const (
@@ -118,7 +119,7 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 	}()
 
 	go func() {
-		for true {
+		for {
 			if len(mp) > 0 {
 				mp = make(map[string]struct{}, 1)
 			}
@@ -135,13 +136,12 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 		}
 	}()
 
-	log := c.log.WithFields(logrus.Fields{"model": "Execution", "id": time.Now().UnixMilli()})
-
-	for true {
+	for {
 		if len(mp) < 1 {
 			time.Sleep(3 * time.Second)
 			continue
 		}
+		log := c.log.WithFields(logrus.Fields{"model": "Execution", "id": time.Now().UnixMilli()})
 		select {
 		case msg := <-receiver:
 			//log.Printf("Read NodeTask offset=%v,topic=%v,value=%v", msg.Offset, msg.Topic, string(msg.Value))
@@ -162,6 +162,7 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 			{
 				if task.TaskType == 1 { //单个交易
 					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyTx, task.BlockChain, task.TxHash), &task)
+					//save latest blockNumber for monitor
 					//_ = c.taskStore.StoreLatestBlock(int64(blockChain), "LatestTx", task)
 					log.Printf("Tx|blockchain:%v,txHash:%v", task.BlockChain, task.TxHash)
 					txCh <- &task
@@ -169,6 +170,7 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 
 				if task.TaskType == 4 { //区块所有交易
 					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyTx, task.BlockChain, task.BlockHash+task.BlockNumber), &task)
+					//save latest blockNumber for monitor
 					_ = c.taskStore.StoreLatestBlock(int64(blockChain), "LatestTx", task, task.BlockNumber)
 					log.Printf("Tx:blockchain:%v,blockNumber:%v,blockHash:%v", task.BlockChain, task.BlockNumber, task.BlockHash)
 					txCh <- &task
@@ -183,6 +185,8 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 				} else if len(task.BlockHash) > 0 {
 					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockHash), &task)
 				}
+
+				//save latest blockNumber for monitor
 				_ = c.taskStore.StoreLatestBlock(int64(blockChain), "LatestBlock", task, task.BlockNumber)
 				log.Printf("Block:blockchain:%v,blockNumber:%v,blockHash:%v", task.BlockChain, task.BlockNumber, task.BlockHash)
 				blockCh <- &task
@@ -257,7 +261,7 @@ func (c *Cmd) HandlerKafkaRespMessage(msList []*kafka.Message) {
 
 func (c *Cmd) ExecReceiptTask(receiptChan chan *service.NodeTask, kf chan []*kafka.Message) {
 	buffCh := make(chan struct{}, 10)
-	for true {
+	for {
 		//控制协程数量
 		buffCh <- struct{}{}
 		//执行任务
@@ -369,7 +373,7 @@ func (c *Cmd) execSingleReceipt(taskReceipt *service.NodeTask, log *logrus.Entry
 
 func (c *Cmd) ExecTxTask(txCh chan *service.NodeTask, kf chan []*kafka.Message) {
 	buffCh := make(chan struct{}, 20)
-	for true {
+	for {
 		//控制协程数量
 		buffCh <- struct{}{}
 		//执行任务
@@ -555,7 +559,7 @@ func (c *Cmd) execSingleTx(taskTx *service.NodeTask, log *logrus.Entry) []*kafka
 
 func (c *Cmd) ExecBlockTask(blockCh chan *service.NodeTask, kf chan []*kafka.Message) {
 	buffCh := make(chan struct{}, 10)
-	for true {
+	for {
 		//控制协程数量
 		buffCh <- struct{}{}
 

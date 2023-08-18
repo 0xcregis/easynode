@@ -23,7 +23,7 @@ func TestService_GetTx(t *testing.T) {
 
 	s, _, x := Init()
 
-	tx := s.GetTx("76f1ff8be6b3cf041f29b67c3a5d025f232d2a48a6d0810f0f234fc73c16adcc", x.WithFields(logrus.Fields{}))
+	tx := s.GetTx("447a8ebba389d27c25079843779690d2f695b4d7f28188515979c9a80b337f4e", x.WithFields(logrus.Fields{}))
 
 	log.Printf("%+v\n", tx)
 

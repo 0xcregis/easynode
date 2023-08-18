@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
@@ -12,9 +16,6 @@ import (
 	"github.com/uduncloud/easynode/collect/config"
 	"github.com/uduncloud/easynode/collect/service"
 	"github.com/uduncloud/easynode/common/util"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // tron链 http 协议返回的数据
@@ -95,8 +96,15 @@ func (s *Service) GetTx(txHash string, eLog *logrus.Entry) *service.TxInterface 
 		}
 	}
 
-	r := &service.TxInterface{TxHash: hash, Tx: fullTx}
-	return r
+	addressList, _ := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
+	addressMp := rebuildAddr(addressList)
+	bs, _ := json.Marshal(fullTx)
+	if s.CheckAddress(bs, addressMp) {
+		t := &service.TxInterface{TxHash: hash, Tx: fullTx}
+		return t
+	}
+	//r := &service.TxInterface{TxHash: hash, Tx: fullTx}
+	return nil
 }
 
 func (s *Service) GetReceipt(txHash string, eLog *logrus.Entry) (*service.ReceiptInterface, error) {

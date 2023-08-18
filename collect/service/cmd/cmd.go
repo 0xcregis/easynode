@@ -135,15 +135,13 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 		}
 	}()
 
-	log := c.log.WithFields(logrus.Fields{"model": "Execution", "id": time.Now().UnixMilli()})
-
 	for {
 		if len(mp) < 1 {
 			time.Sleep(3 * time.Second)
 			continue
 		}
 		msg := <-receiver
-		//log.Printf("Read NodeTask offset=%v,topic=%v,value=%v", msg.Offset, msg.Topic, string(msg.Value))
+		log := c.log.WithFields(logrus.Fields{"model": "Execution", "id": time.Now().UnixMilli()})
 		task := collect.NodeTask{}
 		err := json.Unmarshal(msg.Value, &task)
 		if err != nil {
@@ -168,6 +166,7 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 
 			if task.TaskType == 4 { //区块所有交易
 				c.taskStore.StoreNodeTask(fmt.Sprintf(KeyTx, task.BlockChain, task.BlockHash+task.BlockNumber), &task)
+				//save latest blockNumber for monitor
 				_ = c.taskStore.StoreLatestBlock(int64(blockChain), "LatestTx", task, task.BlockNumber)
 				log.Printf("Tx:blockchain:%v,blockNumber:%v,blockHash:%v", task.BlockChain, task.BlockNumber, task.BlockHash)
 				txCh <- &task
@@ -183,6 +182,7 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 				} else if len(task.BlockHash) > 0 {
 					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockHash), &task)
 				}
+				//save latest blockNumber for monitor
 				_ = c.taskStore.StoreLatestBlock(int64(blockChain), "LatestBlock", task, task.BlockNumber)
 				log.Printf("Block:blockchain:%v,blockNumber:%v,blockHash:%v", task.BlockChain, task.BlockNumber, task.BlockHash)
 				blockCh <- &task
@@ -191,6 +191,7 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 			if task.TaskType == 6 { //批量区块任务
 				if len(task.BlockNumber) > 0 {
 					c.taskStore.StoreNodeTask(fmt.Sprintf(KeyBlock, task.BlockChain, task.BlockNumber), &task)
+					//save latest blockNumber for monitor
 					_ = c.taskStore.StoreLatestBlock(int64(blockChain), "LatestBlock", task, task.BlockNumber)
 					log.Printf("Block:blockchain:%v,blockNumber:%v,blockHash:%v", task.BlockChain, task.BlockNumber, task.BlockHash)
 					blockCh <- &task

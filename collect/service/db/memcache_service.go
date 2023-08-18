@@ -337,7 +337,7 @@ func (s *Service) GetNodeTask(blockchain int64, key string) (int64, *collect.Nod
 }
 
 // StoreNodeTask StoreExecTask key which tx:tx_txHash,receipt:receipt_txHash, block: block_number_blockHash
-func (s *Service) StoreNodeTask(key string, task *collect.NodeTask) {
+func (s *Service) StoreNodeTask(key string, task *collect.NodeTask, append bool) {
 	c, d, _ := s.GetNodeTask(int64(task.BlockChain), key)
 	//已存在且错误超过5次 忽略
 	if c > 5 {
@@ -352,7 +352,11 @@ func (s *Service) StoreNodeTask(key string, task *collect.NodeTask) {
 	}
 
 	mp := make(map[string]any, 2)
-	mp["count"] = c + 1
+	if append {
+		mp["count"] = c + 1
+	} else {
+		mp["count"] = c
+	}
 	mp["data"] = d
 
 	bs, _ := json.Marshal(mp)
@@ -368,7 +372,7 @@ func (s *Service) ResetNodeTask(blockchain int64, oldKey, key string) error {
 		return err
 	}
 	_ = s.cacheClient.HDel(context.Background(), fmt.Sprintf(NodeTaskKey, task.BlockChain), oldKey)
-	s.StoreNodeTask(key, task)
+	s.StoreNodeTask(key, task, false)
 	return nil
 }
 
@@ -395,7 +399,7 @@ func (s *Service) UpdateNodeTaskStatus(key string, status int) error {
 		if err == nil && task != nil {
 			task.TaskStatus = status
 			task.LogTime = time.Now()
-			s.StoreNodeTask(key, task)
+			s.StoreNodeTask(key, task, false)
 		}
 	}
 

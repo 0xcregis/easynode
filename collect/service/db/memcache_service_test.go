@@ -47,7 +47,7 @@ func TestService_StoreNodeTask(t *testing.T) {
 	n := collect.NodeTask{NodeId: "1bf67775-80f3-4482-a960-c0af3a964cba", Id: 1685068437248198000, TxHash: "0x5e856ee7b4b43efc94a0fd18960e2a085243b2cd5b0db798d6709bd67c39ac0d", BlockChain: 200, TaskStatus: 0, TaskType: 1}
 	n.CreateTime = time.Now()
 	n.LogTime = time.Now()
-	s.StoreNodeTask("200_txId_0x5e856ee7b4b43efc94a0fd18960e2a085243b2cd5b0db798d6709bd67c39ac0d", &n)
+	s.StoreNodeTask("200_txId_0x5e856ee7b4b43efc94a0fd18960e2a085243b2cd5b0db798d6709bd67c39ac0d", &n, true)
 }
 
 func TestService_ResetNodeTask(t *testing.T) {

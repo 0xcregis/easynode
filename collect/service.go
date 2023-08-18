@@ -18,7 +18,7 @@ type StoreTaskInterface interface {
 	GetNodeTask(blockchain int64, key string) (int64, *NodeTask, error)
 	DelNodeTask(blockchain int64, key string) (int64, *NodeTask, error)
 	ResetNodeTask(blockchain int64, oldKey, key string) error
-	StoreNodeTask(key string, task *NodeTask)
+	StoreNodeTask(key string, task *NodeTask, append bool)
 	GetAllKeyForNodeTask(blockchain int64) ([]string, error)
 
 	StoreContract(blockchain int64, contract string, data string) error

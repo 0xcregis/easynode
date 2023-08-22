@@ -1,0 +1,26 @@
+{
+  "TaskKafka": {
+    "Host": "192.168.2.9",
+    "Port": 9092
+  },
+  "Redis": {
+    "Addr": "192.168.2.9",
+    "Port": 6379,
+    "DB": 0
+  },
+  "AutoCreateBlockTask": true,
+  "Chains": [
+    {
+      "Cluster": [
+        {
+          "NodeHost": "https://xrplcluster.com",
+          "NodeKey": ""
+        }
+      ],
+      "BlockChainName": "xrp",
+      "BlockChainCode": 310,
+      "BlockMin": 82011530,
+      "BlockMax": 0
+    }
+  ]
+}

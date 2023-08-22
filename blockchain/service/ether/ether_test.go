@@ -1,4 +1,4 @@
-package service
+package ether
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 )
 
 func Init3() blockchain.API {
-	cfg := config.LoadConfig("./../../cmd/blockchain/config_ether.json")
+	cfg := config.LoadConfig("./../../../cmd/blockchain/config_ether.json")
 	return NewEth(cfg.Cluster[200], 200, xlog.NewXLogger())
 }
 

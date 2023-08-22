@@ -1,4 +1,4 @@
-package filecoin
+package xrp
 
 import (
 	"errors"
@@ -11,10 +11,10 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-type Filecoin struct {
+type XRP struct {
 }
 
-func (e *Filecoin) Subscribe(host string, token string) (string, error) {
+func (e *XRP) Subscribe(host string, token string) (string, error) {
 	if len(token) > 1 {
 		host = fmt.Sprintf("%v/%v", host, token)
 	}
@@ -28,27 +28,30 @@ func (e *Filecoin) Subscribe(host string, token string) (string, error) {
 	return host, nil
 }
 
-func (e *Filecoin) UnSubscribe(host string, token string) (string, error) {
+func (e *XRP) UnSubscribe(host string, token string) (string, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
 func NewChainClient() blockchain.ChainConn {
-	return &Filecoin{}
+	return &XRP{}
 }
 
-func (e *Filecoin) SendRequestToChainByHttp(host string, token string, query string) (string, error) {
+func (e *XRP) SendRequestToChainByHttp(host string, token string, query string) (string, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (e *Filecoin) GetTokenBalanceByHttp(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
-	//TODO implement me
+func (e *XRP) GetTokenBalanceByHttp(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
 	panic("implement me")
 }
 
-func (e *Filecoin) SendRequestToChain(host string, token string, query string) (string, error) {
+func (e *XRP) SendRequestToChain(host string, token string, query string) (string, error) {
+	if len(token) > 1 {
+		host = fmt.Sprintf("%v/%v", host, token)
+	}
 	payload := strings.NewReader(query)
+
 	req, err := http.NewRequest("POST", host, payload)
 	if err != nil {
 		return "", err
@@ -57,9 +60,7 @@ func (e *Filecoin) SendRequestToChain(host string, token string, query string) (
 	req.Header.Add("accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("cache-control", "no-cache")
-	if len(token) > 1 {
-		req.Header.Add("Authorization", "Bearer "+token)
-	}
+	//req.Header.Add("Postman-Token", "181e4572-a9db-453a-b7d4-17974f785de0")
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -73,13 +74,13 @@ func (e *Filecoin) SendRequestToChain(host string, token string, query string) (
 		return "", err
 	}
 
-	if gjson.ParseBytes(body).Get("error").Exists() {
+	if gjson.ParseBytes(body).Get("result.error").Exists() {
 		return "", errors.New(string(body))
 	}
 
 	return string(body), nil
 }
 
-func (e *Filecoin) GetTokenBalance(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+func (e *XRP) GetTokenBalance(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {
 	return nil, nil
 }

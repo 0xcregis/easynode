@@ -1,4 +1,4 @@
-package service
+package tron
 
 import (
 	"encoding/json"
@@ -18,7 +18,7 @@ import (
 type Tron struct {
 	log              *xlog.XLog
 	nodeCluster      []*config.NodeCluster
-	blockChainClient blockchain.BlockChain
+	blockChainClient blockchain.ChainConn
 }
 
 func (t *Tron) StartWDT() {
@@ -270,16 +270,12 @@ func (t *Tron) SendReq(blockChain int64, reqBody string, url string) (string, er
 		return "", errors.New("blockchain node has not found")
 	}
 
-	if blockChain == 205 {
-		url = fmt.Sprintf("%v/%v", cluster.NodeUrl, url)
-		resp, err := t.blockChainClient.SendRequestToChainByHttp(url, cluster.NodeToken, reqBody)
-		if err != nil {
-			cluster.ErrorCount += 1
-		}
-		return resp, err
+	url = fmt.Sprintf("%v/%v", cluster.NodeUrl, url)
+	resp, err := t.blockChainClient.SendRequestToChainByHttp(url, cluster.NodeToken, reqBody)
+	if err != nil {
+		cluster.ErrorCount += 1
 	}
-
-	return "", errors.New("blockChainCode is error")
+	return resp, err
 }
 
 func (t *Tron) BalanceCluster() *config.NodeCluster {

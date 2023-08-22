@@ -1,0 +1,15 @@
+{
+  "RootPath": "/api/chain",
+  "Port": 9002,
+  "BlockChain": [
+    310
+  ],
+  "Cluster": {
+    "310": [
+      {
+        "NodeUrl": "https://xrplcluster.com",
+        "NodeToken": ""
+      }
+    ]
+  }
+}

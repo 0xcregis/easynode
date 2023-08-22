@@ -1,4 +1,4 @@
-package service
+package tron
 
 import (
 	"log"
@@ -10,7 +10,7 @@ import (
 )
 
 func Init2() blockchain.API {
-	cfg := config.LoadConfig("./../../cmd/blockchain/config_tron.json")
+	cfg := config.LoadConfig("./../../../cmd/blockchain/config_tron.json")
 	return NewTron(cfg.Cluster[205], 205, xlog.NewXLogger())
 }
 

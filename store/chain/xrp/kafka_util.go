@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/0xcregis/easynode/common/util"
 	"github.com/0xcregis/easynode/store"
 	"github.com/tidwall/gjson"
 )
@@ -103,6 +104,9 @@ func GetTxFromKafka(value []byte) (*store.Tx, error) {
 		txValue = txRoot.Get("metaData.delivered_amount").String()
 		transactionIndex = txRoot.Get("meta.TransactionIndex").String()
 	}
+	if len(txValue) < 1 {
+		txValue = txRoot.Get("Amount").String()
+	}
 	//status := txRoot.Get("meta.TransactionResult").String()
 	txTime := txRoot.Get("date").Uint()
 	//limit := txRoot.Get("GasLimit").String()
@@ -176,6 +180,11 @@ func ParseTx(value []byte, transferTopic string, blockchain int64) (*store.SubTx
 		txValue = txRoot.Get("metaData.delivered_amount").String()
 		//transactionIndex = txRoot.Get("meta.TransactionIndex").String()
 	}
+
+	if len(txValue) < 1 {
+		txValue = txRoot.Get("Amount").String()
+	}
+
 	//status := txRoot.Get("meta.TransactionResult").String()
 	txTime := txRoot.Get("date").Uint()
 	//limit := txRoot.Get("GasLimit").String()
@@ -191,7 +200,18 @@ func ParseTx(value []byte, transferTopic string, blockchain int64) (*store.SubTx
 	fee := txRoot.Get("Fee").String()
 
 	tx.Id = uint64(time.Now().UnixNano())
-	tx.Value = txValue
+	if gjson.Parse(txValue).IsObject() {
+		/**
+		 {
+			"currency": "XDX",
+			"issuer": "rMJAXYsbNzhwp7FfYnAsYP5ty3R9XnurPo",
+			"value": "0.00734017"
+		 }
+		*/
+		tx.Value = txValue
+	} else {
+		tx.Value = util.Div(txValue, 6)
+	}
 	tx.BlockNumber = blockNumber
 	//tx.TransactionIndex = transactionIndex
 	//tx.BlockHash = blockId
@@ -210,7 +230,7 @@ func ParseTx(value []byte, transferTopic string, blockchain int64) (*store.SubTx
 	}
 	//tx.TxType = txType
 	tx.Input = input
-	tx.Fee = fee
+	tx.Fee = util.Div(fee, 6)
 	//tx.GasLimit = limit
 	//tx.PriorityFee = gasPremium
 
@@ -220,6 +240,12 @@ func ParseTx(value []byte, transferTopic string, blockchain int64) (*store.SubTx
 		tx.BlockNumber = blockRoot.Get("ledger_index").String()
 		tx.BlockHash = blockRoot.Get("ledger_hash").String()
 		tx.TxTime = blockRoot.Get("close_time").String()
+	}
+
+	d, err := time.ParseDuration(fmt.Sprintf("%vs", tx.TxTime))
+	if err != nil {
+		blockTime := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC).Add(d).Unix()
+		tx.TxTime = fmt.Sprintf("%v000", blockTime)
 	}
 	return &tx, nil
 }

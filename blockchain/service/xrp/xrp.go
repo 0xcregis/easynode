@@ -69,7 +69,9 @@ func (e *XRP) GetBlockReceiptByBlockNumber(chainCode int64, number string) (stri
 		r["account"] = account
 		hash := root.Get("hash").String()
 		r["hash"] = hash
-		ledgerIndex := root.Get("ledger_index").String()
+		date := root.Get("date").Int()
+		r["date"] = date
+		ledgerIndex := root.Get("ledger_index").Int()
 		r["ledgerIndex"] = ledgerIndex
 
 		transactionIndex := root.Get("meta.TransactionIndex").Int()
@@ -115,9 +117,10 @@ func (e *XRP) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string, 
 		r["account"] = account
 		hash := root.Get("hash").String()
 		r["hash"] = hash
-		ledgerIndex := root.Get("ledger_index").String()
+		ledgerIndex := root.Get("ledger_index").Int()
 		r["ledgerIndex"] = ledgerIndex
-
+		date := root.Get("date").Int()
+		r["date"] = date
 		transactionIndex := root.Get("meta.TransactionIndex").Int()
 		r["transactionIndex"] = transactionIndex
 		transactionResult := root.Get("meta.TransactionResult").String()
@@ -159,9 +162,10 @@ func (e *XRP) GetTransactionReceiptByHash(chainCode int64, hash string) (string,
 	r["account"] = account
 	hash = root.Get("hash").String()
 	r["hash"] = hash
-	ledgerIndex := root.Get("ledger_index").String()
+	ledgerIndex := root.Get("ledger_index").Int()
 	r["ledgerIndex"] = ledgerIndex
-
+	date := root.Get("date").Int()
+	r["date"] = date
 	transactionIndex := root.Get("meta.TransactionIndex").Int()
 	r["transactionIndex"] = transactionIndex
 	transactionResult := root.Get("meta.TransactionResult").String()

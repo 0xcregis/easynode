@@ -343,9 +343,9 @@ func rebuildAddress(addrList []string) map[string]int64 {
 
 func (s *Service) CheckAddress(tx []byte, addrList map[string]int64) bool {
 
-	//if len(addrList) < 1 || len(tx) < 1 {
-	//	return false
-	//}
+	if len(addrList) < 1 || len(tx) < 1 {
+		return false
+	}
 
 	txAddressList := make(map[string]int64, 10)
 	root := gjson.ParseBytes(tx)

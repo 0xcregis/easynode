@@ -8,6 +8,7 @@ import (
 	"github.com/0xcregis/easynode/store/chain/filecoin"
 	"github.com/0xcregis/easynode/store/chain/polygonpos"
 	"github.com/0xcregis/easynode/store/chain/tron"
+	"github.com/0xcregis/easynode/store/chain/xrp"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -20,6 +21,8 @@ func GetReceiptFromKafka(value []byte, blockChain int64) (*store.Receipt, error)
 		return polygonpos.GetReceiptFromKafka(value)
 	} else if blockChain == 301 {
 		return filecoin.GetReceiptFromKafka(value)
+	} else if blockChain == 310 {
+		return xrp.GetReceiptFromKafka(value)
 	} else {
 		return nil, fmt.Errorf("blockchain:%v does not support", blockChain)
 	}
@@ -34,6 +37,8 @@ func GetBlockFromKafka(value []byte, blockChain int64) (*store.Block, error) {
 		return polygonpos.GetBlockFromKafka(value)
 	} else if blockChain == 301 {
 		return filecoin.GetBlockFromKafka(value)
+	} else if blockChain == 310 {
+		return xrp.GetBlockFromKafka(value)
 	} else {
 		return nil, fmt.Errorf("blockchain:%v does not support", blockChain)
 	}
@@ -48,6 +53,8 @@ func GetTxFromKafka(value []byte, blockChain int64) (*store.Tx, error) {
 		return polygonpos.GetTxFromKafka(value)
 	} else if blockChain == 301 {
 		return filecoin.GetTxFromKafka(value)
+	} else if blockChain == 310 {
+		return xrp.GetTxFromKafka(value)
 	} else {
 		return nil, fmt.Errorf("blockchain:%v does not support", blockChain)
 	}
@@ -66,6 +73,9 @@ func ParseTx(blockchain int64, msg *kafka.Message) (*store.SubTx, error) {
 	if blockchain == 301 {
 		return filecoin.ParseTx(msg.Value, store.PolygonTopic, blockchain)
 	}
+	if blockchain == 310 {
+		return xrp.ParseTx(msg.Value, "", blockchain)
+	}
 	return nil, nil
 }
 
@@ -82,6 +92,9 @@ func GetTxType(blockchain int64, msg *kafka.Message) (uint64, error) {
 	if blockchain == 301 {
 		return filecoin.GetTxType(msg.Value)
 	}
+	if blockchain == 310 {
+		return xrp.GetTxType(msg.Value)
+	}
 	return 0, nil
 }
 
@@ -94,6 +107,8 @@ func GetCoreAddress(blockChain int64, address string) string {
 		return polygonpos.GetCoreAddr(address)
 	} else if blockChain == 301 {
 		return filecoin.GetCoreAddr(address)
+	} else if blockChain == 310 {
+		return xrp.GetCoreAddr(address)
 	} else {
 		return address
 	}
@@ -111,6 +126,8 @@ func CheckAddress(blockChain int64, msg *kafka.Message, list map[string]*store.M
 		return polygonpos.CheckAddress(msg.Value, list, store.PolygonTopic)
 	} else if blockChain == 301 {
 		return filecoin.CheckAddress(msg.Value, list, store.PolygonTopic)
+	} else if blockChain == 310 {
+		return xrp.CheckAddress(msg.Value, list, "")
 	} else {
 		return false
 	}

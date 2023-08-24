@@ -1,4 +1,4 @@
-package service
+package filecoin
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 )
 
 func Init5() blockchain.API {
-	cfg := config.LoadConfig("./../../cmd/blockchain/config_filecoin.json")
+	cfg := config.LoadConfig("./../../../cmd/blockchain/config_filecoin.json")
 	return NewFileCoin(cfg.Cluster[301], 301, xlog.NewXLogger())
 }
 

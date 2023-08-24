@@ -1,0 +1,70 @@
+{
+  "Log": {
+    "Path": "./log/collect",
+    "Delay": 2
+  },
+  "KeyPath": "./data/temp/6",
+  "Chains": [
+    {
+      "TaskKafka": {
+        "Host": "192.168.2.9",
+        "Port": 9092,
+        "Group": "23",
+        "StartOffset": -1,
+        "Partition": 0,
+        "WritePartitions": [
+          0
+        ]
+      },
+      "Kafka": {
+        "Host": "192.168.2.9",
+        "Port": 9092
+      },
+      "Redis": {
+        "Addr": "192.168.2.9",
+        "Port": 6379,
+        "DB": 0
+      },
+      "BlockChainName": "xrp",
+      "BlockChainCode": 310,
+      "PullReceipt": false,
+      "PullTx": true,
+      "BlockTask": {
+        "FromCluster": [
+          {
+            "Host": "https://xrplcluster.com",
+            "Key": ""
+          }
+        ],
+        "Kafka": {
+          "Topic": "xrp_block",
+          "Partition": 0
+        }
+      },
+      "TxTask": {
+        "FromCluster": [
+          {
+            "Host": "https://xrplcluster.com",
+            "Key": ""
+          }
+        ],
+        "Kafka": {
+          "Topic": "xrp_tx",
+          "Partition": 0
+        }
+      },
+      "ReceiptTask": {
+        "FromCluster": [
+          {
+            "Host": "https://xrplcluster.com",
+            "Key": ""
+          }
+        ],
+        "Kafka": {
+          "Topic": "xrp_receipt",
+          "Partition": 0
+        }
+      }
+    }
+  ]
+}

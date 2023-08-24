@@ -1,4 +1,4 @@
-package service
+package filecoin
 
 import (
 	"encoding/json"
@@ -20,7 +20,7 @@ import (
 type FileCoin struct {
 	log              *xlog.XLog
 	nodeCluster      []*config.NodeCluster
-	blockChainClient blockchain.BlockChain
+	blockChainClient blockchain.ChainConn
 }
 
 func NewFileCoin(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.API {

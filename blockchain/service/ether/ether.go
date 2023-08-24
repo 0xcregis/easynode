@@ -1,4 +1,4 @@
-package service
+package ether
 
 import (
 	"context"
@@ -18,13 +18,13 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-type PolygonPos struct {
+type Ether struct {
 	log              *xlog.XLog
 	nodeCluster      []*config.NodeCluster
-	blockChainClient blockchain.BlockChain
+	blockChainClient blockchain.ChainConn
 }
 
-func (e *PolygonPos) GetCode(chainCode int64, address string) (string, error) {
+func (e *Ether) GetCode(chainCode int64, address string) (string, error) {
 	query := `{
 				"id": 1,
 				"jsonrpc": "2.0",
@@ -33,12 +33,12 @@ func (e *PolygonPos) GetCode(chainCode int64, address string) (string, error) {
 					"%v",
 					"latest"
 				]
-			}`
+ 			}`
 	query = fmt.Sprintf(query, address)
 	return e.SendReq(chainCode, query)
 }
 
-func (e *PolygonPos) GetAddressType(chainCode int64, address string) (string, error) {
+func (e *Ether) GetAddressType(chainCode int64, address string) (string, error) {
 	start := time.Now()
 	defer func() {
 		e.log.Printf("GetAddressType,Duration=%v", time.Since(start))
@@ -68,7 +68,7 @@ func (e *PolygonPos) GetAddressType(chainCode int64, address string) (string, er
 	}
 }
 
-func (e *PolygonPos) SubscribePendingTx(chainCode int64, receiverCh chan string, sendCh chan string) (string, error) {
+func (e *Ether) SubscribePendingTx(chainCode int64, receiverCh chan string, sendCh chan string) (string, error) {
 
 	query := `{"jsonrpc":  "2.0",  "id":  1,  "method":  "eth_subscribe",  "params":  ["newPendingTransactions"]}`
 
@@ -83,7 +83,7 @@ func (e *PolygonPos) SubscribePendingTx(chainCode int64, receiverCh chan string,
 }
 
 // SubscribeLogs {"jsonrpc":"2.0","id": 1, "method": "eth_subscribe", "params": ["logs", {"address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", "topics": ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]}]}
-func (e *PolygonPos) SubscribeLogs(chainCode int64, address string, topics []string, receiverCh chan string, sendCh chan string) (string, error) {
+func (e *Ether) SubscribeLogs(chainCode int64, address string, topics []string, receiverCh chan string, sendCh chan string) (string, error) {
 	query := ` {"jsonrpc":  "2.0",  "id":  1,  "method":  "eth_subscribe",  "params":  ["logs",  {"address":  "%v",  "topics":  []}]}`
 	query = fmt.Sprintf(query, address)
 	var resp string
@@ -96,7 +96,7 @@ func (e *PolygonPos) SubscribeLogs(chainCode int64, address string, topics []str
 	return resp, err
 }
 
-func (e *PolygonPos) UnSubscribe(chainCode int64, subId string) (string, error) {
+func (e *Ether) UnSubscribe(chainCode int64, subId string) (string, error) {
 	query := `{"id": 1, "method": "eth_unsubscribe", "params": ["%v"]}`
 
 	query = fmt.Sprintf(query, subId)
@@ -119,7 +119,7 @@ func (e *PolygonPos) UnSubscribe(chainCode int64, subId string) (string, error) 
 	}
 }
 
-func (e *PolygonPos) GetBlockReceiptByBlockNumber(chainCode int64, number string) (string, error) {
+func (e *Ether) GetBlockReceiptByBlockNumber(chainCode int64, number string) (string, error) {
 	query := `{
 				"id": 1,
 				"jsonrpc": "2.0",
@@ -132,7 +132,7 @@ func (e *PolygonPos) GetBlockReceiptByBlockNumber(chainCode int64, number string
 	return e.SendReq(chainCode, query)
 }
 
-func (e *PolygonPos) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string, error) {
+func (e *Ether) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string, error) {
 	query := `{
 				"id": 1,
 				"jsonrpc": "2.0",
@@ -146,7 +146,7 @@ func (e *PolygonPos) GetBlockReceiptByBlockHash(chainCode int64, hash string) (s
 	return e.SendReq(chainCode, query)
 }
 
-func (e *PolygonPos) GetTransactionReceiptByHash(chainCode int64, hash string) (string, error) {
+func (e *Ether) GetTransactionReceiptByHash(chainCode int64, hash string) (string, error) {
 	start := time.Now()
 	defer func() {
 		e.log.Printf("GetTransactionReceiptByHash,Duration=%v", time.Since(start))
@@ -163,7 +163,7 @@ func (e *PolygonPos) GetTransactionReceiptByHash(chainCode int64, hash string) (
 	return e.SendReq(chainCode, query)
 }
 
-func (e *PolygonPos) GetBlockByHash(chainCode int64, hash string, flag bool) (string, error) {
+func (e *Ether) GetBlockByHash(chainCode int64, hash string, flag bool) (string, error) {
 	req := `
 		{
 		  "id": 1,
@@ -179,7 +179,7 @@ func (e *PolygonPos) GetBlockByHash(chainCode int64, hash string, flag bool) (st
 	return e.SendReq(chainCode, req)
 }
 
-func (e *PolygonPos) GetBlockByNumber(chainCode int64, number string, flag bool) (string, error) {
+func (e *Ether) GetBlockByNumber(chainCode int64, number string, flag bool) (string, error) {
 	req := `
 			{
 			  "id": 1,
@@ -195,7 +195,7 @@ func (e *PolygonPos) GetBlockByNumber(chainCode int64, number string, flag bool)
 	return e.SendReq(chainCode, req)
 }
 
-func (e *PolygonPos) GetTxByHash(chainCode int64, hash string) (string, error) {
+func (e *Ether) GetTxByHash(chainCode int64, hash string) (string, error) {
 	start := time.Now()
 	defer func() {
 		e.log.Printf("GetTxByHash,Duration=%v", time.Since(start))
@@ -214,16 +214,16 @@ func (e *PolygonPos) GetTxByHash(chainCode int64, hash string) (string, error) {
 	return e.SendReq(chainCode, req)
 }
 
-func (e *PolygonPos) SendJsonRpc(chainCode int64, req string) (string, error) {
+func (e *Ether) SendJsonRpc(chainCode int64, req string) (string, error) {
 	return e.SendReq(chainCode, req)
 }
 
-func NewPolygonPos(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.API {
+func NewEth(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.API {
 	blockChainClient := chain.NewChain(blockchain)
 	if blockChainClient == nil {
 		return nil
 	}
-	e := &PolygonPos{
+	e := &Ether{
 		log:              xlog,
 		nodeCluster:      cluster,
 		blockChainClient: blockChainClient,
@@ -232,7 +232,7 @@ func NewPolygonPos(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.X
 	return e
 }
 
-func (e *PolygonPos) StartWDT() {
+func (e *Ether) StartWDT() {
 	go func() {
 		t := time.NewTicker(10 * time.Minute)
 		for {
@@ -244,11 +244,11 @@ func (e *PolygonPos) StartWDT() {
 	}()
 }
 
-func (e *PolygonPos) MonitorCluster() any {
+func (e *Ether) MonitorCluster() any {
 	return e.nodeCluster
 }
 
-func (e *PolygonPos) Balance(chainCode int64, address string, tag string) (string, error) {
+func (e *Ether) Balance(chainCode int64, address string, tag string) (string, error) {
 	start := time.Now()
 	defer func() {
 		e.log.Printf("Balance,Duration=%v", time.Since(start))
@@ -270,7 +270,7 @@ func (e *PolygonPos) Balance(chainCode int64, address string, tag string) (strin
 	return e.SendReq(chainCode, req)
 }
 
-func (e *PolygonPos) TokenBalance(chainCode int64, address string, contractAddr string, abi string) (string, error) {
+func (e *Ether) TokenBalance(chainCode int64, address string, contractAddr string, abi string) (string, error) {
 	start := time.Now()
 	defer func() {
 		e.log.Printf("TokenBalance,Duration=%v", time.Since(start))
@@ -288,7 +288,7 @@ func (e *PolygonPos) TokenBalance(chainCode int64, address string, contractAddr 
 	return string(rs), nil
 }
 
-func (e *PolygonPos) Nonce(chainCode int64, address string, tag string) (string, error) {
+func (e *Ether) Nonce(chainCode int64, address string, tag string) (string, error) {
 	req := `
 			 {
 				 "id": 1,
@@ -304,7 +304,7 @@ func (e *PolygonPos) Nonce(chainCode int64, address string, tag string) (string,
 	return e.SendReq(chainCode, req)
 }
 
-func (e *PolygonPos) LatestBlock(chainCode int64) (string, error) {
+func (e *Ether) LatestBlock(chainCode int64) (string, error) {
 	req := `
 			 {
 				 "id": 1,
@@ -315,7 +315,7 @@ func (e *PolygonPos) LatestBlock(chainCode int64) (string, error) {
 	return e.SendReq(chainCode, req)
 }
 
-func (e *PolygonPos) SendRawTransaction(chainCode int64, signedTx string) (string, error) {
+func (e *Ether) SendRawTransaction(chainCode int64, signedTx string) (string, error) {
 	req := `{
 					 "id": 1,
 					 "jsonrpc": "2.0",
@@ -328,15 +328,14 @@ func (e *PolygonPos) SendRawTransaction(chainCode int64, signedTx string) (strin
 	return e.SendReq(chainCode, req)
 }
 
-func (e *PolygonPos) SendReqByWs(blockChain int64, receiverCh chan string, sendCh chan string) (string, error) {
+func (e *Ether) SendReqByWs(blockChain int64, receiverCh chan string, sendCh chan string) (string, error) {
 	cluster := e.BalanceCluster()
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
 	}
 
-	//if blockChain == 200 {
-	host, err := e.blockChainClient.EthSubscribe(cluster.NodeUrl, cluster.NodeToken)
+	host, err := e.blockChainClient.Subscribe(cluster.NodeUrl, cluster.NodeToken)
 	if err != nil {
 		return "", err
 	}
@@ -432,29 +431,23 @@ func (e *PolygonPos) SendReqByWs(blockChain int64, receiverCh chan string, sendC
 	}
 
 	return "", nil
-	//}
-	//return "", errors.New("blockChainCode is error")
 }
 
-func (e *PolygonPos) SendReq(blockChain int64, reqBody string) (string, error) {
+func (e *Ether) SendReq(blockChain int64, reqBody string) (string, error) {
 	cluster := e.BalanceCluster()
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
 	}
 
-	//if blockChain == 200 {
 	resp, err := e.blockChainClient.SendRequestToChain(cluster.NodeUrl, cluster.NodeToken, reqBody)
 	if err != nil {
 		cluster.ErrorCount += 1
 	}
 	return resp, err
-	//}
-
-	//return "", errors.New("blockChainCode is error")
 }
 
-func (e *PolygonPos) BalanceCluster() *config.NodeCluster {
+func (e *Ether) BalanceCluster() *config.NodeCluster {
 	var resultCluster *config.NodeCluster
 	l := len(e.nodeCluster)
 

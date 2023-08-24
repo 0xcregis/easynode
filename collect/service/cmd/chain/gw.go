@@ -10,6 +10,7 @@ import (
 	"github.com/0xcregis/easynode/collect/service/cmd/chain/filecoin"
 	"github.com/0xcregis/easynode/collect/service/cmd/chain/polygonpos"
 	"github.com/0xcregis/easynode/collect/service/cmd/chain/tron2"
+	"github.com/0xcregis/easynode/collect/service/cmd/chain/xrp"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
 )
@@ -24,14 +25,16 @@ func GetBlockchain(blockchain int, c *config.Chain, store collect.StoreTaskInter
 	} else if blockchain == 201 {
 		srv = polygonpos.NewService(c, x, store, nodeId, collect.PolygonTopic)
 	} else if blockchain == 301 {
-		srv = filecoin.NewService(c, x, store, nodeId, collect.PolygonTopic)
+		srv = filecoin.NewService(c, x, store, nodeId, "")
+	} else if blockchain == 310 {
+		srv = xrp.NewService(c, x, store, nodeId, "")
 	}
 
 	return srv
 }
 
-func GetTxHashFromKafka(blockchain int, msg []byte) string {
-	r := gjson.ParseBytes(msg)
+func GetTxHashFromKafka(blockchain int, txMsg []byte) string {
+	r := gjson.ParseBytes(txMsg)
 	var txHash string
 	if blockchain == 200 {
 		txHash = r.Get("hash").String()
@@ -42,13 +45,15 @@ func GetTxHashFromKafka(blockchain int, msg []byte) string {
 		txHash = r.Get("hash").String()
 	} else if blockchain == 301 {
 		txHash = r.Get("hash").String()
+	} else if blockchain == 310 {
+		txHash = r.Get("hash").String()
 	}
 
 	return txHash
 }
 
-func GetBlockHashFromKafka(blockchain int, msg []byte) string {
-	r := gjson.ParseBytes(msg)
+func GetBlockHashFromKafka(blockchain int, blockMsg []byte) string {
+	r := gjson.ParseBytes(blockMsg)
 	var blockHash string
 	if blockchain == 200 {
 		blockHash = r.Get("hash").String()
@@ -58,12 +63,14 @@ func GetBlockHashFromKafka(blockchain int, msg []byte) string {
 		blockHash = r.Get("hash").String()
 	} else if blockchain == 301 {
 		blockHash = r.Get("blockHash").String()
+	} else if blockchain == 310 {
+		blockHash = r.Get("ledger_hash").String()
 	}
 	return blockHash
 }
 
-func GetReceiptHashFromKafka(blockchain int, msg []byte) string {
-	r := gjson.ParseBytes(msg)
+func GetReceiptHashFromKafka(blockchain int, receiptMsg []byte) string {
+	r := gjson.ParseBytes(receiptMsg)
 	var txHash string
 	if blockchain == 200 {
 		txHash = r.Get("transactionHash").String()
@@ -73,6 +80,8 @@ func GetReceiptHashFromKafka(blockchain int, msg []byte) string {
 		txHash = r.Get("transactionHash").String()
 	} else if blockchain == 301 {
 		txHash = r.Get("transactionHash").String()
+	} else if blockchain == 310 {
+		txHash = r.Get("hash").String()
 	}
 	return txHash
 }

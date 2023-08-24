@@ -1,4 +1,4 @@
-package service
+package polygon
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 )
 
 func Init4() blockchain.API {
-	cfg := config.LoadConfig("./../../cmd/blockchain/config_polygon.json")
+	cfg := config.LoadConfig("./../../../cmd/blockchain/config_polygon.json")
 	return NewPolygonPos(cfg.Cluster[201], 201, xlog.NewXLogger())
 }
 

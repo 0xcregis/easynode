@@ -3,26 +3,33 @@ package service
 import (
 	"github.com/0xcregis/easynode/blockchain"
 	"github.com/0xcregis/easynode/blockchain/config"
+	"github.com/0xcregis/easynode/blockchain/service/ether"
+	"github.com/0xcregis/easynode/blockchain/service/filecoin"
+	"github.com/0xcregis/easynode/blockchain/service/polygon"
+	"github.com/0xcregis/easynode/blockchain/service/tron"
+	"github.com/0xcregis/easynode/blockchain/service/xrp"
 	"github.com/sunjiangjun/xlog"
 )
 
 func NewApi(blockchain int64, cluster []*config.NodeCluster, xlog *xlog.XLog) blockchain.API {
 	if blockchain == 200 {
-		return NewEth(cluster, blockchain, xlog)
+		return ether.NewEth(cluster, blockchain, xlog)
 	} else if blockchain == 205 {
-		return NewTron(cluster, blockchain, xlog)
+		return tron.NewTron(cluster, blockchain, xlog)
 	} else if blockchain == 201 {
-		return NewPolygonPos(cluster, blockchain, xlog)
+		return polygon.NewPolygonPos(cluster, blockchain, xlog)
 	} else if blockchain == 301 {
-		return NewFileCoin(cluster, blockchain, xlog)
+		return filecoin.NewFileCoin(cluster, blockchain, xlog)
+	} else if blockchain == 310 {
+		return xrp.NewXRP(cluster, blockchain, xlog)
 	}
 	return nil
 }
 
 func NewApis(clusters map[int64][]*config.NodeCluster, xlog *xlog.XLog) map[int64]blockchain.API {
 	blockChainClients := make(map[int64]blockchain.API, 0)
-	for blockchain, cluster := range clusters {
-		blockChainClients[blockchain] = NewApi(blockchain, cluster, xlog)
+	for chainCode, cluster := range clusters {
+		blockChainClients[chainCode] = NewApi(chainCode, cluster, xlog)
 	}
 	return blockChainClients
 }

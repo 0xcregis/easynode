@@ -19,7 +19,7 @@ import (
 type PolygonPos struct {
 }
 
-func (e *PolygonPos) EthSubscribe(host string, token string) (string, error) {
+func (e *PolygonPos) Subscribe(host string, token string) (string, error) {
 	if len(token) > 1 {
 		host = fmt.Sprintf("%v/%v", host, token)
 	}
@@ -33,12 +33,12 @@ func (e *PolygonPos) EthSubscribe(host string, token string) (string, error) {
 	return host, nil
 }
 
-func (e *PolygonPos) EthUnSubscribe(host string, token string) (string, error) {
+func (e *PolygonPos) UnSubscribe(host string, token string) (string, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func NewChainClient() blockchain.BlockChain {
+func NewChainClient() blockchain.ChainConn {
 	return &PolygonPos{}
 }
 

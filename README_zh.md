@@ -39,6 +39,7 @@
 | polygon-pos |    201    | POLYGON |
 | bitcoin     |    300    |   BTC   |
 | filecoin    |    301    |   FIL   |
+| ripple      |    310    |   XRP   |
 
 ## 入门指引
 

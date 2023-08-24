@@ -7,6 +7,7 @@ import (
 	"github.com/0xcregis/easynode/task/service/taskcreate/filecoin"
 	"github.com/0xcregis/easynode/task/service/taskcreate/polygonpos"
 	"github.com/0xcregis/easynode/task/service/taskcreate/tron"
+	"github.com/0xcregis/easynode/task/service/taskcreate/xrp"
 	"github.com/sunjiangjun/xlog"
 )
 
@@ -19,6 +20,8 @@ func NewApi(blockchain int64, log *xlog.XLog, v *config.BlockConfig) task.BlockC
 		return polygonpos.NewPolygonPos(log, v)
 	} else if blockchain == 301 {
 		return filecoin.NewFileCoin(log, v)
+	} else if blockchain == 310 {
+		return xrp.NewXRP(log, v)
 	}
 	return nil
 }

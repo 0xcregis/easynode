@@ -13,7 +13,7 @@
   },
   "Chains": [
     {
-      "BlockChain": 301,
+      "BlockChain": 310,
       "BlockStore": true,
       "TxStore": true,
       "ReceiptStore": false,
@@ -22,7 +22,7 @@
         "SubTx": {
           "Host": "192.168.2.9",
           "Port": 9092,
-          "Topic": "filecoin_sub_tx",
+          "Topic": "xrp_sub_tx",
           "Group": "22",
           "StartOffset": -1,
           "Partition": 0
@@ -30,7 +30,7 @@
         "Tx": {
           "Host": "192.168.2.9",
           "Port": 9092,
-          "Topic": "filecoin_tx",
+          "Topic": "xrp_tx",
           "Group": "32",
           "StartOffset": -1,
           "Partition": 0
@@ -38,7 +38,7 @@
         "Block": {
           "Host": "192.168.2.9",
           "Port": 9092,
-          "Topic": "filecoin_block",
+          "Topic": "xrp_block",
           "Group": "42",
           "StartOffset": -2,
           "Partition": 0
@@ -46,7 +46,7 @@
         "Receipt": {
           "Host": "192.168.2.9",
           "Port": 9092,
-          "Topic": "filecoin_receipt",
+          "Topic": "xrp_receipt",
           "Group": "52",
           "StartOffset": -1,
           "Partition": 0
@@ -57,7 +57,7 @@
         "Port": 9000,
         "User": "test",
         "Password": "test",
-        "DbName": "filecoin",
+        "DbName": "xrp",
         "TxTable": "tx",
         "BlockTable": "block",
         "ReceiptTable": "receipt",

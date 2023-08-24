@@ -9,9 +9,8 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-
+//GetReceiptFromJson
 /**
-
 {
         "transactionHash": "0x5917da4788cdc1383215541744beb93fd804c1902e221d2c5555ce99d9bfff42",
         "blockHash": "0xb49d607f5b80890531e3e1d57798a7573cf8e18048ec0df34e3c81d48115078f",
@@ -45,7 +44,6 @@ import (
         "type": "0x2"
     }
 */
-
 func GetReceiptFromJson(js string) *collect.Receipt {
 	var receipt collect.Receipt
 	r := gjson.Parse(js)

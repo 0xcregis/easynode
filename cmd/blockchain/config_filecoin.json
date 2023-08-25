@@ -1,9 +1,12 @@
 {
   "RootPath": "/api/chain",
   "Port": 9002,
-  "BlockChain": [
-    301
-  ],
+  "Kafka": {
+    "Host": "192.168.2.9",
+    "Port": 9092,
+    "Topic": "backup_tx",
+    "Partition": 0
+  },
   "Cluster": {
     "301": [
       {

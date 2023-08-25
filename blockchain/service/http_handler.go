@@ -1,12 +1,18 @@
 package service
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/0xcregis/easynode/blockchain"
 	"github.com/0xcregis/easynode/blockchain/config"
+	easyKafka "github.com/0xcregis/easynode/common/kafka"
 	"github.com/gin-gonic/gin"
+	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
@@ -16,12 +22,29 @@ type HttpHandler struct {
 	log               *logrus.Entry
 	nodeCluster       map[int64][]*config.NodeCluster
 	blockChainClients map[int64]blockchain.API
+	kafkaClient       *easyKafka.EasyKafka
+	kafkaCfg          *config.Kafka
+	sendCh            chan []*kafka.Message
 }
 
-func NewHttpHandler(cluster map[int64][]*config.NodeCluster, xlog *xlog.XLog) *HttpHandler {
+func (h *HttpHandler) StartKafka(ctx context.Context) {
+	go func(ctx context.Context) {
+		broker := fmt.Sprintf("%v:%v", h.kafkaCfg.Host, h.kafkaCfg.Port)
+		kafkaCtx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		h.kafkaClient.Write(easyKafka.Config{Brokers: []string{broker}, Topic: h.kafkaCfg.Topic, Partition: h.kafkaCfg.Partition}, h.sendCh, nil, kafkaCtx)
+	}(ctx)
+}
+
+func NewHttpHandler(cluster map[int64][]*config.NodeCluster, kafkaCfg *config.Kafka, xlog *xlog.XLog) *HttpHandler {
+	kafkaClient := easyKafka.NewEasyKafka(xlog)
+	sendCh := make(chan []*kafka.Message)
 	return &HttpHandler{
 		log:               xlog.WithField("model", "httpSrv"),
 		nodeCluster:       cluster,
+		kafkaCfg:          kafkaCfg,
+		kafkaClient:       kafkaClient,
+		sendCh:            sendCh,
 		blockChainClients: NewApis(cluster, xlog),
 	}
 }
@@ -180,13 +203,34 @@ func (h *HttpHandler) SendRawTx(ctx *gin.Context) {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
 		return
 	}
-	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
-	signedTx := gjson.ParseBytes(b).Get("signed_tx").String()
+
+	backup := make(map[string]any, 5)
+	defer func(backup map[string]any) {
+		bs, _ := json.Marshal(backup)
+		msg := &kafka.Message{Topic: h.kafkaCfg.Topic, Partition: h.kafkaCfg.Partition, Key: []byte(fmt.Sprintf("%v", time.Now().UnixNano())), Value: bs}
+		h.sendCh <- []*kafka.Message{msg}
+	}(backup)
+
+	root := gjson.ParseBytes(b)
+	blockChainCode := root.Get("chain").Int()
+	backup["chainCode"] = blockChainCode
+	signedTx := root.Get("signed_tx").String()
+	backup["signed"] = signedTx
+	backup["id"] = time.Now().UnixMicro()
+	from := root.Get("from").String()
+	backup["from"] = from
+	to := root.Get("to").String()
+	backup["to"] = to
+	extra := root.Get("extra").String()
+	backup["extra"] = extra
 	res, err := h.blockChainClients[blockChainCode].SendRawTransaction(blockChainCode, signedTx)
 	if err != nil {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
+		backup["status"] = 0
 		return
 	}
+	backup["status"] = 1
+	backup["response"] = res
 	h.Success(ctx, string(b), res, ctx.Request.RequestURI)
 }
 

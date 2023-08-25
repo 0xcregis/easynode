@@ -174,3 +174,25 @@ CREATE TABLE IF NOT EXISTS polygon_pos.sub_tx
 (
     id
 ) ORDER BY hash;
+CREATE TABLE IF NOT EXISTS polygon_pos.backup_tx
+(
+    id
+    UInt64,--时间戳
+    block_chain
+    UInt64,
+    extra
+    String,
+    signed
+    String,
+    tx_status
+    UInt8,
+    from_addr
+    String,
+    to_addr
+    String,
+    response
+    String
+) ENGINE = ReplacingMergeTree
+(
+    id
+) ORDER BY id;

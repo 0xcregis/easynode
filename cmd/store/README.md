@@ -30,16 +30,26 @@ store是easynode系统的基础和核心服务. 该服务负责任监控地址�
     "Password": "test",
     "DbName": "base",
     "AddressTable": "address", //地址表
-    "TokenTable": "token" //token表
+    "TokenTable": "token", //token表
+    "FilterTable": "sub_filter" //订阅规则表
   },
   "Chains": [ //公链配置
    {
-  "BlockChain": 200, //公链代码
-  "BlockStore": false, //区块是否落盘
-  "TxStore": false, //交易是否落盘
-  "ReceiptStore": false, //收据是否落盘
-  "SubStore": true,//订阅数据持久化
-  "Kafka": { //公链数据所在的Kafka配置
+    "BlockChain": 200, //公链代码
+    "BlockStore": false, //区块是否落盘
+    "TxStore": false, //交易是否落盘
+    "ReceiptStore": false, //收据是否落盘
+    "SubStore": true,//订阅数据持久化
+    "BackupTxStore": true,//广播交易持久化
+    "Kafka": { //公链数据所在的Kafka配置
+    "BackupTx": { //广播交易
+            "Host": "192.168.2.9",
+            "Port": 9092,
+            "Topic": "backup_tx",
+            "Group": "2",
+            "StartOffset": 0,
+            "Partition": 0
+          },
     "SubTx": { //订阅
           "Host": "192.168.2.9",
           "Port": 9092,
@@ -82,8 +92,14 @@ store是easynode系统的基础和核心服务. 该服务负责任监控地址�
     "TxTable": "tx", //交易表
     "BlockTable": "block", //区块表
     "ReceiptTable": "receipt", //收据表
-    "SubTxTable": "sub_tx" //订阅数据交易表
-  }
+    "SubTxTable": "sub_tx", //订阅数据交易表
+    "BackupTxTable": "backup_tx" //广播交易
+  },
+  "Redis": { //redis 配置
+    "Addr": "192.168.2.9",
+    "Port": 6379,
+    "DB": 0
+  }  
  }
 ]
 }

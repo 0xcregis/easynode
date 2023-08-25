@@ -298,3 +298,26 @@ type SubTx struct {
 	TxType      uint64        `json:"txType" gorm:"column:tx_type"` //交易类型 1:合约调用，2:普通资产转移 3:资源代理 4:资源回收 5:激活 6:质押 7:解质押 8:解质押提现
 	Value       string        `json:"value" gorm:"column:value"`
 }
+
+/*
+		{
+		  "chainCode": 200,
+		  "extra": "",
+		  "from": "0x123",
+		  "id": 1692935834954910,
+		  "signed": "0xe5cB067E90D5Cd1F8052B83562Ae670bA4A211a8",
+		  "status": 0,
+		  "to": "0x456"
+	      "response": "{}"
+		}
+*/
+type BackupTx struct {
+	ChainCode uint64 `json:"chainCode" gorm:"column:block_chain"`
+	Extra     string `json:"extra" gorm:"column:extra"`
+	Signed    string `json:"signed" gorm:"column:signed"`
+	From      string `json:"from" gorm:"column:from_addr"`
+	ID        uint64 `json:"id" gorm:"column:id"`
+	To        string `json:"to" gorm:"column:to_addr"`
+	Response  string `json:"response" gorm:"column:response"`
+	Status    uint8  `json:"status" gorm:"column:tx_status"`
+}

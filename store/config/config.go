@@ -8,14 +8,15 @@ type Config struct {
 }
 
 type Chain struct {
-	BlockChain   int64                   `json:"BlockChain"`
-	TxStore      bool                    `json:"TxStore"`
-	BlockStore   bool                    `json:"BlockStore"`
-	ReceiptStore bool                    `json:"ReceiptStore"`
-	SubStore     bool                    `json:"SubStore"`
-	KafkaCfg     map[string]*KafkaConfig `json:"Kafka"`
-	ClickhouseDb *ClickhouseChainDb      `json:"ChainDb"`
-	Redis        *Redis                  `json:"Redis"`
+	BlockChain    int64                   `json:"BlockChain"`
+	TxStore       bool                    `json:"TxStore"`
+	BlockStore    bool                    `json:"BlockStore"`
+	ReceiptStore  bool                    `json:"ReceiptStore"`
+	SubStore      bool                    `json:"SubStore"`
+	BackupTxStore bool                    `json:"BackupTxStore"`
+	KafkaCfg      map[string]*KafkaConfig `json:"Kafka"`
+	ClickhouseDb  *ClickhouseChainDb      `json:"ChainDb"`
+	Redis         *Redis                  `json:"Redis"`
 }
 
 type Redis struct {
@@ -25,15 +26,16 @@ type Redis struct {
 }
 
 type ClickhouseChainDb struct {
-	Addr         string `json:"Addr"`
-	Port         int    `json:"Port"`
-	User         string `json:"User"`
-	Password     string `json:"Password"`
-	DbName       string `json:"DbName"`
-	TxTable      string `json:"TxTable"`
-	BlockTable   string `json:"BlockTable"`
-	ReceiptTable string `json:"ReceiptTable"`
-	SubTxTable   string `json:"SubTxTable"`
+	Addr          string `json:"Addr"`
+	Port          int    `json:"Port"`
+	User          string `json:"User"`
+	Password      string `json:"Password"`
+	DbName        string `json:"DbName"`
+	TxTable       string `json:"TxTable"`
+	BlockTable    string `json:"BlockTable"`
+	ReceiptTable  string `json:"ReceiptTable"`
+	SubTxTable    string `json:"SubTxTable"`
+	BackupTxTable string `json:"BackupTxTable"`
 }
 
 type ClickhouseBaseDb struct {

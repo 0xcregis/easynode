@@ -53,8 +53,62 @@ func (s *StoreHandler) Start(ctx context.Context) {
 		if v.SubStore {
 			go s.ReadSubTxFromKafka(v.BlockChain, v.KafkaCfg, ctx)
 		}
+
+		if v.BackupTxStore {
+			go s.ReadBackupTxFromKafka(v.BlockChain, v.KafkaCfg, ctx)
+		}
 	}
 
+}
+
+func (s *StoreHandler) ReadBackupTxFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {
+	receiver := make(chan *kafka.Message)
+	ctx2, cancel := context.WithCancel(ctx)
+	defer cancel()
+	go func() {
+		Kafka := kafkaCfg["BackupTx"]
+		broker := fmt.Sprintf("%v:%v", Kafka.Host, Kafka.Port)
+		group := fmt.Sprintf("gr_store_backuptx_%v", Kafka.Group)
+		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: fmt.Sprintf("%v_%v", Kafka.Topic, blockChain), Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx2)
+	}()
+
+	list := make([]*store.BackupTx, 0, 20)
+	tk := time.NewTicker(5 * time.Second)
+	lock := sync.RWMutex{}
+
+	for {
+		select {
+		case <-ctx2.Done():
+			tk.Stop()
+			return
+		case <-tk.C:
+			lock.Lock()
+			if len(list) > 0 {
+				err := s.store.NewBackupTx(blockChain, list)
+				if err != nil {
+					s.log.Errorf("ReadBackupTxFromKafka|blockChain=%v,error=%v", blockChain, err.Error())
+				}
+				list = list[:0]
+			}
+			lock.Unlock()
+
+		case msg := <-receiver:
+
+			if msg.Value == nil || len(msg.Value) < 5 {
+				continue
+			}
+			var tx store.BackupTx
+			err := json.Unmarshal(msg.Value, &tx)
+			if err != nil {
+				s.log.Errorf("ReadBackupTxFromKafka|blockChain=%v,error=%v", blockChain, err.Error())
+				continue
+			}
+
+			lock.Lock()
+			list = append(list, &tx)
+			lock.Unlock()
+		}
+	}
 }
 
 func (s *StoreHandler) ReadSubTxFromKafka(blockChain int64, kafkaCfg map[string]*config.KafkaConfig, ctx context.Context) {

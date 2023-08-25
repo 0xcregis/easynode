@@ -5,6 +5,14 @@ type Config struct {
 	Port       int                      `json:"Port"`
 	BlockChain []int64                  `json:"BlockChain"`
 	Cluster    map[int64][]*NodeCluster `json:"Cluster"`
+	Kafka      *Kafka                   `json:"Kafka"`
+}
+
+type Kafka struct {
+	Host      string `json:"Host"`
+	Port      int    `json:"Port"`
+	Topic     string `json:"Topic"`
+	Partition int    `json:"Partition"`
 }
 
 type NodeCluster struct {

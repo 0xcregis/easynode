@@ -13,6 +13,7 @@ type DbStoreInterface interface {
 	NewBlock(blockchain int64, block []*Block) error
 	NewReceipt(blockchain int64, receipt []*Receipt) error
 	NewSubTx(blockchain int64, tx []*SubTx) error
+	NewBackupTx(blockchain int64, tx []*BackupTx) error
 
 	NewSubFilter(filters []*SubFilter) error
 	DelSubFilter(id int64) error

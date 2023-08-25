@@ -168,7 +168,14 @@ func startBlockchain(configPath string, ctx context.Context) {
 
 	root.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: xLog.Out}))
 
-	srv := blockchainService.NewHttpHandler(cfg.Cluster, xLog)
+	srv := blockchainService.NewHttpHandler(cfg.Cluster, cfg.Kafka, xLog)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	//start kafka listener
+	srv.StartKafka(ctx)
+
 	//支持JSON-RPC协议的公链
 	root.POST("/jsonrpc", srv.HandlerReq)
 

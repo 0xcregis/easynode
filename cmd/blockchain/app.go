@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -31,7 +32,14 @@ func main() {
 
 	root.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: xLog.Out}))
 
-	srv := service.NewHttpHandler(cfg.Cluster, xLog)
+	srv := service.NewHttpHandler(cfg.Cluster, cfg.Kafka, xLog)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	//start kafka listener
+	srv.StartKafka(ctx)
+
 	//支持JSON-RPC协议的公链
 	root.POST("/jsonrpc", srv.HandlerReq)
 

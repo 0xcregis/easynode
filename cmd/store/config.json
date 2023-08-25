@@ -17,8 +17,17 @@
       "BlockStore": false,
       "TxStore": false,
       "ReceiptStore": false,
-      "SubStore": true,
+      "SubStore": false,
+      "BackupTxStore": true,
       "Kafka": {
+        "BackupTx": {
+          "Host": "192.168.2.9",
+          "Port": 9092,
+          "Topic": "backup_tx",
+          "Group": "2",
+          "StartOffset": 0,
+          "Partition": 0
+        },
         "SubTx": {
           "Host": "192.168.2.9",
           "Port": 9092,
@@ -61,7 +70,8 @@
         "TxTable": "tx",
         "BlockTable": "block",
         "ReceiptTable": "receipt",
-        "SubTxTable": "sub_tx"
+        "SubTxTable": "sub_tx",
+        "BackupTxTable": "backup_tx"
       },
       "Redis": {
         "Addr": "192.168.2.9",

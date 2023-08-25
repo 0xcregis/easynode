@@ -64,6 +64,11 @@ func TestClickhouseDb_NewSubFilter(t *testing.T) {
 	t.Log(s.NewSubFilter([]*store.SubFilter{{Token: "token", BlockChain: 205, TxCode: "1"}}))
 }
 
+func TestClickhouseDb_NewBackupTx(t *testing.T) {
+	s := Init()
+	t.Log(s.NewBackupTx(200, []*store.BackupTx{{ChainCode: 200, ID: uint64(time.Now().UnixMilli()), From: "0x123", To: "0x456", Signed: "0xdddd", Status: 1, Response: "{\"id\":\"12312321\"}"}}))
+}
+
 func TestClickhouseDb_GetSubFilter(t *testing.T) {
 	s := Init()
 	t.Log(s.GetSubFilter("token", 205, "1"))

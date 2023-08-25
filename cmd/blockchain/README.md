@@ -40,7 +40,12 @@
 {
   "RootPath": "/api/chain", //api根目录
   "Port": 9002, //端口
-  "BlockChain": [200,205], //支持的公链代码
+  "Kafka": { //备份广播交易 Kafka
+    "Host": "192.168.2.9",//host
+    "Port": 9092, //port
+    "Topic": "backup_tx", //kafka.topic
+    "Partition": 0 //kafka.partition,default:0
+  },
   "Cluster": {//区块链节点集群
     "200": [{ //ether 节点配置
       "NodeUrl": "https://eth-mainnet.g.alchemy.com/v2", //节点地址

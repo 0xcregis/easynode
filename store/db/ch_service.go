@@ -190,6 +190,16 @@ func (m *ClickhouseDb) NewReceipt(blockchain int64, receipts []*store.Receipt) e
 	return m.chDb[blockchain].Table(m.cfg[blockchain].ClickhouseDb.BlockTable).Create(receipts).Error
 }
 
+func (m *ClickhouseDb) NewBackupTx(blockchain int64, txs []*store.BackupTx) error {
+	if _, ok := m.chDb[blockchain]; !ok {
+		return errors.New("the server has not support this blockchain")
+	}
+	if _, ok := m.cfg[blockchain]; !ok {
+		return errors.New("the server has not support this blockchain")
+	}
+	return m.chDb[blockchain].Table(m.cfg[blockchain].ClickhouseDb.BackupTxTable).Create(txs).Error
+}
+
 func NewChService(cfg *config.Config, log *xlog.XLog) store.DbStoreInterface {
 	dbs := make(map[int64]*gorm.DB, 2)
 	cs := make(map[int64]*config.Chain, 2)

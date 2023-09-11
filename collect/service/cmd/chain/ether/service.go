@@ -437,8 +437,20 @@ func (s *Service) CheckAddress(tx []byte, addrList map[string]int64) bool {
 		list := receiptRoot.Get("logs").Array()
 		for _, v := range list {
 			topics := v.Get("topics").Array()
-			//Transfer()
-			if len(topics) >= 3 && topics[0].String() == s.transferTopic {
+			//Transfer(),erc20
+			if len(topics) == 3 && topics[0].String() == s.transferTopic {
+				from, _ := util.Hex2Address(topics[1].String())
+				if len(from) > 0 {
+					txAddressList[getCoreAddr(from)] = 1
+				}
+				to, _ := util.Hex2Address(topics[2].String())
+				if len(to) > 0 {
+					txAddressList[getCoreAddr(to)] = 1
+				}
+			}
+
+			//Transfer(),erc721
+			if len(topics) == 4 && topics[0].String() == s.transferTopic {
 				from, _ := util.Hex2Address(topics[1].String())
 				if len(from) > 0 {
 					txAddressList[getCoreAddr(from)] = 1

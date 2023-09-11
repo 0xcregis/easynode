@@ -326,11 +326,11 @@ func (s *Service) buildContract(receipt *collect.Receipt) (*collect.Receipt, err
 	// 仅有 合约交易，才能有logs
 	for _, g := range receipt.Logs {
 
-		//erc20
+		//erc20 odo save contract of erc-20 to receipt.log
 		if len(g.Topics) == 3 && g.Topics[0] == s.transferTopic {
 			//处理 普通资产和 20 协议 资产转移
 			mp := make(map[string]interface{}, 2)
-			token, err := s.getToken(int64(s.chain.BlockChainCode), receipt.From, g.Address)
+			token, err := s.getToken(int64(s.chain.BlockChainCode), receipt.From, g.Address, "20")
 			if err != nil {
 				has = false
 				break
@@ -343,11 +343,28 @@ func (s *Service) buildContract(receipt *collect.Receipt) (*collect.Receipt, err
 				has = false
 				break
 			}
-
+			mp["token"] = token
+			mp["eip"] = 20
 			mp["data"] = g.Data
 			bs, _ := json.Marshal(mp)
 			g.Data = string(bs)
 		}
+
+		//erc721
+		//save contract of erc-721 to receipt.log
+		if len(g.Topics) == 4 && g.Topics[0] == s.transferTopic {
+			//处理 普通资产和 721 协议 资产转移
+			mp := make(map[string]interface{}, 2)
+			token, _ := s.getToken(int64(s.chain.BlockChainCode), receipt.From, g.Address, "721")
+			mp["token"] = token
+			mp["eip"] = 721
+			mp["data"] = g.Data
+			bs, _ := json.Marshal(mp)
+			g.Data = string(bs)
+		}
+
+		//erc1155
+		//todo save contract of erc-1155 to receipt.log
 	}
 
 	if has {
@@ -357,13 +374,13 @@ func (s *Service) buildContract(receipt *collect.Receipt) (*collect.Receipt, err
 	}
 }
 
-func (s *Service) getToken(blockChain int64, from string, contract string) (string, error) {
+func (s *Service) getToken(blockChain int64, from string, contract string, eip string) (string, error) {
 	token, err := s.store.GetContract(blockChain, contract)
 	if err == nil && len(token) > 5 {
 		return token, nil
 	}
 
-	token, err = s.txChainClient.TokenBalance(blockChain, from, contract, "")
+	token, err = s.txChainClient.Token(blockChain, contract, "", eip)
 	if err != nil {
 		s.log.Errorf("TokenBalance fail: blockchain:%v,contract:%v,err:%v", blockChain, contract, err.Error())
 		//请求失败的合约记录，监控服务重试
@@ -419,8 +436,20 @@ func (s *Service) CheckAddress(tx []byte, addrList map[string]int64) bool {
 		list := receiptRoot.Get("logs").Array()
 		for _, v := range list {
 			topics := v.Get("topics").Array()
-			//Transfer()
-			if len(topics) >= 3 && topics[0].String() == s.transferTopic {
+			//Transfer(),erc20
+			if len(topics) == 3 && topics[0].String() == s.transferTopic {
+				from, _ := util.Hex2Address(topics[1].String())
+				if len(from) > 0 {
+					txAddressList[getCoreAddr(from)] = 1
+				}
+				to, _ := util.Hex2Address(topics[2].String())
+				if len(to) > 0 {
+					txAddressList[getCoreAddr(to)] = 1
+				}
+			}
+
+			//Transfer(),erc721
+			if len(topics) == 4 && topics[0].String() == s.transferTopic {
 				from, _ := util.Hex2Address(topics[1].String())
 				if len(from) > 0 {
 					txAddressList[getCoreAddr(from)] = 1

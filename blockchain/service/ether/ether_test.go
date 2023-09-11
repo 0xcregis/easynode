@@ -14,6 +14,27 @@ func Init3() blockchain.API {
 	return NewEth(cfg.Cluster[200], 200, xlog.NewXLogger())
 }
 
+func TestEther_Token(t *testing.T) {
+	s := Init3()
+	resp, err := s.Token(200, "0xdac17f958d2ee523a2206206994597c13d831ec7", "", "20")
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log(resp)
+	}
+}
+
+func TestEther_TokenBalance(t *testing.T) {
+	s := Init3()
+	resp, err := s.TokenBalance(200, "0xdac17f958d2ee523a2206206994597c13d831ec7", "0xdac17f958d2ee523a2206206994597c13d831ec7", "")
+
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log(resp)
+	}
+}
+
 func TestEther_GetLatestBlock(t *testing.T) {
 	s := Init3()
 	resp, err := s.LatestBlock(200)

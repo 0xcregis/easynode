@@ -19,6 +19,16 @@ import (
 type Ether struct {
 }
 
+func (e *Ether) GetToken721(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (e *Ether) GetToken1155(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (e *Ether) Subscribe(host string, token string) (string, error) {
 	if len(token) > 1 {
 		host = fmt.Sprintf("%v/%v", host, token)
@@ -47,7 +57,7 @@ func (e *Ether) SendRequestToChainByHttp(host string, token string, query string
 	panic("implement me")
 }
 
-func (e *Ether) GetTokenBalanceByHttp(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+func (e *Ether) GetToken20ByHttp(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -87,7 +97,7 @@ func (e *Ether) SendRequestToChain(host string, token string, query string) (str
 	return string(body), nil
 }
 
-func (e *Ether) GetTokenBalance(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+func (e *Ether) GetToken20(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {
 
 	if len(key) > 1 {
 		host = fmt.Sprintf("%v/%v", host, key)

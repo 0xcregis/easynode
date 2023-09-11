@@ -14,6 +14,16 @@ import (
 type XRP struct {
 }
 
+func (e *XRP) GetToken721(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (e *XRP) GetToken1155(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (e *XRP) Subscribe(host string, token string) (string, error) {
 	if len(token) > 1 {
 		host = fmt.Sprintf("%v/%v", host, token)
@@ -42,7 +52,7 @@ func (e *XRP) SendRequestToChainByHttp(host string, token string, query string) 
 	panic("implement me")
 }
 
-func (e *XRP) GetTokenBalanceByHttp(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+func (e *XRP) GetToken20ByHttp(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
 	panic("implement me")
 }
 
@@ -81,6 +91,6 @@ func (e *XRP) SendRequestToChain(host string, token string, query string) (strin
 	return string(body), nil
 }
 
-func (e *XRP) GetTokenBalance(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+func (e *XRP) GetToken20(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {
 	return nil, nil
 }

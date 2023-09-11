@@ -24,6 +24,11 @@ type PolygonPos struct {
 	blockChainClient blockchain.ChainConn
 }
 
+func (e *PolygonPos) Token(chainCode int64, contractAddr string, abi string, eip string) (string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (e *PolygonPos) GetCode(chainCode int64, address string) (string, error) {
 	query := `{
 				"id": 1,
@@ -280,7 +285,7 @@ func (e *PolygonPos) TokenBalance(chainCode int64, address string, contractAddr 
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
 	}
-	mp, err := e.blockChainClient.GetTokenBalance(cluster.NodeUrl, cluster.NodeToken, contractAddr, address)
+	mp, err := e.blockChainClient.GetToken20(cluster.NodeUrl, cluster.NodeToken, contractAddr, address)
 	if err != nil {
 		return "", err
 	}

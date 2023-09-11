@@ -24,6 +24,33 @@ type Ether struct {
 	blockChainClient blockchain.ChainConn
 }
 
+func (e *Ether) Token(chainCode int64, contractAddr string, abi string, eip string) (string, error) {
+	cluster := e.BalanceCluster()
+	if cluster == nil {
+		//不存在节点
+		return "", errors.New("blockchain node has not found")
+	}
+
+	var resp map[string]any
+	var err error
+	if eip == "721" {
+		resp, err = e.blockChainClient.GetToken721(cluster.NodeUrl, cluster.NodeToken, contractAddr, "")
+	} else if eip == "1155" {
+		resp, err = e.blockChainClient.GetToken1155(cluster.NodeUrl, cluster.NodeToken, contractAddr, "")
+	} else if eip == "20" {
+		resp, err = e.blockChainClient.GetToken20(cluster.NodeUrl, cluster.NodeToken, contractAddr, "")
+	} else {
+		return "", fmt.Errorf("unknow the eip:%v", eip)
+	}
+
+	if err != nil {
+		cluster.ErrorCount += 1
+	}
+
+	bs, _ := json.Marshal(resp)
+	return string(bs), err
+}
+
 func (e *Ether) GetCode(chainCode int64, address string) (string, error) {
 	query := `{
 				"id": 1,
@@ -280,7 +307,7 @@ func (e *Ether) TokenBalance(chainCode int64, address string, contractAddr strin
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
 	}
-	mp, err := e.blockChainClient.GetTokenBalance(cluster.NodeUrl, cluster.NodeToken, contractAddr, address)
+	mp, err := e.blockChainClient.GetToken20(cluster.NodeUrl, cluster.NodeToken, contractAddr, address)
 	if err != nil {
 		return "", err
 	}

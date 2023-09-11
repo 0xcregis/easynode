@@ -14,6 +14,16 @@ import (
 type Filecoin struct {
 }
 
+func (e *Filecoin) GetToken721(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (e *Filecoin) GetToken1155(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (e *Filecoin) Subscribe(host string, token string) (string, error) {
 	if len(token) > 1 {
 		host = fmt.Sprintf("%v/%v", host, token)
@@ -42,7 +52,7 @@ func (e *Filecoin) SendRequestToChainByHttp(host string, token string, query str
 	panic("implement me")
 }
 
-func (e *Filecoin) GetTokenBalanceByHttp(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+func (e *Filecoin) GetToken20ByHttp(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -80,6 +90,6 @@ func (e *Filecoin) SendRequestToChain(host string, token string, query string) (
 	return string(body), nil
 }
 
-func (e *Filecoin) GetTokenBalance(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+func (e *Filecoin) GetToken20(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {
 	return nil, nil
 }

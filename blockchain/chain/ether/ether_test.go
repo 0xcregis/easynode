@@ -6,7 +6,7 @@ import (
 
 func TestEth_GetToken(t *testing.T) {
 	c := NewChainClient()
-	resp, err := c.GetTokenBalance("https://ethereum-mainnet-rpc.allthatnode.com", "", "0xdAC17F958D2ee523a2206206994597C13D831ec7", "0xd7Aa9ba6cAAC7b0436c91396f22ca5a7F31664fC")
+	resp, err := c.GetToken20("https://ethereum-mainnet-rpc.allthatnode.com", "", "0xdac17f958d2ee523a2206206994597c13d831ec7", "0xdac17f958d2ee523a2206206994597c13d831ec7")
 	if err != nil {
 		t.Error(err)
 	} else {

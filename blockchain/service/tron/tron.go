@@ -21,6 +21,11 @@ type Tron struct {
 	blockChainClient blockchain.ChainConn
 }
 
+func (t *Tron) Token(chainCode int64, contractAddr string, abi string, eip string) (string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (t *Tron) StartWDT() {
 	go func() {
 		ticker := time.NewTicker(10 * time.Minute)
@@ -230,7 +235,7 @@ func (t *Tron) TokenBalance(chainCode int64, address string, contractAddr string
 	}
 
 	url := fmt.Sprintf("%v/%v", cluster.NodeUrl, "wallet/triggerconstantcontract")
-	mp, err := t.blockChainClient.GetTokenBalanceByHttp(url, cluster.NodeToken, contractAddr, address)
+	mp, err := t.blockChainClient.GetToken20ByHttp(url, cluster.NodeToken, contractAddr, address)
 	if err != nil {
 		return "", err
 	}

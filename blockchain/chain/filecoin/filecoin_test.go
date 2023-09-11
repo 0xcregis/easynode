@@ -6,7 +6,7 @@ import (
 
 func TestEth_GetToken(t *testing.T) {
 	c := NewChainClient()
-	resp, err := c.GetTokenBalance("https://api.calibration.node.glif.io/rpc/v0", "", "0xdAC17F958D2ee523a2206206994597C13D831ec7", "0xd7Aa9ba6cAAC7b0436c91396f22ca5a7F31664fC")
+	resp, err := c.GetToken20("https://api.calibration.node.glif.io/rpc/v0", "", "0xdAC17F958D2ee523a2206206994597C13D831ec7", "0xd7Aa9ba6cAAC7b0436c91396f22ca5a7F31664fC")
 	if err != nil {
 		t.Error(err)
 	} else {

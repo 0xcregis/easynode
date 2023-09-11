@@ -353,8 +353,8 @@ func (s *Service) GetReceipt(txHash string, eLog *logrus.Entry) (*collect.Receip
 		return nil, errors.New("receipt is null")
 	}
 
-	receipt = s.buildContract(receipt)
-	if receipt != nil {
+	receipt, err = s.buildContract(receipt)
+	if err == nil {
 		return &collect.ReceiptInterface{TransactionHash: receipt.TransactionHash, Receipt: receipt}, nil
 	} else {
 		//nodeId, _ := util.GetLocalNodeId()
@@ -364,8 +364,10 @@ func (s *Service) GetReceipt(txHash string, eLog *logrus.Entry) (*collect.Receip
 	}
 }
 
-func (s *Service) buildContract(receipt *collect.Receipt) *collect.Receipt {
-
+func (s *Service) buildContract(receipt *collect.Receipt) (*collect.Receipt, error) {
+	if receipt == nil {
+		return nil, errors.New("receipt is null")
+	}
 	has := true
 
 	// 仅有 合约交易，才能有logs
@@ -396,12 +398,9 @@ func (s *Service) buildContract(receipt *collect.Receipt) *collect.Receipt {
 	}
 
 	if has {
-		return receipt
+		return receipt, nil
 	} else {
-		//nodeId, _ := util.GetLocalNodeId()
-		//task := service.NodeTask{Id: time.Now().UnixNano(), BlockChain: s.chain.BlockChainCode, NodeId: nodeId, TxHash: receipt.TransactionHash, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
-		//_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), receipt.TransactionHash, task)
-		return nil
+		return receipt, errors.New("can not get contract")
 	}
 }
 

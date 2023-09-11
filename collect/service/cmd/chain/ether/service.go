@@ -266,8 +266,8 @@ func (s *Service) GetReceiptByBlock(blockHash, number string, eLog *logrus.Entry
 	rs := make([]*collect.ReceiptInterface, 0, len(receiptList))
 	for _, v := range receiptList {
 		txHash := v.TransactionHash
-		v = s.buildContract(v)
-		if v != nil {
+		v, err = s.buildContract(v)
+		if err == nil {
 			r := &collect.ReceiptInterface{TransactionHash: txHash, Receipt: v}
 			rs = append(rs, r)
 		} else {
@@ -306,8 +306,8 @@ func (s *Service) GetReceipt(txHash string, eLog *logrus.Entry) (*collect.Receip
 		return nil, errors.New("receipt is null")
 	}
 
-	receipt = s.buildContract(receipt)
-	if receipt != nil {
+	receipt, err = s.buildContract(receipt)
+	if err == nil {
 		return &collect.ReceiptInterface{TransactionHash: receipt.TransactionHash, Receipt: receipt}, nil
 	} else {
 		//nodeId, _ := util.GetLocalNodeId()
@@ -317,18 +317,20 @@ func (s *Service) GetReceipt(txHash string, eLog *logrus.Entry) (*collect.Receip
 	}
 }
 
-func (s *Service) buildContract(receipt *collect.Receipt) *collect.Receipt {
-
+func (s *Service) buildContract(receipt *collect.Receipt) (*collect.Receipt, error) {
+	if receipt == nil {
+		return nil, errors.New("receipt is null")
+	}
 	has := true
 
 	// 仅有 合约交易，才能有logs
 	for _, g := range receipt.Logs {
 
-		//erc20
+		//erc20 odo save contract of erc-20 to receipt.log
 		if len(g.Topics) == 3 && g.Topics[0] == s.transferTopic {
 			//处理 普通资产和 20 协议 资产转移
 			mp := make(map[string]interface{}, 2)
-			token, err := s.getToken(int64(s.chain.BlockChainCode), receipt.From, g.Address)
+			token, err := s.getToken(int64(s.chain.BlockChainCode), receipt.From, g.Address, "20")
 			if err != nil {
 				has = false
 				break
@@ -341,30 +343,45 @@ func (s *Service) buildContract(receipt *collect.Receipt) *collect.Receipt {
 				has = false
 				break
 			}
-
+			mp["token"] = token
+			mp["eip"] = 20
 			mp["data"] = g.Data
 			bs, _ := json.Marshal(mp)
 			g.Data = string(bs)
 		}
+
+		//erc721
+		//save contract of erc-721 to receipt.log
+		if len(g.Topics) == 4 && g.Topics[0] == s.transferTopic {
+			//处理 普通资产和 721 协议 资产转移
+			mp := make(map[string]interface{}, 2)
+			token, _ := s.getToken(int64(s.chain.BlockChainCode), receipt.From, g.Address, "721")
+			mp["token"] = token
+			mp["eip"] = 721
+			mp["data"] = g.Data
+			bs, _ := json.Marshal(mp)
+			g.Data = string(bs)
+		}
+
+		//erc1155
+		//todo save contract of erc-1155 to receipt.log
+
 	}
 
 	if has {
-		return receipt
+		return receipt, nil
 	} else {
-		//nodeId, _ := util.GetLocalNodeId()
-		//task := service.NodeTask{Id: time.Now().UnixNano(), BlockChain: s.chain.BlockChainCode, NodeId: nodeId, TxHash: receipt.TransactionHash, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
-		//_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), receipt.TransactionHash, task)
-		return nil
+		return receipt, errors.New("can not get contract")
 	}
 }
 
-func (s *Service) getToken(blockChain int64, from string, contract string) (string, error) {
+func (s *Service) getToken(blockChain int64, from string, contract string, eip string) (string, error) {
 	token, err := s.store.GetContract(blockChain, contract)
 	if err == nil && len(token) > 5 {
 		return token, nil
 	}
 
-	token, err = s.txChainClient.TokenBalance(blockChain, from, contract, "")
+	token, err = s.txChainClient.Token(blockChain, contract, "", eip)
 	if err != nil {
 		s.log.Errorf("TokenBalance fail: blockchain:%v,contract:%v,err:%v", blockChain, contract, err.Error())
 		//请求失败的合约记录，监控服务重试

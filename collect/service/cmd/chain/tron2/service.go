@@ -130,11 +130,11 @@ func (s *Service) GetReceipt(txHash string, eLog *logrus.Entry) (*collect.Receip
 	var receipt collect.TronReceipt
 	_ = json.Unmarshal([]byte(resp), &receipt)
 
-	p := s.buildContract(&receipt)
+	p, err := s.buildContract(&receipt)
 
-	if p != nil {
-		bs, _ := json.Marshal(receipt)
-		r := &collect.ReceiptInterface{TransactionHash: hash, Receipt: string(bs), BlockNumber: receipt.BlockNumber, BlockTimeStamp: receipt.BlockTimeStamp}
+	if err == nil {
+		bs, _ := json.Marshal(p)
+		r := &collect.ReceiptInterface{TransactionHash: hash, Receipt: string(bs), BlockNumber: p.BlockNumber, BlockTimeStamp: p.BlockTimeStamp}
 		return r, nil
 	} else {
 		//nodeId, _ := util.GetLocalNodeId()
@@ -178,9 +178,9 @@ func (s *Service) GetReceiptByBlock(blockHash, number string, eLog *logrus.Entry
 		var receipt collect.TronReceipt
 		_ = json.Unmarshal([]byte(v.String()), &receipt)
 
-		p := s.buildContract(&receipt)
+		p, err := s.buildContract(&receipt)
 
-		if p != nil {
+		if err == nil {
 			bs, _ := json.Marshal(p)
 			r := &collect.ReceiptInterface{TransactionHash: hash, Receipt: string(bs)}
 			receiptList = append(receiptList, r)
@@ -325,7 +325,11 @@ func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool
 	return r, txs
 }
 
-func (s *Service) buildContract(receipt *collect.TronReceipt) *collect.TronReceipt {
+func (s *Service) buildContract(receipt *collect.TronReceipt) (*collect.TronReceipt, error) {
+
+	if receipt == nil {
+		return nil, errors.New("receipt is null")
+	}
 
 	has := true
 
@@ -356,12 +360,9 @@ func (s *Service) buildContract(receipt *collect.TronReceipt) *collect.TronRecei
 	}
 
 	if has {
-		return receipt
+		return receipt, nil
 	} else {
-		//nodeId, _ := util.GetLocalNodeId()
-		//task := service.NodeTask{Id: time.Now().UnixNano(), NodeId: nodeId, BlockChain: s.chain.BlockChainCode, TxHash: receipt.Id, TaskType: 1, TaskStatus: 0, CreateTime: time.Now(), LogTime: time.Now()}
-		//_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), receipt.Id, task)
-		return nil
+		return receipt, errors.New("can not get contract")
 	}
 }
 

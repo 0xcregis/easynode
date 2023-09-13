@@ -26,10 +26,25 @@ func NewApi(blockchain int64, cluster []*config.NodeCluster, xlog *xlog.XLog) bl
 	return nil
 }
 
+func NewNftApi(blockchain int64, cluster []*config.NodeCluster, xlog *xlog.XLog) blockchain.NftApi {
+	if blockchain == 200 {
+		return ether.NewNftEth(cluster, blockchain, xlog)
+	}
+	return nil
+}
+
 func NewApis(clusters map[int64][]*config.NodeCluster, xlog *xlog.XLog) map[int64]blockchain.API {
 	blockChainClients := make(map[int64]blockchain.API, 0)
 	for chainCode, cluster := range clusters {
 		blockChainClients[chainCode] = NewApi(chainCode, cluster, xlog)
+	}
+	return blockChainClients
+}
+
+func NewNftApis(clusters map[int64][]*config.NodeCluster, xlog *xlog.XLog) map[int64]blockchain.NftApi {
+	blockChainClients := make(map[int64]blockchain.NftApi, 0)
+	for chainCode, cluster := range clusters {
+		blockChainClients[chainCode] = NewNftApi(chainCode, cluster, xlog)
 	}
 	return blockChainClients
 }

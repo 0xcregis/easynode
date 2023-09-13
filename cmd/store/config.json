@@ -14,11 +14,11 @@
   "Chains": [
     {
       "BlockChain": 200,
-      "BlockStore": false,
+      "BlockStore": true,
       "TxStore": false,
       "ReceiptStore": false,
-      "SubStore": false,
-      "BackupTxStore": true,
+      "SubStore": true,
+      "BackupTxStore": false,
       "Kafka": {
         "BackupTx": {
           "Host": "192.168.2.9",

@@ -22,6 +22,63 @@ type Ether struct {
 	log              *xlog.XLog
 	nodeCluster      []*config.NodeCluster
 	blockChainClient blockchain.ChainConn
+	nftClient        blockchain.NFT
+}
+
+func (e *Ether) TokenURI(chainCode int64, contractAddress string, tokenId string, eip int64) (string, error) {
+	cluster := e.BalanceCluster()
+	if cluster == nil {
+		//不存在节点
+		return "", errors.New("blockchain node has not found")
+	}
+	resp, err := e.nftClient.TokenURI(cluster.NodeUrl, cluster.NodeToken, contractAddress, tokenId, eip)
+	if err != nil {
+		cluster.ErrorCount += 1
+		return "", err
+	}
+	return resp, nil
+}
+
+func (e *Ether) BalanceOf(chainCode int64, contractAddress string, address string, tokenId string, eip int64) (string, error) {
+	cluster := e.BalanceCluster()
+	if cluster == nil {
+		//不存在节点
+		return "", errors.New("blockchain node has not found")
+	}
+	resp, err := e.nftClient.BalanceOf(cluster.NodeUrl, cluster.NodeToken, contractAddress, address, tokenId, eip)
+	if err != nil {
+		cluster.ErrorCount += 1
+		return "", err
+	}
+	return resp, nil
+}
+
+func (e *Ether) OwnerOf(chainCode int64, contractAddress string, tokenId string, eip int64) (string, error) {
+	cluster := e.BalanceCluster()
+	if cluster == nil {
+		//不存在节点
+		return "", errors.New("blockchain node has not found")
+	}
+	resp, err := e.nftClient.OwnerOf(cluster.NodeUrl, cluster.NodeToken, contractAddress, tokenId, eip)
+	if err != nil {
+		cluster.ErrorCount += 1
+		return "", err
+	}
+	return resp, nil
+}
+
+func (e *Ether) TotalSupply(chainCode int64, contractAddress string, eip int64) (string, error) {
+	cluster := e.BalanceCluster()
+	if cluster == nil {
+		//不存在节点
+		return "", errors.New("blockchain node has not found")
+	}
+	resp, err := e.nftClient.TotalSupply(cluster.NodeUrl, cluster.NodeToken, contractAddress, eip)
+	if err != nil {
+		cluster.ErrorCount += 1
+		return "", err
+	}
+	return resp, nil
 }
 
 func (e *Ether) Token(chainCode int64, contractAddr string, abi string, eip string) (string, error) {
@@ -243,6 +300,22 @@ func (e *Ether) GetTxByHash(chainCode int64, hash string) (string, error) {
 
 func (e *Ether) SendJsonRpc(chainCode int64, req string) (string, error) {
 	return e.SendReq(chainCode, req)
+}
+
+func NewNftEth(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.NftApi {
+	nftClient := chain.NewNFT(blockchain)
+	if nftClient == nil {
+		return nil
+	}
+
+	chain.NewNFT(blockchain)
+	e := &Ether{
+		log:         xlog,
+		nodeCluster: cluster,
+		nftClient:   nftClient,
+	}
+	e.StartWDT()
+	return e
 }
 
 func NewEth(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.API {

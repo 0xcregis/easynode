@@ -53,6 +53,10 @@ func main() {
 	root.POST("/account/nonce", srv.GetNonce)
 	root.POST("/block/latest", srv.GetLatestBlock)
 	root.POST("/tx/sendRawTransaction", srv.SendRawTx)
+	root.POST("/nft/tokenUri", srv.TokenUri)
+	root.POST("/nft/balanceOf", srv.BalanceOf)
+	root.POST("/nft/owner", srv.OwnerOf)
+	root.POST("/nft/totalSupply", srv.TotalSupply)
 
 	//ws 协议
 	wsServer := service.NewWsHandler(cfg.Cluster, xLog)

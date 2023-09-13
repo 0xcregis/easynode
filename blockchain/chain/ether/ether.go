@@ -212,9 +212,9 @@ func (e *Ether) GetToken721(host string, key string, contractAddress string, use
 
 func (e *Ether) GetToken1155(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {
 	mp := make(map[string]interface{}, 2)
-	if len(key) > 1 {
-		host = fmt.Sprintf("%v/%v", host, key)
-	}
+	//if len(key) > 1 {
+	//	host = fmt.Sprintf("%v/%v", host, key)
+	//}
 
 	//client, err := ethclient.Dial(host)
 	//if err != nil {

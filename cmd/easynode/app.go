@@ -189,6 +189,10 @@ func startBlockchain(configPath string, ctx context.Context) {
 	root.POST("/account/nonce", srv.GetNonce)
 	root.POST("/block/latest", srv.GetLatestBlock)
 	root.POST("/tx/sendRawTransaction", srv.SendRawTx)
+	root.POST("/nft/tokenUri", srv.TokenUri)
+	root.POST("/nft/balanceOf", srv.BalanceOf)
+	root.POST("/nft/owner", srv.OwnerOf)
+	root.POST("/nft/totalSupply", srv.TotalSupply)
 
 	//ws 协议
 	wsServer := blockchainService.NewWsHandler(cfg.Cluster, xLog)

@@ -277,6 +277,8 @@ type ContractTx struct {
 	Method   string `json:"method"`
 	To       string `json:"to"`
 	Value    string `json:"value"`
+	EIP      int64  `json:"eip"`
+	Token    string `json:"token"`
 }
 
 type SubTx struct {

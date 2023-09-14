@@ -20,14 +20,16 @@ import (
 )
 
 type Service struct {
-	log                *xlog.XLog
-	chain              *config.Chain
-	nodeId             string
-	transferTopic      string
-	store              collect.StoreTaskInterface
-	txChainClient      blockchain.API
-	blockChainClient   blockchain.API
-	receiptChainClient blockchain.API
+	log                    *xlog.XLog
+	chain                  *config.Chain
+	nodeId                 string
+	transferTopic          string
+	nftTransferSingleTopic string
+	nftTransferBatchTopic  string
+	store                  collect.StoreTaskInterface
+	txChainClient          blockchain.API
+	blockChainClient       blockchain.API
+	receiptChainClient     blockchain.API
 }
 
 func (s *Service) GetMultiBlockByNumber(blockNumber string, log *logrus.Entry, flag bool) ([]*collect.BlockInterface, []*collect.TxInterface) {
@@ -364,7 +366,17 @@ func (s *Service) buildContract(receipt *collect.Receipt) (*collect.Receipt, err
 		}
 
 		//erc1155
-		//todo save contract of erc-1155 to receipt.log
+		// save contract of erc-1155 to receipt.log
+		if len(g.Topics) == 4 && g.Topics[0] == s.nftTransferSingleTopic {
+			//处理 普通资产和 1155 协议 资产转移
+			mp := make(map[string]interface{}, 3)
+			token, _ := s.getToken(int64(s.chain.BlockChainCode), receipt.From, g.Address, "1155")
+			mp["token"] = token
+			mp["eip"] = 1155
+			mp["data"] = g.Data
+			bs, _ := json.Marshal(mp)
+			g.Data = string(bs)
+		}
 
 	}
 
@@ -480,7 +492,7 @@ func (s *Service) CheckAddress(tx []byte, addrList map[string]int64) bool {
 	return has
 }
 
-func NewService(c *config.Chain, x *xlog.XLog, store collect.StoreTaskInterface, nodeId string, transferTopic string) collect.BlockChainInterface {
+func NewService(c *config.Chain, x *xlog.XLog, store collect.StoreTaskInterface, nodeId string, transferTopic, nftTransferSingleTopic string) collect.BlockChainInterface {
 
 	var blockClient blockchain.API
 	if c.BlockTask != nil {
@@ -526,13 +538,14 @@ func NewService(c *config.Chain, x *xlog.XLog, store collect.StoreTaskInterface,
 	}
 
 	return &Service{
-		log:                x,
-		chain:              c,
-		store:              store,
-		txChainClient:      txClient,
-		blockChainClient:   blockClient,
-		receiptChainClient: receiptClient,
-		nodeId:             nodeId,
-		transferTopic:      transferTopic,
+		log:                    x,
+		chain:                  c,
+		store:                  store,
+		txChainClient:          txClient,
+		blockChainClient:       blockClient,
+		receiptChainClient:     receiptClient,
+		nodeId:                 nodeId,
+		transferTopic:          transferTopic,
+		nftTransferSingleTopic: nftTransferSingleTopic,
 	}
 }

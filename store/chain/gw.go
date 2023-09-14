@@ -62,7 +62,7 @@ func GetTxFromKafka(value []byte, blockChain int64) (*store.Tx, error) {
 
 func ParseTx(blockchain int64, msg *kafka.Message) (*store.SubTx, error) {
 	if blockchain == 200 {
-		return ether.ParseTx(msg.Value, store.EthTopic, blockchain)
+		return ether.ParseTx(msg.Value, store.EthTopic, store.EthTransferSingleTopic, blockchain)
 	}
 	if blockchain == 205 {
 		return tron.ParseTx(msg.Value, store.TronTopic, blockchain)

@@ -33,7 +33,7 @@ func TestParseTx(t *testing.T) {
 }
 
 `
-	tx, err := ParseTx([]byte(str), store.EthTopic, 200)
+	tx, err := ParseTx([]byte(str), store.EthTopic, store.EthTransferSingleTopic, 200)
 	if err != nil {
 		t.Error(err)
 	} else {

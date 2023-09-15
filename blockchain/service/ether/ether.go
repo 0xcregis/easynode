@@ -22,6 +22,90 @@ type Ether struct {
 	log              *xlog.XLog
 	nodeCluster      []*config.NodeCluster
 	blockChainClient blockchain.ChainConn
+	nftClient        blockchain.NFT
+}
+
+func (e *Ether) TokenURI(chainCode int64, contractAddress string, tokenId string, eip int64) (string, error) {
+	cluster := e.BalanceCluster()
+	if cluster == nil {
+		//不存在节点
+		return "", errors.New("blockchain node has not found")
+	}
+	resp, err := e.nftClient.TokenURI(cluster.NodeUrl, cluster.NodeToken, contractAddress, tokenId, eip)
+	if err != nil {
+		cluster.ErrorCount += 1
+		return "", err
+	}
+	return resp, nil
+}
+
+func (e *Ether) BalanceOf(chainCode int64, contractAddress string, address string, tokenId string, eip int64) (string, error) {
+	cluster := e.BalanceCluster()
+	if cluster == nil {
+		//不存在节点
+		return "", errors.New("blockchain node has not found")
+	}
+	resp, err := e.nftClient.BalanceOf(cluster.NodeUrl, cluster.NodeToken, contractAddress, address, tokenId, eip)
+	if err != nil {
+		cluster.ErrorCount += 1
+		return "", err
+	}
+	return resp, nil
+}
+
+func (e *Ether) OwnerOf(chainCode int64, contractAddress string, tokenId string, eip int64) (string, error) {
+	cluster := e.BalanceCluster()
+	if cluster == nil {
+		//不存在节点
+		return "", errors.New("blockchain node has not found")
+	}
+	resp, err := e.nftClient.OwnerOf(cluster.NodeUrl, cluster.NodeToken, contractAddress, tokenId, eip)
+	if err != nil {
+		cluster.ErrorCount += 1
+		return "", err
+	}
+	return resp, nil
+}
+
+func (e *Ether) TotalSupply(chainCode int64, contractAddress string, eip int64) (string, error) {
+	cluster := e.BalanceCluster()
+	if cluster == nil {
+		//不存在节点
+		return "", errors.New("blockchain node has not found")
+	}
+	resp, err := e.nftClient.TotalSupply(cluster.NodeUrl, cluster.NodeToken, contractAddress, eip)
+	if err != nil {
+		cluster.ErrorCount += 1
+		return "", err
+	}
+	return resp, nil
+}
+
+func (e *Ether) Token(chainCode int64, contractAddr string, abi string, eip string) (string, error) {
+	cluster := e.BalanceCluster()
+	if cluster == nil {
+		//不存在节点
+		return "", errors.New("blockchain node has not found")
+	}
+
+	var resp map[string]any
+	var err error
+	if eip == "721" {
+		resp, err = e.blockChainClient.GetToken721(cluster.NodeUrl, cluster.NodeToken, contractAddr, "")
+	} else if eip == "1155" {
+		resp, err = e.blockChainClient.GetToken1155(cluster.NodeUrl, cluster.NodeToken, contractAddr, "")
+	} else if eip == "20" {
+		resp, err = e.blockChainClient.GetToken20(cluster.NodeUrl, cluster.NodeToken, contractAddr, "")
+	} else {
+		return "", fmt.Errorf("unknow the eip:%v", eip)
+	}
+
+	if err != nil {
+		cluster.ErrorCount += 1
+	}
+
+	bs, _ := json.Marshal(resp)
+	return string(bs), err
 }
 
 func (e *Ether) GetCode(chainCode int64, address string) (string, error) {
@@ -218,6 +302,22 @@ func (e *Ether) SendJsonRpc(chainCode int64, req string) (string, error) {
 	return e.SendReq(chainCode, req)
 }
 
+func NewNftEth(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.NftApi {
+	nftClient := chain.NewNFT(blockchain)
+	if nftClient == nil {
+		return nil
+	}
+
+	chain.NewNFT(blockchain)
+	e := &Ether{
+		log:         xlog,
+		nodeCluster: cluster,
+		nftClient:   nftClient,
+	}
+	e.StartWDT()
+	return e
+}
+
 func NewEth(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.API {
 	blockChainClient := chain.NewChain(blockchain)
 	if blockChainClient == nil {
@@ -280,7 +380,7 @@ func (e *Ether) TokenBalance(chainCode int64, address string, contractAddr strin
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
 	}
-	mp, err := e.blockChainClient.GetTokenBalance(cluster.NodeUrl, cluster.NodeToken, contractAddr, address)
+	mp, err := e.blockChainClient.GetToken20(cluster.NodeUrl, cluster.NodeToken, contractAddr, address)
 	if err != nil {
 		return "", err
 	}

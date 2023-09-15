@@ -23,6 +23,11 @@ type FileCoin struct {
 	blockChainClient blockchain.ChainConn
 }
 
+func (e *FileCoin) Token(chainCode int64, contractAddr string, abi string, eip string) (string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func NewFileCoin(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.API {
 	blockChainClient := chain.NewChain(blockchain)
 	if blockChainClient == nil {
@@ -377,7 +382,7 @@ func (e *FileCoin) TokenBalance(chainCode int64, address string, contractAddr st
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
 	}
-	mp, err := e.blockChainClient.GetTokenBalance(cluster.NodeUrl, cluster.NodeToken, contractAddr, address)
+	mp, err := e.blockChainClient.GetToken20(cluster.NodeUrl, cluster.NodeToken, contractAddr, address)
 	if err != nil {
 		return "", err
 	}

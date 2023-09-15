@@ -56,7 +56,7 @@ func GetTxType(body []byte) (uint64, error) {
 		return 2, nil
 	}
 }
-func ParseTx(body []byte, transferTopic string, blockchain int64) (*store.SubTx, error) {
+func ParseTx(body []byte, transferTopic, nftTransferSingleTopic string, blockchain int64) (*store.SubTx, error) {
 	var r store.SubTx
 	root := gjson.ParseBytes(body)
 	r.BlockChain = uint64(blockchain)
@@ -132,40 +132,95 @@ func ParseTx(body []byte, transferTopic string, blockchain int64) (*store.SubTx,
 		r := gjson.Parse(data)
 		if r.IsObject() {
 			//mp := make(map[string]string, 2)
-			contractDecimals := r.Get("contractDecimals").String()
-			if len(contractDecimals) < 1 {
-				return nil, errors.New("tx.log.contract is error")
-			}
-			decimals, err := strconv.Atoi(contractDecimals)
-			if err != nil {
-				return nil, errors.New("tx.log.contract is error")
+
+			eip := r.Get("eip").Int()
+			token := r.Get("token").String()
+
+			if eip == 20 {
+				contractDecimals := r.Get("contractDecimals").String()
+				if len(contractDecimals) < 1 {
+					return nil, errors.New("tx.log.contract is error")
+				}
+				decimals, err := strconv.Atoi(contractDecimals)
+				if err != nil {
+					return nil, errors.New("tx.log.contract is error")
+				}
+
+				fee := r.Get("data").String()
+				bigFee, err := util.HexToInt(fee)
+				if err == nil {
+					data = util.Div(bigFee, decimals)
+				} else {
+					return nil, errors.New("tx.log.contract is error")
+				}
+
+				tps := v.Get("topics").Array()
+				var from, to string
+				if len(tps) == 3 && tps[0].String() == transferTopic {
+					//method = tps[0].String()
+					from = tps[1].String()
+					to = tps[2].String()
+					var m store.ContractTx
+					m.Contract = contract
+					m.Value = data
+					m.From, _ = util.Hex2Address(from)
+					m.To, _ = util.Hex2Address(to)
+					m.Method = "Transfer"
+					m.EIP = eip
+					m.Token = token
+					contractTx = append(contractTx, &m)
+				}
+
 			}
 
-			fee := r.Get("data").String()
-			bigFee, err := util.HexToInt(fee)
-			if err == nil {
-				data = util.Div(bigFee, decimals)
-			} else {
-				return nil, errors.New("tx.log.contract is error")
+			if eip == 721 {
+				tps := v.Get("topics").Array()
+				var from, to string
+				if len(tps) == 4 && tps[0].String() == transferTopic {
+					//method = tps[0].String()
+					from = tps[1].String()
+					to = tps[2].String()
+					var m store.ContractTx
+					m.Contract = contract
+					v, _ := util.HexToInt(tps[3].String())
+					m.Value = v
+					m.From, _ = util.Hex2Address(from)
+					m.To, _ = util.Hex2Address(to)
+					m.Method = "Transfer"
+					m.EIP = eip
+					m.Token = token
+					contractTx = append(contractTx, &m)
+				}
 			}
-		} else {
-			continue
-		}
 
-		tps := v.Get("topics").Array()
-		var from, to string
-		if len(tps) >= 3 && tps[0].String() == transferTopic {
-			//method = tps[0].String()
-			from = tps[1].String()
-			to = tps[2].String()
-			var m store.ContractTx
-			m.Contract = contract
-			m.Value = data
-			m.From, _ = util.Hex2Address(from)
-			m.To, _ = util.Hex2Address(to)
-			m.Method = "Transfer"
-			contractTx = append(contractTx, &m)
+			if eip == 1155 {
+				tps := v.Get("topics").Array()
+				v := r.Get("data").String()
+				id, amount, err := util.NftData(v)
+				if err == nil {
+					v = fmt.Sprintf("id=%v&value=%v", id, amount)
+				}
+				var from, to string
+				if len(tps) == 4 && tps[0].String() == nftTransferSingleTopic {
+					//method = tps[0].String()
+					from = tps[1].String()
+					to = tps[2].String()
+					var m store.ContractTx
+					m.Contract = contract
+					m.Value = v
+					m.From, _ = util.Hex2Address(from)
+					m.To, _ = util.Hex2Address(to)
+					m.Method = "Transfer"
+					m.EIP = eip
+					m.Token = token
+					contractTx = append(contractTx, &m)
+				}
+			}
+
 		}
+		//else {
+		// 合约数据不完整，直接放弃了
+		//}
 	}
 	r.ContractTx = contractTx
 	return &r, nil
@@ -202,8 +257,20 @@ func CheckAddress(tx []byte, addrList map[string]*store.MonitorAddress, transfer
 				continue
 			}
 			topics := v.Get("topics").Array()
-			//Transfer()
-			if len(topics) >= 3 && topics[0].String() == transferTopic {
+			//Transfer(),erc20
+			if len(topics) == 3 && topics[0].String() == transferTopic {
+				from, _ := util.Hex2Address(topics[1].String())
+				if len(from) > 0 {
+					txAddressList[GetCoreAddr(from)] = 1
+				}
+				to, _ := util.Hex2Address(topics[2].String())
+				if len(to) > 0 {
+					txAddressList[GetCoreAddr(to)] = 1
+				}
+			}
+
+			//Transfer(),erc721
+			if len(topics) == 4 && topics[0].String() == transferTopic {
 				from, _ := util.Hex2Address(topics[1].String())
 				if len(from) > 0 {
 					txAddressList[GetCoreAddr(from)] = 1

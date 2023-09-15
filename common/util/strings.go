@@ -53,3 +53,27 @@ func Div(str string, pos int) string {
 	}
 	return result
 }
+
+//0xabe68307e498ae6cbe979c23ebd518e8e3e04d26000000000000000000000003000000000000000000000000000000000000000000000000000000000000000d
+
+func NftData(data string) (string, string, error) {
+
+	data = strings.Replace(data, "0x", "", -1)
+
+	array := []byte(data)
+
+	var err error
+	id := string(array[:64])
+	id, err = HexToInt(id)
+	if err != nil {
+		return "", "", err
+	}
+	value := string(array[64:])
+
+	value, err = HexToInt(value)
+	if err != nil {
+		return "", "", err
+	}
+
+	return id, value, nil
+}

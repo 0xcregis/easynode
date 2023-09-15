@@ -19,6 +19,16 @@ import (
 type PolygonPos struct {
 }
 
+func (e *PolygonPos) GetToken721(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (e *PolygonPos) GetToken1155(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (e *PolygonPos) Subscribe(host string, token string) (string, error) {
 	if len(token) > 1 {
 		host = fmt.Sprintf("%v/%v", host, token)
@@ -47,7 +57,7 @@ func (e *PolygonPos) SendRequestToChainByHttp(host string, token string, query s
 	panic("implement me")
 }
 
-func (e *PolygonPos) GetTokenBalanceByHttp(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+func (e *PolygonPos) GetToken20ByHttp(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -87,7 +97,7 @@ func (e *PolygonPos) SendRequestToChain(host string, token string, query string)
 	return string(body), nil
 }
 
-func (e *PolygonPos) GetTokenBalance(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+func (e *PolygonPos) GetToken20(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {
 
 	if len(key) > 1 {
 		host = fmt.Sprintf("%v/%v", host, key)

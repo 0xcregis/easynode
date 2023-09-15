@@ -19,7 +19,7 @@ func GetBlockchain(blockchain int, c *config.Chain, store collect.StoreTaskInter
 	x := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/chain_info", logConfig.Path), 24*time.Hour)
 	var srv collect.BlockChainInterface
 	if blockchain == 200 {
-		srv = ether.NewService(c, x, store, nodeId, collect.EthTopic)
+		srv = ether.NewService(c, x, store, nodeId, collect.EthTopic, collect.EthNftTransferSingleTopic)
 	} else if blockchain == 205 {
 		srv = tron2.NewService(c, x, store, nodeId, collect.TronTopic)
 	} else if blockchain == 201 {

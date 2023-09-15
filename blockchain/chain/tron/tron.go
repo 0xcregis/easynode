@@ -16,6 +16,16 @@ import (
 type Tron struct {
 }
 
+func (t *Tron) GetToken721(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t *Tron) GetToken1155(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (t *Tron) Subscribe(host string, token string) (string, error) {
 	//TODO implement me
 	panic("implement me")
@@ -100,7 +110,7 @@ func (t *Tron) SendRequestToChainByHttp(host string, token string, query string)
 	return string(body), nil
 }
 
-func (t *Tron) GetTokenBalanceByHttp(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+func (t *Tron) GetToken20ByHttp(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
 	mp := make(map[string]interface{}, 2)
 
 	if !strings.HasPrefix(userAddress, "0x41") && !strings.HasPrefix(userAddress, "41") {
@@ -197,6 +207,6 @@ func (t *Tron) GetTokenBalanceByHttp2(host string, token string, contractAddress
 	return "", errors.New("no data")
 }
 
-func (t *Tron) GetTokenBalance(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+func (t *Tron) GetToken20(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {
 	return nil, nil
 }

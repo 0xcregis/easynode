@@ -22,6 +22,7 @@ type HttpHandler struct {
 	log               *logrus.Entry
 	nodeCluster       map[int64][]*config.NodeCluster
 	blockChainClients map[int64]blockchain.API
+	nftClients        map[int64]blockchain.NftApi
 	kafkaClient       *easyKafka.EasyKafka
 	kafkaCfg          *config.Kafka
 	sendCh            chan []*kafka.Message
@@ -46,7 +47,87 @@ func NewHttpHandler(cluster map[int64][]*config.NodeCluster, kafkaCfg *config.Ka
 		kafkaClient:       kafkaClient,
 		sendCh:            sendCh,
 		blockChainClients: NewApis(cluster, xlog),
+		nftClients:        NewNftApis(cluster, xlog),
 	}
+}
+
+func (h *HttpHandler) TokenUri(ctx *gin.Context) {
+	b, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
+		return
+	}
+	root := gjson.ParseBytes(b)
+	blockChainCode := root.Get("chain").Int()
+	contract := root.Get("contract").String()
+	tokenId := root.Get("tokenId").String()
+	eip := root.Get("eip").Int()
+	res, err := h.nftClients[blockChainCode].TokenURI(blockChainCode, contract, tokenId, eip)
+	if err != nil {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
+		return
+	}
+
+	h.Success(ctx, string(b), res, ctx.Request.RequestURI)
+}
+
+func (h *HttpHandler) BalanceOf(ctx *gin.Context) {
+	b, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
+		return
+	}
+	root := gjson.ParseBytes(b)
+	blockChainCode := root.Get("chain").Int()
+	contract := root.Get("contract").String()
+	addr := root.Get("address").String()
+	tokenId := root.Get("tokenId").String()
+	eip := root.Get("eip").Int()
+	res, err := h.nftClients[blockChainCode].BalanceOf(blockChainCode, contract, addr, tokenId, eip)
+	if err != nil {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
+		return
+	}
+
+	h.Success(ctx, string(b), res, ctx.Request.RequestURI)
+}
+
+func (h *HttpHandler) OwnerOf(ctx *gin.Context) {
+	b, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
+		return
+	}
+	root := gjson.ParseBytes(b)
+	blockChainCode := root.Get("chain").Int()
+	contract := root.Get("contract").String()
+	tokenId := root.Get("tokenId").String()
+	eip := root.Get("eip").Int()
+	res, err := h.nftClients[blockChainCode].OwnerOf(blockChainCode, contract, tokenId, eip)
+	if err != nil {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
+		return
+	}
+
+	h.Success(ctx, string(b), res, ctx.Request.RequestURI)
+}
+
+func (h *HttpHandler) TotalSupply(ctx *gin.Context) {
+	b, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
+		return
+	}
+	root := gjson.ParseBytes(b)
+	blockChainCode := root.Get("chain").Int()
+	contract := root.Get("contract").String()
+	eip := root.Get("eip").Int()
+	res, err := h.nftClients[blockChainCode].TotalSupply(blockChainCode, contract, eip)
+	if err != nil {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
+		return
+	}
+	h.Success(ctx, string(b), res, ctx.Request.RequestURI)
 }
 
 func (h *HttpHandler) GetBlockByHash(ctx *gin.Context) {

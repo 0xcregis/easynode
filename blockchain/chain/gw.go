@@ -32,3 +32,12 @@ func NewChain(blockchain int64) blockchain.ChainConn {
 		return nil
 	}
 }
+
+func NewNFT(blockchain int64) blockchain.NFT {
+	if blockchain == 200 {
+		//eth
+		return ether.NewNFTClient()
+	} else {
+		return nil
+	}
+}

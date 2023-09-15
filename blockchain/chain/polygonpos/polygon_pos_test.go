@@ -6,7 +6,7 @@ import (
 
 func TestPolygonPos_GetToken(t *testing.T) {
 	c := NewChainClient()
-	resp, err := c.GetTokenBalance("https://polygon.rpc.blxrbdn.com", "", "0xc2132d05d31c914a87c6611c10748aeb04b58e8f", "0xa006b7ba6fb6fd1df91a6c0478bc126702299a47")
+	resp, err := c.GetToken20("https://polygon.rpc.blxrbdn.com", "", "0xc2132d05d31c914a87c6611c10748aeb04b58e8f", "0xa006b7ba6fb6fd1df91a6c0478bc126702299a47")
 	if err != nil {
 		t.Error(err)
 	} else {

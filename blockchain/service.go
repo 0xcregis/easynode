@@ -1,7 +1,15 @@
 package blockchain
 
+type NftApi interface {
+	TokenURI(chainCode int64, contractAddress string, tokenId string, eip int64) (string, error)
+	BalanceOf(chainCode int64, contractAddress string, address string, tokenId string, eip int64) (string, error)
+	OwnerOf(chainCode int64, contractAddress string, tokenId string, eip int64) (string, error)
+	TotalSupply(chainCode int64, contractAddress string, eip int64) (string, error)
+}
+
 type API interface {
 	Balance(chainCode int64, address string, tag string) (string, error)
+	Token(chainCode int64, contractAddr string, abi string, eip string) (string, error)
 	TokenBalance(chainCode int64, address string, contractAddr string, abi string) (string, error)
 	Nonce(chainCode int64, address string, tag string) (string, error)
 	LatestBlock(chainCode int64) (string, error)

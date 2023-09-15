@@ -197,6 +197,62 @@ curl -X POST \
 	"hash":"89afac2142e025a13987ed183444ec90e9dcb8028bc7bc0757a21c654aa78b31"
 }'
 
+//nft.tokenUri 查询
+curl -X POST \
+  http://127.0.0.1:9002/api/chain/nft/tokenUri \
+  -H 'Content-Type: application/json' \
+  -H 'Postman-Token: 40192de5-9473-4179-a142-202ea405e368' \
+  -H 'cache-control: no-cache' \
+  -d '{
+    "chain": 200,
+    "contract": "0x0000000000664ceffed39244a8312bd895470803",
+    "tokenId":"439034",
+    "eip":721
+    
+}'
+
+//nft.balanceOf 查询
+curl -X POST \
+  http://127.0.0.1:9002/api/chain/nft/balanceOf \
+  -H 'Content-Type: application/json' \
+  -H 'Postman-Token: 7de26f12-1598-458e-b58e-d1a2182cdc92' \
+  -H 'cache-control: no-cache' \
+  -d '{
+    "chain": 200,
+    "contract": "0x0000000000664ceffed39244a8312bd895470803",
+    "address":"0x99f49B6783f6E1e6D6A9b16e291BbB9D164e54FF",
+    "tokenId":"439034",
+    "eip":721
+    
+}'
+
+//nft.owner查询
+curl -X POST \
+  http://127.0.0.1:9002/api/chain/nft/owner \
+  -H 'Content-Type: application/json' \
+  -H 'Postman-Token: d7f0aae4-5542-4f1a-88b0-c642f7eb92ec' \
+  -H 'cache-control: no-cache' \
+  -d '{
+    "chain": 200,
+    "contract": "0x0000000000664ceffed39244a8312bd895470803",
+    "tokenId":"439034",
+    "eip":721
+    
+}'
+
+//nft.totalSupply
+curl -X POST \
+  http://127.0.0.1:9002/api/chain/nft/totalSupply \
+  -H 'Content-Type: application/json' \
+  -H 'Postman-Token: 81cba267-66cd-4e8e-8278-fa122b1d5032' \
+  -H 'cache-control: no-cache' \
+  -d '{
+    "chain": 200,
+    "contract": "0x0000000000664ceffed39244a8312bd895470803",
+    "eip":721
+    
+}'
+
 ``````
 
 - ws 协议

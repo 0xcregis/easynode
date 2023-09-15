@@ -25,11 +25,11 @@ type Service struct {
 	nodeId                 string
 	transferTopic          string
 	nftTransferSingleTopic string
-	nftTransferBatchTopic  string
-	store                  collect.StoreTaskInterface
-	txChainClient          blockchain.API
-	blockChainClient       blockchain.API
-	receiptChainClient     blockchain.API
+	//nftTransferBatchTopic  string
+	store              collect.StoreTaskInterface
+	txChainClient      blockchain.API
+	blockChainClient   blockchain.API
+	receiptChainClient blockchain.API
 }
 
 func (s *Service) GetMultiBlockByNumber(blockNumber string, log *logrus.Entry, flag bool) ([]*collect.BlockInterface, []*collect.TxInterface) {

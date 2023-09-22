@@ -3,6 +3,7 @@ package service
 import (
 	"github.com/0xcregis/easynode/blockchain"
 	"github.com/0xcregis/easynode/blockchain/config"
+	"github.com/0xcregis/easynode/blockchain/service/btc"
 	"github.com/0xcregis/easynode/blockchain/service/ether"
 	"github.com/0xcregis/easynode/blockchain/service/filecoin"
 	"github.com/0xcregis/easynode/blockchain/service/polygon"
@@ -18,6 +19,8 @@ func NewApi(blockchain int64, cluster []*config.NodeCluster, xlog *xlog.XLog) bl
 		return tron.NewTron(cluster, blockchain, xlog)
 	} else if blockchain == 201 {
 		return polygon.NewPolygonPos(cluster, blockchain, xlog)
+	} else if blockchain == 300 {
+		return btc.NewBtc(cluster, blockchain, xlog)
 	} else if blockchain == 301 {
 		return filecoin.NewFileCoin(cluster, blockchain, xlog)
 	} else if blockchain == 310 {

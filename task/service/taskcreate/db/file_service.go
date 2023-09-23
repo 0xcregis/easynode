@@ -63,7 +63,7 @@ func (t *TaskCreateFile) GetAndDelNodeId(blockChainCode int64) ([]string, error)
 	return list, nil
 }
 
-func (t *TaskCreateFile) AddNodeTask(list []*task.NodeTask) ([]*kafka.Message, error) {
+func (t *TaskCreateFile) ToKafkaMessage(list []*task.NodeTask) ([]*kafka.Message, error) {
 	resultList := make([]*kafka.Message, 0, 5)
 	for _, v := range list {
 		bs, _ := json.Marshal(v)

@@ -88,7 +88,7 @@ func (s *Service) updateLatestBlock(ctx context.Context, cfg *config.BlockConfig
 }
 func (s *Service) startCreateBlockProc(ctx context.Context, cfg *config.BlockConfig, log *logrus.Entry, notify chan struct{}) {
 	interrupt := true
-	ticker := time.NewTicker(27 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
 	for interrupt {
 		//<-time.After(20 * time.Second)
 		select {
@@ -155,17 +155,6 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 
 	for UsedMaxNumber <= v.BlockMax {
 		index := rand.Intn(l)
-		//t := &task.NodeTask{
-		//	NodeId:      nodeIdList[index],
-		//	BlockNumber: fmt.Sprintf("%v", UsedMaxNumber),
-		//	BlockChain:  v.BlockChainCode,
-		//	TaskType:    2,
-		//	TaskStatus:  0,
-		//	CreateTime:  time.Now(),
-		//	LogTime:     time.Now(),
-		//	Id:          time.Now().UnixNano(),
-		//}
-
 		if api, ok := s.api[v.BlockChainCode]; ok {
 			t, _ := api.CreateNodeTask(nodeIdList[index], v.BlockChainCode, fmt.Sprintf("%v", UsedMaxNumber))
 			list = append(list, t)
@@ -177,7 +166,7 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 	recentNumber := UsedMaxNumber - 1
 
 	//生成任务并保存
-	msgList, err := s.store.AddNodeTask(list)
+	msgList, err := s.store.ToKafkaMessage(list)
 	if err != nil {
 		return err
 	}

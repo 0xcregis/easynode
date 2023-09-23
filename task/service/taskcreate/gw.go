@@ -3,6 +3,7 @@ package taskcreate
 import (
 	"github.com/0xcregis/easynode/task"
 	"github.com/0xcregis/easynode/task/config"
+	"github.com/0xcregis/easynode/task/service/taskcreate/btc"
 	"github.com/0xcregis/easynode/task/service/taskcreate/ether"
 	"github.com/0xcregis/easynode/task/service/taskcreate/filecoin"
 	"github.com/0xcregis/easynode/task/service/taskcreate/polygonpos"
@@ -22,6 +23,8 @@ func NewApi(blockchain int64, log *xlog.XLog, v *config.BlockConfig) task.BlockC
 		return filecoin.NewFileCoin(log, v)
 	} else if blockchain == 310 {
 		return xrp.NewXRP(log, v)
+	} else if blockchain == 300 {
+		return btc.NewBtc(log, v)
 	}
 	return nil
 }

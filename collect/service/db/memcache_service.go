@@ -146,12 +146,12 @@ func (s *Service) GetMonitorAddress(blockChain int64) ([]string, error) {
 	list, err := s.cacheClient.HKeys(context.Background(), fmt.Sprintf(MonitorKey, blockChain)).Result()
 	if err != nil {
 		s.log.Warnf("GetMonitorAddress|err=%v", err.Error())
-		return nil, errors.New("no record")
+		return nil, errors.New("no record for get monitorAddress")
 	}
 
 	if len(list) < 1 {
 		s.log.Warnf("GetMonitorAddress|err=no data")
-		return nil, errors.New("no record")
+		return nil, errors.New("no record for get monitorAddress")
 	}
 	return list, nil
 }

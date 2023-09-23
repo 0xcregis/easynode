@@ -240,7 +240,11 @@ func (s *Service) GetBlockByNumber(blockNumber string, eLog *logrus.Entry, flag 
 	}
 
 	txs := make([]*collect.TxInterface, 0, len(list))
-	addressList, _ := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
+	addressList, err := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
+	if err != nil {
+		eLog.Errorf("GetBlockByNumber|BlockChainName=%v,err=%v,blockNumber=%v", s.chain.BlockChainName, err, blockNumber)
+		return nil, nil
+	}
 	addressMp := rebuildAddr(addressList)
 	for _, tx := range list {
 		// 补充字段
@@ -302,7 +306,11 @@ func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool
 	}
 
 	list := gjson.Parse(resp).Get("transactions").Array()
-	addressList, _ := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
+	addressList, err := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
+	if err != nil {
+		eLog.Errorf("GetBlockByHash|BlockChainName=%v,err=%v,blockHash=%v", s.chain.BlockChainName, err, blockHash)
+		return nil, nil
+	}
 	addressMp := rebuildAddr(addressList)
 	txs := make([]*collect.TxInterface, 0, len(list))
 	for _, tx := range list {

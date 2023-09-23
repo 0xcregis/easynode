@@ -46,10 +46,10 @@ type Chain struct {
 	BlockChainName string `json:"BlockChainName"`
 	BlockChainCode int    `json:"BlockChainCode"`
 	//NodeWeight     int          `json:"NodeWeight"`
-	PullReceipt bool         `json:"PullReceipt"`
-	PullTx      bool         `json:"PullTx"`
-	Kafka       *Kafka       `json:"Kafka"`     //结果数据Kafka
-	TaskKafka   *Kafka       `json:"TaskKafka"` //任务kafka
+	PullReceipt uint8        `json:"PullReceipt"` //0:没有收据任务，1:批量收据任务，2:单笔收据任务
+	PullTx      uint8        `json:"PullTx"`      //0:没有交易任务，1:批量交易任务，2:单笔交易任务
+	Kafka       *Kafka       `json:"Kafka"`       //结果数据Kafka
+	TaskKafka   *Kafka       `json:"TaskKafka"`   //任务kafka
 	BlockTask   *BlockTask   `json:"BlockTask"`
 	TxTask      *TxTask      `json:"TxTask"`
 	ReceiptTask *ReceiptTask `json:"ReceiptTask"`

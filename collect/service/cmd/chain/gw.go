@@ -28,6 +28,8 @@ func GetBlockchain(blockchain int, c *config.Chain, store collect.StoreTaskInter
 		srv = filecoin.NewService(c, x, store, nodeId, "")
 	} else if blockchain == 310 {
 		srv = xrp.NewService(c, x, store, nodeId, "")
+	} else if blockchain == 300 {
+
 	}
 
 	return srv

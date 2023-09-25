@@ -1,0 +1,83 @@
+{
+  "RootPath": "/api/store",
+  "Port": 9003,
+  "BaseDb": {
+    "Addr": "192.168.2.9",
+    "Port": 9000,
+    "User": "test",
+    "Password": "test",
+    "DbName": "base",
+    "AddressTable": "address",
+    "TokenTable": "token",
+    "FilterTable": "sub_filter"
+  },
+  "Chains": [
+    {
+      "BlockChain": 200,
+      "BlockStore": true,
+      "TxStore": false,
+      "ReceiptStore": false,
+      "SubStore": true,
+      "BackupTxStore": false,
+      "Kafka": {
+        "BackupTx": {
+          "Host": "192.168.2.9",
+          "Port": 9092,
+          "Topic": "backup_tx",
+          "Group": "2",
+          "StartOffset": 0,
+          "Partition": 0
+        },
+        "SubTx": {
+          "Host": "192.168.2.9",
+          "Port": 9092,
+          "Topic": "ether_sub_tx",
+          "Group": "101",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "Tx": {
+          "Host": "192.168.2.9",
+          "Port": 9092,
+          "Topic": "ether_tx",
+          "Group": "120",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "Block": {
+          "Host": "192.168.2.9",
+          "Port": 9092,
+          "Topic": "ether_block",
+          "Group": "110",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "Receipt": {
+          "Host": "192.168.2.9",
+          "Port": 9092,
+          "Topic": "ether_receipt",
+          "Group": "130",
+          "StartOffset": -1,
+          "Partition": 0
+        }
+      },
+      "ChainDb": {
+        "Addr": "192.168.2.9",
+        "Port": 9000,
+        "User": "test",
+        "Password": "test",
+        "DbName": "ether2",
+        "TxTable": "tx",
+        "BlockTable": "block",
+        "ReceiptTable": "receipt",
+        "SubTxTable": "sub_tx",
+        "BackupTxTable": "backup_tx"
+      },
+      "Redis": {
+        "Addr": "192.168.2.9",
+        "Port": 6379,
+        "DB": 0
+      }
+    }
+  ]
+}

@@ -108,7 +108,6 @@ func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool
 	addressList, err := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
 	if err != nil {
 		eLog.Errorf("GetBlockByHash|BlockChainName=%v,err=%v,blockHash=%v", s.chain.BlockChainName, err, blockHash)
-		return nil, nil
 	}
 	addressMp := rebuildAddress(addressList)
 	txs := make([]*collect.TxInterface, 0, len(txList))
@@ -180,7 +179,6 @@ func (s *Service) GetBlockByNumber(blockNumber string, eLog *logrus.Entry, flag 
 	addressList, err := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
 	if err != nil {
 		eLog.Errorf("GetBlockByNumber|BlockChainName=%v,err=%v,blockNumber=%v", s.chain.BlockChainName, err, blockNumber)
-		return nil, nil
 	}
 	addressMp := rebuildAddress(addressList)
 	txs := make([]*collect.TxInterface, 0, len(txList))

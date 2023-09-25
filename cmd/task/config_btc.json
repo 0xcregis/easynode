@@ -1,0 +1,38 @@
+{
+  "TaskKafka": {
+    "Host": "192.168.2.9",
+    "Port": 9092
+  },
+  "Redis": {
+    "Addr": "192.168.2.9",
+    "Port": 6379,
+    "DB": 0
+  },
+  "AutoCreateBlockTask": true,
+  "Chains": [
+    {
+      "Cluster": [
+        {
+          "NodeHost": "https://eth-mainnet.g.alchemy.com/v2",
+          "NodeKey": "RzxBjjh_c4y0LVHZ7GNm8zoXEZR3HYop"
+        }
+      ],
+      "BlockChainName": "eth",
+      "BlockChainCode": 200,
+      "BlockMin": 17325771,
+      "BlockMax": 0
+    },
+    {
+      "Cluster": [
+        {
+          "NodeHost": "https://api.trongrid.io",
+          "NodeKey": "244f918d-56b5-4a16-9665-9637598b1223"
+        }
+      ],
+      "BlockChainName": "tron",
+      "BlockChainCode": 205,
+      "BlockMin": 51979625,
+      "BlockMax": 0
+    }
+  ]
+}

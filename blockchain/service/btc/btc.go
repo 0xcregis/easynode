@@ -61,6 +61,7 @@ func (e *Btc) GetBlockByHash(chainCode int64, hash string, flag bool) (string, e
 	req := `
 		{
 		  "method": "getblock",
+          "cache":true,
 		  "params": [
 			"%v",
  			%v
@@ -79,6 +80,7 @@ func (e *Btc) GetBlockByHash(chainCode int64, hash string, flag bool) (string, e
 func (e *Btc) GetBlockByNumber(chainCode int64, number string, flag bool) (string, error) {
 	req := `{
 				"method": "getblockhash",
+       		    "cache":true,
 				"params": [
 					%v
 				]
@@ -107,6 +109,7 @@ func (e *Btc) GetTxByHash(chainCode int64, hash string) (string, error) {
 	req := `
 			{
 				"method": "getrawtransaction",
+                "cache":true,
 				"params": [
 					"%v",
 					2

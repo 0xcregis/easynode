@@ -1,17 +1,22 @@
 package btc
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/0xcregis/easynode/blockchain"
+	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/tidwall/gjson"
 )
 
 type Btc struct {
+	lru *expirable.LRU[string, string]
 }
 
 func (e *Btc) GetToken721(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {
@@ -44,7 +49,10 @@ func (e *Btc) UnSubscribe(host string, token string) (string, error) {
 }
 
 func NewChainClient() blockchain.ChainConn {
-	return &Btc{}
+	cache := expirable.NewLRU[string, string](100, nil, time.Minute*5)
+	return &Btc{
+		lru: cache,
+	}
 }
 
 func (e *Btc) SendRequestToChainByHttp(host string, token string, query string) (string, error) {
@@ -61,6 +69,20 @@ func (e *Btc) SendRequestToChain(host string, token string, query string) (strin
 	if len(token) > 1 {
 		host = fmt.Sprintf("%v/%v", host, token)
 	}
+
+	cacheOK := gjson.Parse(query).Get("cache").Bool()
+
+	//return from cache
+	var keyCache string
+	if e.lru != nil && cacheOK {
+		hash := md5.Sum([]byte(query))
+		keyCache = hex.EncodeToString(hash[:])
+		valueCache, ok := e.lru.Get(keyCache)
+		if ok {
+			return valueCache, nil
+		}
+	}
+
 	payload := strings.NewReader(query)
 
 	req, err := http.NewRequest("POST", host, payload)
@@ -87,14 +109,16 @@ func (e *Btc) SendRequestToChain(host string, token string, query string) (strin
 
 	r := gjson.ParseBytes(body)
 	if r.Get("error").Exists() {
-
 		if r.Get("error").String() != "" {
 			return "", errors.New(r.Get("error").String())
 		}
-
 	}
 
-	return string(body), nil
+	value := string(body)
+	if e.lru != nil && cacheOK {
+		e.lru.Add(keyCache, value)
+	}
+	return value, nil
 }
 
 func (e *Btc) GetToken20(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {

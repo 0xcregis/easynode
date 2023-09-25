@@ -15,7 +15,7 @@ import (
 
 func main() {
 	var configPath string
-	flag.StringVar(&configPath, "task", "./cmd/task/config_filecoin.json", "The system file of config")
+	flag.StringVar(&configPath, "task", "./cmd/task/config_btc.json", "The system file of config")
 	flag.Parse()
 	if len(configPath) < 1 {
 		panic("can not find config file")

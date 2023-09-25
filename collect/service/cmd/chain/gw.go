@@ -6,6 +6,7 @@ import (
 
 	"github.com/0xcregis/easynode/collect"
 	"github.com/0xcregis/easynode/collect/config"
+	"github.com/0xcregis/easynode/collect/service/cmd/chain/btc"
 	"github.com/0xcregis/easynode/collect/service/cmd/chain/ether"
 	"github.com/0xcregis/easynode/collect/service/cmd/chain/filecoin"
 	"github.com/0xcregis/easynode/collect/service/cmd/chain/polygonpos"
@@ -29,7 +30,7 @@ func GetBlockchain(blockchain int, c *config.Chain, store collect.StoreTaskInter
 	} else if blockchain == 310 {
 		srv = xrp.NewService(c, x, store, nodeId, "")
 	} else if blockchain == 300 {
-
+		srv = btc.NewService(c, x, store, nodeId)
 	}
 
 	return srv

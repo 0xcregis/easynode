@@ -3,7 +3,6 @@ package btc
 import (
 	"encoding/json"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/0xcregis/easynode/blockchain"
@@ -85,13 +84,9 @@ func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool
 		return r, nil
 	}
 
-	//fix prevout
-	txList = s.getTxsOut(txList, eLog)
-
 	addressList, err := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
 	if err != nil {
 		eLog.Errorf("GetBlockByHash|BlockChainName=%v,err=%v,blockHash=%v", s.chain.BlockChainName, err, blockHash)
-		return nil, nil
 	}
 	addressMp := rebuildAddress(addressList)
 	txs := make([]*collect.TxInterface, 0, len(txList))
@@ -142,13 +137,9 @@ func (s *Service) GetBlockByNumber(blockNumber string, eLog *logrus.Entry, flag 
 		return r, nil
 	}
 
-	//fix prevout
-	txList = s.getTxsOut(txList, eLog)
-
 	addressList, err := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
 	if err != nil {
-		eLog.Errorf("GetBlockByNumber|BlockChainName=%v,err=%v,blockNumber=%v", s.chain.BlockChainName, err, blockNumber)
-		return nil, nil
+		eLog.Warnf("GetBlockByNumber|BlockChainName=%v,err=%v,blockNumber=%v", s.chain.BlockChainName, err, blockNumber)
 	}
 
 	addressMp := rebuildAddress(addressList)
@@ -195,16 +186,15 @@ func (s *Service) GetTx(txHash string, eLog *logrus.Entry) *collect.TxInterface 
 	if len(tx.BlockNumber) < 1 {
 		resp, err = s.txChainClient.GetBlockByHash(int64(s.chain.BlockChainCode), tx.BlockHash, false)
 		if err != nil {
-			eLog.Errorf("GetTx|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, resp, txHash)
-			return nil
+			eLog.Warnf("GetTx|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, err, txHash)
+		} else {
+			tx.BlockNumber = gjson.Parse(resp).Get("result.height").String()
 		}
-		tx.BlockNumber = gjson.Parse(resp).Get("result.height").String()
 	}
 
 	addressList, err := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
 	if err != nil {
 		eLog.Errorf("GetTx|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, err, txHash)
-		return nil
 	}
 
 	addressMp := rebuildAddress(addressList)
@@ -228,34 +218,6 @@ func (s *Service) GetReceipt(txHash string, eLog *logrus.Entry) (*collect.Receip
 	return nil, nil
 }
 
-func (s *Service) getTxsOut(list []*collect.Tx, eLog *logrus.Entry) []*collect.Tx {
-	wg := sync.WaitGroup{}
-	wg.Add(len(list))
-	for _, v := range list {
-		go func(v *collect.Tx) {
-			defer wg.Done()
-
-			resp, err := s.txChainClient.GetTxByHash(int64(s.chain.BlockChainCode), v.TxHash)
-			//resp, err := ether.Eth_GetTransactionByHash(cluster.Host, cluster.Key, txHash, s.log)
-			if err != nil {
-				eLog.Errorf("getTxsOut|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, err.Error(), v.TxHash)
-				return
-			}
-
-			//处理数据
-			if resp == "" {
-				eLog.Errorf("getTxsOut|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, "tx is empty", v.TxHash)
-				return
-			}
-			from := gjson.Parse(resp).Get("result.vin").String()
-			v.FromAddr = from
-		}(v)
-	}
-
-	wg.Wait()
-	return list
-}
-
 func getCoreAddr(addr string) string {
 	addr = strings.ToLower(addr)
 	if strings.HasPrefix(addr, "0x") {
@@ -275,9 +237,9 @@ func rebuildAddress(addrList []string) map[string]int64 {
 
 func (s *Service) CheckAddress(tx []byte, addrList map[string]int64) bool {
 
-	//if len(addrList) < 1 || len(tx) < 1 {
-	//	return false
-	//}
+	if len(addrList) < 1 || len(tx) < 1 {
+		return false
+	}
 
 	txAddressList := make(map[string]int64, 10)
 	root := gjson.ParseBytes(tx)

@@ -13,7 +13,7 @@
   },
   "Chains": [
     {
-      "BlockChain": 200,
+      "BlockChain": 300,
       "BlockStore": true,
       "TxStore": false,
       "ReceiptStore": false,
@@ -31,31 +31,31 @@
         "SubTx": {
           "Host": "192.168.2.9",
           "Port": 9092,
-          "Topic": "ether_sub_tx",
-          "Group": "101",
-          "StartOffset": -1,
+          "Topic": "btc_sub_tx",
+          "Group": "1",
+          "StartOffset": 0,
           "Partition": 0
         },
         "Tx": {
           "Host": "192.168.2.9",
           "Port": 9092,
-          "Topic": "ether_tx",
-          "Group": "120",
-          "StartOffset": -1,
+          "Topic": "btc_tx",
+          "Group": "1",
+          "StartOffset": 0,
           "Partition": 0
         },
         "Block": {
           "Host": "192.168.2.9",
           "Port": 9092,
-          "Topic": "ether_block",
-          "Group": "110",
-          "StartOffset": -1,
+          "Topic": "btc_block",
+          "Group": "1",
+          "StartOffset": 0,
           "Partition": 0
         },
         "Receipt": {
           "Host": "192.168.2.9",
           "Port": 9092,
-          "Topic": "ether_receipt",
+          "Topic": "btc_receipt",
           "Group": "130",
           "StartOffset": -1,
           "Partition": 0
@@ -66,7 +66,7 @@
         "Port": 9000,
         "User": "test",
         "Password": "test",
-        "DbName": "ether2",
+        "DbName": "btc",
         "TxTable": "tx",
         "BlockTable": "block",
         "ReceiptTable": "receipt",

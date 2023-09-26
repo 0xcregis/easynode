@@ -39,7 +39,10 @@ type Cmd struct {
 }
 
 func NewService(cfg *config.Chain, logConfig *config.LogConfig, nodeId string) *Cmd {
-	log := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/cmd", logConfig.Path), 24*time.Hour)
+	if logConfig.LogLevel == 0 {
+		logConfig.LogLevel = 4
+	}
+	log := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildLevel(xlog.Level(logConfig.LogLevel)).BuildFile(fmt.Sprintf("%v/cmd", logConfig.Path), 24*time.Hour)
 	x := log.WithField("root", "cmd")
 	txChan := make(chan *collect.NodeTask, 10)
 	receiptChan := make(chan *collect.NodeTask, 10)

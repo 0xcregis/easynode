@@ -3,6 +3,7 @@ package config
 type Config struct {
 	RootPath string            `json:"RootPath"`
 	Port     int               `json:"Port"`
+	LogLevel int               `json:"LogLevel"`
 	Chains   []*Chain          `json:"Chains"`
 	BaseDb   *ClickhouseBaseDb `json:"BaseDb"`
 }

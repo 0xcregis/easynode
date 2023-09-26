@@ -183,7 +183,10 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 }
 
 func NewService(config *config.Config) *Service {
-	xg := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFile("./log/task/create_task", 24*time.Hour)
+	if config.LogLevel == 0 {
+		config.LogLevel = 4
+	}
+	xg := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildLevel(xlog.Level(config.LogLevel)).BuildFile("./log/task/create_task", 24*time.Hour)
 	kf := kafkaClient.NewEasyKafka(xg)
 	sendCh := make(chan []*kafka.Message, 5)
 	//receiverCh := make(chan []*kafka.Message, 5)

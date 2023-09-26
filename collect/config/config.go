@@ -63,8 +63,9 @@ type Redis struct {
 }
 
 type LogConfig struct {
-	Path  string `json:"Path"`
-	Delay int64  `json:"Delay"`
+	Path     string `json:"Path"`
+	Delay    int64  `json:"Delay"`
+	LogLevel int    `json:"LogLevel"`
 }
 
 type Config struct {

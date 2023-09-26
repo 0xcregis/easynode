@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/0xcregis/easynode/blockchain"
@@ -268,7 +269,16 @@ func (t *Tron) SendRawTransaction(chainCode int64, signedTx string) (string, err
 	return t.SendReq(chainCode, signedTx, "wallet/broadcasttransaction")
 }
 
-func (t *Tron) SendReq(blockChain int64, reqBody string, url string) (string, error) {
+func (t *Tron) SendReq(blockChain int64, reqBody string, url string) (resp string, err error) {
+	reqBody = strings.Replace(reqBody, "\t", "", -1)
+	reqBody = strings.Replace(reqBody, "\n", "", -1)
+	defer func() {
+		if err != nil {
+			t.log.Errorf("method:%v,blockChain:%v,req:%v,err:%v", "SendReq", blockChain, reqBody, err)
+		} else {
+			t.log.Printf("method:%v,blockChain:%v,req:%v,resp:%v", "SendReq", blockChain, reqBody, "ok")
+		}
+	}()
 	cluster := t.BalanceCluster()
 	if cluster == nil {
 		//不存在节点
@@ -276,7 +286,7 @@ func (t *Tron) SendReq(blockChain int64, reqBody string, url string) (string, er
 	}
 
 	url = fmt.Sprintf("%v/%v", cluster.NodeUrl, url)
-	resp, err := t.blockChainClient.SendRequestToChainByHttp(url, cluster.NodeToken, reqBody)
+	resp, err = t.blockChainClient.SendRequestToChainByHttp(url, cluster.NodeToken, reqBody)
 	if err != nil {
 		cluster.ErrorCount += 1
 	}

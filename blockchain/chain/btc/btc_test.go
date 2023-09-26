@@ -15,7 +15,4 @@ func TestEther_SendRequestToChain(t *testing.T) {
 	} else {
 		t.Log(resp)
 	}
-
-	resp, err = c.SendRequestToChain("https://docs-demo.btc.quiknode.pro", "", query)
-
 }

@@ -27,7 +27,7 @@ const (
 
 type Cmd struct {
 	blockChain  collect.BlockChainInterface
-	log         *xlog.XLog
+	log         *logrus.Entry
 	taskStore   collect.StoreTaskInterface
 	chain       *config.Chain
 	kafka       *kafkaClient.EasyKafka
@@ -40,16 +40,17 @@ type Cmd struct {
 
 func NewService(cfg *config.Chain, logConfig *config.LogConfig, nodeId string) *Cmd {
 	log := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/cmd", logConfig.Path), 24*time.Hour)
+	x := log.WithField("root", "cmd")
 	txChan := make(chan *collect.NodeTask, 10)
 	receiptChan := make(chan *collect.NodeTask, 10)
 	blockChan := make(chan *collect.NodeTask, 10)
 	kafkaCh := make(chan []*kafka.Message, 100)
-	store := db.NewTaskCacheService(cfg, log)
-	kf := kafkaClient.NewEasyKafka(log)
+	store := db.NewTaskCacheService2(cfg, x)
+	kf := kafkaClient.NewEasyKafka2(x)
 	chainApi := getBlockChainApi(cfg, logConfig, store, nodeId)
 
 	return &Cmd{
-		log:         log,
+		log:         x,
 		taskStore:   store,
 		chain:       cfg,
 		kafka:       kf,

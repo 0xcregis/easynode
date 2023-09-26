@@ -16,9 +16,6 @@ func Init() collect.StoreTaskInterface {
 	return NewTaskCacheService(cfg.Chains[0], x)
 }
 
-func TestService_GetTaskByTx(t *testing.T) {
-}
-
 func TestService_UpdateTaskStatus(t *testing.T) {
 	s := Init()
 	s.GetNodeTask(200, "200_blockId_0xfaef00a7e1c58c9d6f77512a8707010ae94c2ca4078489f2e22aae0d63e71aa3")

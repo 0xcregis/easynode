@@ -49,8 +49,7 @@ func (s *WsHandler) Start(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		log := s.log.WithFields(logrus.Fields{
-			"id":    time.Now().UnixMilli(),
-			"model": "ws.start",
+			"id": time.Now().UnixMilli(),
 		})
 
 		mt, message, err := c.ReadMessage()

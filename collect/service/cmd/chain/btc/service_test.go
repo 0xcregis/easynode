@@ -25,6 +25,6 @@ func TestService_GetBlockByNumber(t *testing.T) {
 
 func TestService_GetTx(t *testing.T) {
 	s, _, x := Init()
-	tx := s.GetTx("fd638d1ddc5538ba3d48f88794fc664f0d4fb23d00ab8efd7be2bb7642bfbfe3", x.WithFields(logrus.Fields{}))
+	tx := s.GetTx("66acad1ac15fe6ff08e100a7ff02aa06e425d06f36a769be6065565aa0d52bea", x.WithFields(logrus.Fields{}))
 	t.Log(tx)
 }

@@ -38,10 +38,11 @@ func (h *HttpHandler) StartKafka(ctx context.Context) {
 }
 
 func NewHttpHandler(cluster map[int64][]*config.NodeCluster, kafkaCfg *config.Kafka, xlog *xlog.XLog) *HttpHandler {
-	kafkaClient := easyKafka.NewEasyKafka(xlog)
+	x := xlog.WithField("model", "httpSrv")
+	kafkaClient := easyKafka.NewEasyKafka2(x)
 	sendCh := make(chan []*kafka.Message)
 	return &HttpHandler{
-		log:               xlog.WithField("model", "httpSrv"),
+		log:               x,
 		nodeCluster:       cluster,
 		kafkaCfg:          kafkaCfg,
 		kafkaClient:       kafkaClient,

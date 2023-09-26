@@ -44,7 +44,7 @@ func (s *Service) Start(ctx context.Context) {
 		}(ctx, v, log, notify)
 
 		go func(ctx context.Context, cfg *config.BlockConfig, log *logrus.Entry, notify chan struct{}) {
-			s.startCreateBlockProc(ctx, cfg, log, notify)
+			s.startCreateBlock(ctx, cfg, log, notify)
 		}(ctx, v, log, notify)
 	}
 }
@@ -65,7 +65,7 @@ func (s *Service) updateLatestBlock(ctx context.Context, cfg *config.BlockConfig
 			lastNumber, err = api.GetLatestBlockNumber()
 		}
 		if err != nil {
-			log.Errorf("GetLastBlockNumber|err=%v", err.Error())
+			log.Errorf("UpdateLatestBlock|GetLastBlockNumber|err=%v", err.Error())
 			time.Sleep(3 * time.Second)
 			continue
 		}
@@ -86,7 +86,7 @@ func (s *Service) updateLatestBlock(ctx context.Context, cfg *config.BlockConfig
 		}
 	}
 }
-func (s *Service) startCreateBlockProc(ctx context.Context, cfg *config.BlockConfig, log *logrus.Entry, notify chan struct{}) {
+func (s *Service) startCreateBlock(ctx context.Context, cfg *config.BlockConfig, log *logrus.Entry, notify chan struct{}) {
 	interrupt := true
 	ticker := time.NewTicker(30 * time.Second)
 	for interrupt {
@@ -95,7 +95,7 @@ func (s *Service) startCreateBlockProc(ctx context.Context, cfg *config.BlockCon
 		case <-ticker.C:
 			_, err := s.store.GetAndDelNodeId(cfg.BlockChainCode)
 			if err != nil {
-				log.Warnf("GetAndDelNodeId|error=%v", err.Error())
+				log.Warnf("StartCreateBlock|GetAndDelNodeId|error=%v", err.Error())
 			}
 		case <-ctx.Done():
 			interrupt = false
@@ -105,7 +105,7 @@ func (s *Service) startCreateBlockProc(ctx context.Context, cfg *config.BlockCon
 			//处理自产生区块任务，包括：区块
 			err := s.NewBlockTask(*cfg, log)
 			if err != nil {
-				log.Errorf("NewBlockTask|err=%v", err.Error())
+				log.Errorf("StartCreateBlock|NewBlockTask|err=%v", err.Error())
 			}
 		}
 	}
@@ -119,8 +119,7 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 	//已经下发的最新区块高度
 	UsedMaxNumber, lastBlockNumber, err := s.store.GetRecentNumber(v.BlockChainCode)
 	if err != nil {
-		log.Errorf("GetRecentNumber|err=%v", err)
-		return err
+		return fmt.Errorf("GetRecentNumber is error,err:%v", err)
 	}
 
 	log.Printf("NewBlockTask:blockchain:%v,UsedMaxNumber=%v,lastBlockNumber=%v", v.BlockChainCode, UsedMaxNumber, lastBlockNumber)
@@ -147,8 +146,7 @@ func (s *Service) NewBlockTask(v config.BlockConfig, log *logrus.Entry) error {
 
 	nodeIdList, err := s.store.GetNodeId(v.BlockChainCode)
 	if err != nil {
-		log.Errorf("GetNodeId|err=%v", err)
-		return err
+		return fmt.Errorf("GetNodeId is error,err:%v", err)
 	}
 
 	l := len(nodeIdList)

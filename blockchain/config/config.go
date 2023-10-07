@@ -21,4 +21,5 @@ type NodeCluster struct {
 	NodeToken  string `json:"NodeToken"`
 	Weight     int64  `json:"Weight"`
 	ErrorCount int64  `json:"ErrorCount"`
+	Utxo       string `json:"Utxo"`
 }

@@ -13,6 +13,16 @@ func Init() blockchain.API {
 	return NewBtc(cfg.Cluster[300], 300, xlog.NewXLogger())
 }
 
+func TestBtc_Balance(t *testing.T) {
+	s := Init()
+	resp, err := s.Balance(300, "1PL6qjNjEMRhTLAnHEFJWwnvjjKGWAwFws", "")
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log(resp)
+	}
+}
+
 func TestEther_GetLatestBlock(t *testing.T) {
 	s := Init()
 	resp, err := s.LatestBlock(300)

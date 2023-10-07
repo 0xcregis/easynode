@@ -1,6 +1,7 @@
 package btc
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -156,7 +157,18 @@ func (e *Btc) MonitorCluster() any {
 }
 
 func (e *Btc) Balance(chainCode int64, address string, tag string) (string, error) {
-	return "", nil
+	uris := make([]string, 0)
+	for _, v := range e.nodeCluster {
+		uris = append(uris, v.Utxo)
+	}
+
+	list, err := GetBalanceEx(uris, address)
+	if err != nil {
+		return "", err
+	}
+
+	bs, _ := json.Marshal(list)
+	return string(bs), nil
 }
 
 func (e *Btc) TokenBalance(chainCode int64, address string, contractAddr string, abi string) (string, error) {

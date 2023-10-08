@@ -19,7 +19,6 @@ type Btc struct {
 	log              *xlog.XLog
 	nodeCluster      []*config.NodeCluster
 	blockChainClient blockchain.ChainConn
-	nftClient        blockchain.NFT
 }
 
 func (e *Btc) Token(chainCode int64, contractAddr string, abi string, eip string) (string, error) {

@@ -15,16 +15,19 @@ import (
 
 func main() {
 	var configPath string
-	flag.StringVar(&configPath, "store", "./cmd/store/config.json", "The system file of config")
+	flag.StringVar(&configPath, "store", "./cmd/store/config_btc.json", "The system file of config")
 	flag.Parse()
 	if len(configPath) < 1 {
 		panic("can not find config file")
 	}
 	cfg := config.LoadConfig(configPath)
 
+	if cfg.LogLevel == 0 {
+		cfg.LogLevel = 4
+	}
 	log.Printf("%+v\n", cfg)
 
-	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/store/store", 24*time.Hour)
+	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildLevel(xlog.Level(cfg.LogLevel)).BuildFile("./log/store/store", 24*time.Hour)
 
 	kafkaCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()

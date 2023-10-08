@@ -1,0 +1,26 @@
+{
+  "TaskKafka": {
+    "Host": "192.168.2.9",
+    "Port": 9092
+  },
+  "Redis": {
+    "Addr": "192.168.2.9",
+    "Port": 6379,
+    "DB": 0
+  },
+  "AutoCreateBlockTask": true,
+  "Chains": [
+    {
+      "Cluster": [
+        {
+          "NodeHost": "https://bitcoin-mainnet-archive.allthatnode.com",
+          "NodeKey": ""
+        }
+      ],
+      "BlockChainName": "btc",
+      "BlockChainCode": 300,
+      "BlockMin": 809246,
+      "BlockMax": 0
+    }
+  ]
+}

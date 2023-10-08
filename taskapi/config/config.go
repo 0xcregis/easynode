@@ -3,6 +3,7 @@ package config
 type Config struct {
 	RootPath     string                  `json:"RootPath"`
 	Port         int                     `json:"Port"`
+	LogLevel     int                     `json:"LogLevel"`
 	BlockChain   []int64                 `json:"BlockChain"`
 	ClickhouseDb map[int64]*ClickhouseDb `json:"ClickhouseDb"`
 	TaskKafka    *Kafka                  `json:"TaskKafka"`

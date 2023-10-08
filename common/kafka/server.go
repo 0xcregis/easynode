@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 )
 
@@ -19,7 +20,7 @@ type Config struct {
 }
 
 type EasyKafka struct {
-	log  *xlog.XLog
+	log  *logrus.Entry
 	Logf func(string, ...interface{})
 }
 
@@ -28,8 +29,21 @@ func NewEasyKafka(xLog *xlog.XLog) *EasyKafka {
 		//xLog.Printf("kafka|msg=%v , other=%v", msg, a)
 		fmt.Println(msg, a)
 	}
+	x := xLog.WithField("subModel", "kafka")
 	return &EasyKafka{
-		log:  xLog,
+		log:  x,
+		Logf: f,
+	}
+}
+
+func NewEasyKafka2(xLog *logrus.Entry) *EasyKafka {
+	f := func(msg string, a ...interface{}) {
+		//xLog.Printf("kafka|msg=%v , other=%v", msg, a)
+		fmt.Println(msg, a)
+	}
+	x := xLog.WithField("subModel", "kafka")
+	return &EasyKafka{
+		log:  x,
 		Logf: f,
 	}
 }

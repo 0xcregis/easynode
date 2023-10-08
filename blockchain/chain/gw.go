@@ -2,6 +2,7 @@ package chain
 
 import (
 	"github.com/0xcregis/easynode/blockchain"
+	"github.com/0xcregis/easynode/blockchain/chain/btc"
 	"github.com/0xcregis/easynode/blockchain/chain/ether"
 	"github.com/0xcregis/easynode/blockchain/chain/filecoin"
 	"github.com/0xcregis/easynode/blockchain/chain/polygonpos"
@@ -24,7 +25,7 @@ func NewChain(blockchain int64) blockchain.ChainConn {
 		return filecoin.NewChainClient()
 	} else if blockchain == 300 {
 		//btc
-		return nil
+		return btc.NewChainClient()
 	} else if blockchain == 310 {
 		//xrp
 		return xrp.NewChainClient()

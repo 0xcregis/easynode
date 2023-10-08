@@ -25,13 +25,14 @@ type StoreHandler struct {
 }
 
 func NewStoreHandler(config *config.Config, log *xlog.XLog) *StoreHandler {
+	x := log.WithField("model", "store")
 	ch := db.NewChService(config, log)
-	kfk := kafkaClient.NewEasyKafka(log)
+	kfk := kafkaClient.NewEasyKafka2(x)
 
 	return &StoreHandler{
 		config: config,
 		store:  ch,
-		log:    log.WithField("model", "store"),
+		log:    x,
 		kafka:  kfk,
 	}
 }

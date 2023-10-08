@@ -2,6 +2,7 @@ package config
 
 type Config struct {
 	AutoCreateBlockTask bool           `json:"AutoCreateBlockTask"`
+	LogLevel            int            `json:"LogLevel"`
 	BlockConfigs        []*BlockConfig `json:"Chains"`
 	TaskKafka           *Kafka         `json:"TaskKafka"`
 	Redis               *Redis         `json:"Redis"`

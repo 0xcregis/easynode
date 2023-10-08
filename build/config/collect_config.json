@@ -6,6 +6,10 @@
   "KeyPath": "./data/node/1",
   "Chains": [
     {
+      "BlockChainName": "eth",
+      "BlockChainCode": 200,
+      "PullReceipt": 0,
+      "PullTx": 1,
       "TaskKafka": {
         "Host": "easykafka",
         "Port": 9092,
@@ -25,10 +29,6 @@
         "Port": 6379,
         "DB": 0
       },
-      "BlockChainName": "eth",
-      "BlockChainCode": 200,
-      "PullReceipt": false,
-      "PullTx": true,
       "BlockTask": {
         "FromCluster": [
           {

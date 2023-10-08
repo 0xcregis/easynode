@@ -1,0 +1,19 @@
+{
+  "RootPath": "/api/chain",
+  "Port": 9002,
+  "Kafka": {
+    "Host": "192.168.2.9",
+    "Port": 9092,
+    "Topic": "backup_tx",
+    "Partition": 0
+  },
+  "Cluster": {
+    "300": [
+      {
+        "NodeUrl": "https://docs-demo.btc.quiknode.pro",
+        "NodeToken": "",
+        "Utxo": "https://www.oklink.com/api/v5/explorer/address/utxo#a6938ee9-4678-4cd1-90ca-ba13ee472ede"
+      }
+    ]
+  }
+}

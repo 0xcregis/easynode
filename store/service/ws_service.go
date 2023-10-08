@@ -45,7 +45,8 @@ type TokenAddress struct {
 }
 
 func NewWsHandler(cfg *config.Config, log *xlog.XLog) *WsHandler {
-	kfk := kafkaClient.NewEasyKafka(log)
+	x := log.WithField("model", "wsSrv")
+	kfk := kafkaClient.NewEasyKafka2(x)
 	ch := db.NewChService(cfg, log)
 	mp := make(map[int64]*config.Chain, 2)
 
@@ -56,7 +57,7 @@ func NewWsHandler(cfg *config.Config, log *xlog.XLog) *WsHandler {
 	}
 	cache := db.NewCacheService(cfg.Chains, log)
 	return &WsHandler{
-		log:     log.WithField("model", "wsSrv"),
+		log:     x,
 		store:   ch,
 		cfg:     mp,
 		kafka:   kfk,

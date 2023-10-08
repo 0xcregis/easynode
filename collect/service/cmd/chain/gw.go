@@ -6,6 +6,7 @@ import (
 
 	"github.com/0xcregis/easynode/collect"
 	"github.com/0xcregis/easynode/collect/config"
+	"github.com/0xcregis/easynode/collect/service/cmd/chain/btc"
 	"github.com/0xcregis/easynode/collect/service/cmd/chain/ether"
 	"github.com/0xcregis/easynode/collect/service/cmd/chain/filecoin"
 	"github.com/0xcregis/easynode/collect/service/cmd/chain/polygonpos"
@@ -16,7 +17,10 @@ import (
 )
 
 func GetBlockchain(blockchain int, c *config.Chain, store collect.StoreTaskInterface, logConfig *config.LogConfig, nodeId string) collect.BlockChainInterface {
-	x := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/chain_info", logConfig.Path), 24*time.Hour)
+	if logConfig.LogLevel == 0 {
+		logConfig.LogLevel = 4
+	}
+	x := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildLevel(xlog.Level(logConfig.LogLevel)).BuildFile(fmt.Sprintf("%v/chain_info", logConfig.Path), 24*time.Hour)
 	var srv collect.BlockChainInterface
 	if blockchain == 200 {
 		srv = ether.NewService(c, x, store, nodeId, collect.EthTopic, collect.EthNftTransferSingleTopic)
@@ -28,6 +32,8 @@ func GetBlockchain(blockchain int, c *config.Chain, store collect.StoreTaskInter
 		srv = filecoin.NewService(c, x, store, nodeId, "")
 	} else if blockchain == 310 {
 		srv = xrp.NewService(c, x, store, nodeId, "")
+	} else if blockchain == 300 {
+		srv = btc.NewService(c, x, store, nodeId)
 	}
 
 	return srv

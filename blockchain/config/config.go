@@ -3,6 +3,7 @@ package config
 type Config struct {
 	RootPath   string                   `json:"RootPath"`
 	Port       int                      `json:"Port"`
+	LogLevel   int                      `json:"LogLevel"`
 	BlockChain []int64                  `json:"BlockChain"`
 	Cluster    map[int64][]*NodeCluster `json:"Cluster"`
 	Kafka      *Kafka                   `json:"Kafka"`
@@ -20,4 +21,5 @@ type NodeCluster struct {
 	NodeToken  string `json:"NodeToken"`
 	Weight     int64  `json:"Weight"`
 	ErrorCount int64  `json:"ErrorCount"`
+	Utxo       string `json:"Utxo"`
 }

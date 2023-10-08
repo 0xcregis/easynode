@@ -36,22 +36,11 @@ type Service struct {
 
 // Start 监控服务
 func (s *Service) Start(ctx context.Context) {
+	//开启Kafka
+	s.StartKafka()
 
-	go func() {
-		for _, v := range s.cfg.Chains {
-			broker := fmt.Sprintf("%v:%v", v.TaskKafka.Host, v.TaskKafka.Port)
-			s.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker}}, s.kafkaSender[int64(v.BlockChainCode)], nil, context.Background(), 1)
-		}
-	}()
-
-	go func(nodeId string) {
-		for {
-			for b, s := range s.taskStore {
-				_ = s.StoreNodeId(b, nodeId, 1)
-			}
-			<-time.After(5 * time.Second)
-		}
-	}(s.nodeId)
+	//更新nodeId
+	s.UpdateNodeId()
 
 	//公链节点健康检查
 	s.CheckClusterHealth()
@@ -67,6 +56,26 @@ func (s *Service) Start(ctx context.Context) {
 
 	//构建合约数据
 	s.CheckContract()
+}
+
+func (s *Service) StartKafka() {
+	go func() {
+		for _, v := range s.cfg.Chains {
+			broker := fmt.Sprintf("%v:%v", v.TaskKafka.Host, v.TaskKafka.Port)
+			s.kafka.WriteBatch(&kafkaClient.Config{Brokers: []string{broker}}, s.kafkaSender[int64(v.BlockChainCode)], nil, context.Background(), 1)
+		}
+	}()
+}
+
+func (s *Service) UpdateNodeId() {
+	go func(nodeId string) {
+		for {
+			for b, s := range s.taskStore {
+				_ = s.StoreNodeId(b, nodeId, 1)
+			}
+			<-time.After(5 * time.Second)
+		}
+	}(s.nodeId)
 }
 
 func (s *Service) CheckClusterHealth() {
@@ -287,14 +296,15 @@ func (s *Service) getToken(blockChain int64, from string, contract string) {
 
 func NewService(config *config.Config, nodeId string) *Service {
 	log := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/monitor", config.LogConfig.Path), 24*time.Hour)
+	x := log.WithField("model", "monitor")
 	mp := make(map[int64]collect.StoreTaskInterface, 2)
 	sender := make(map[int64]chan []*kafka.Message, 2)
 	for _, v := range config.Chains {
-		store := db.NewTaskCacheService(v, log)
+		store := db.NewTaskCacheService2(v, x)
 		mp[int64(v.BlockChainCode)] = store
 		sender[int64(v.BlockChainCode)] = make(chan []*kafka.Message)
 	}
-	kf := kafkaClient.NewEasyKafka(log)
+	kf := kafkaClient.NewEasyKafka2(x)
 
 	apis := make(map[int64]blockchain.API, 2)
 
@@ -322,6 +332,6 @@ func NewService(config *config.Config, nodeId string) *Service {
 		kafkaSender: sender,
 		apis:        apis,
 		nodeId:      nodeId,
-		log:         log.WithField("model", "monitor"),
+		log:         x,
 	}
 }

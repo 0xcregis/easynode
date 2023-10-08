@@ -6,6 +6,10 @@
   "KeyPath": "./data/temp/6",
   "Chains": [
     {
+      "BlockChainName": "xrp",
+      "BlockChainCode": 310,
+      "PullReceipt": 0,
+      "PullTx": 1,
       "TaskKafka": {
         "Host": "192.168.2.9",
         "Port": 9092,
@@ -25,10 +29,6 @@
         "Port": 6379,
         "DB": 0
       },
-      "BlockChainName": "xrp",
-      "BlockChainCode": 310,
-      "PullReceipt": false,
-      "PullTx": true,
       "BlockTask": {
         "FromCluster": [
           {

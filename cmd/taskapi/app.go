@@ -20,10 +20,12 @@ func main() {
 		panic("can not find config file")
 	}
 	cfg := config.LoadConfig(configPath)
-
+	if cfg.LogLevel == 0 {
+		cfg.LogLevel = 4
+	}
 	log.Printf("%+v\n", cfg)
 
-	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/taskapi/task_api", 24*time.Hour)
+	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildLevel(xlog.Level(cfg.LogLevel)).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/taskapi/task_api", 24*time.Hour)
 
 	e := gin.Default()
 

@@ -27,7 +27,7 @@ const (
 
 type Cmd struct {
 	blockChain  collect.BlockChainInterface
-	log         *xlog.XLog
+	log         *logrus.Entry
 	taskStore   collect.StoreTaskInterface
 	chain       *config.Chain
 	kafka       *kafkaClient.EasyKafka
@@ -39,17 +39,21 @@ type Cmd struct {
 }
 
 func NewService(cfg *config.Chain, logConfig *config.LogConfig, nodeId string) *Cmd {
-	log := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile(fmt.Sprintf("%v/cmd", logConfig.Path), 24*time.Hour)
+	if logConfig.LogLevel == 0 {
+		logConfig.LogLevel = 4
+	}
+	log := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildLevel(xlog.Level(logConfig.LogLevel)).BuildFile(fmt.Sprintf("%v/cmd", logConfig.Path), 24*time.Hour)
+	x := log.WithField("root", "cmd")
 	txChan := make(chan *collect.NodeTask, 10)
 	receiptChan := make(chan *collect.NodeTask, 10)
 	blockChan := make(chan *collect.NodeTask, 10)
 	kafkaCh := make(chan []*kafka.Message, 100)
-	store := db.NewTaskCacheService(cfg, log)
-	kf := kafkaClient.NewEasyKafka(log)
+	store := db.NewTaskCacheService2(cfg, x)
+	kf := kafkaClient.NewEasyKafka2(x)
 	chainApi := getBlockChainApi(cfg, logConfig, store, nodeId)
 
 	return &Cmd{
-		log:         log,
+		log:         x,
 		taskStore:   store,
 		chain:       cfg,
 		kafka:       kf,
@@ -488,7 +492,7 @@ func (c *Cmd) execMultiTx(taskTx *collect.NodeTask, log *logrus.Entry) []*kafka.
 
 		//未分配的收据任务
 		//写入receipt task
-		if len(receiptsTaskList) > 0 && c.chain.PullReceipt {
+		if len(receiptsTaskList) > 0 && c.chain.PullReceipt > 0 {
 
 			//tron 不支持 批量获取收据
 			//if c.chain.BlockChainCode == 205 {
@@ -547,7 +551,7 @@ func (c *Cmd) execSingleTx(taskTx *collect.NodeTask, log *logrus.Entry) []*kafka
 	}
 
 	//写入receipt task
-	if c.chain.PullReceipt {
+	if c.chain.PullReceipt > 0 {
 		c.kafkaCh <- c.taskStore.SendNodeTask([]*collect.NodeTask{{BlockChain: c.chain.BlockChainCode, TxHash: tx.TxHash, BlockHash: "", BlockNumber: "", TaskType: 3, TaskStatus: 0, NodeId: taskTx.NodeId}}, c.chain.TaskKafka.Partitions)
 	}
 
@@ -660,7 +664,7 @@ func (c *Cmd) execMultiBlock(taskBlock *collect.NodeTask, log *logrus.Entry) []*
 	}
 
 	//发出批量交易任务
-	if c.chain.PullTx {
+	if c.chain.PullTx > 0 {
 		//s := &collect.NodeTask{NodeId: taskBlock.NodeId, BlockChain: taskBlock.BlockChain, BlockNumber: taskBlock.BlockNumber, BlockHash: taskBlock.BlockHash, TaskType: 4, TaskStatus: 0}
 		c.kafkaCh <- c.taskStore.SendNodeTask(nodeTaskList, c.chain.TaskKafka.Partitions)
 	}
@@ -712,11 +716,11 @@ func (c *Cmd) execSingleBlock(taskBlock *collect.NodeTask, log *logrus.Entry) []
 	}
 
 	var block *collect.BlockInterface
-	//var txList []*service.Tx
+	var txs []*collect.TxInterface
 	if len(taskBlock.BlockNumber) > 5 {
-		block, _ = c.blockChain.GetBlockByNumber(taskBlock.BlockNumber, log, false)
+		block, txs = c.blockChain.GetBlockByNumber(taskBlock.BlockNumber, log, c.chain.PullTx == 2)
 	} else if len(taskBlock.BlockHash) > 10 {
-		block, _ = c.blockChain.GetBlockByHash(taskBlock.BlockHash, log, false)
+		block, txs = c.blockChain.GetBlockByHash(taskBlock.BlockHash, log, c.chain.PullTx == 2)
 	}
 
 	if block == nil || len(block.BlockHash) < 1 {
@@ -725,10 +729,20 @@ func (c *Cmd) execSingleBlock(taskBlock *collect.NodeTask, log *logrus.Entry) []
 		return nil
 	}
 
-	//发出批量交易任务
-	if c.chain.PullTx {
+	if c.chain.PullTx == 1 {
+		//发出批量交易任务
 		s := &collect.NodeTask{NodeId: taskBlock.NodeId, BlockChain: taskBlock.BlockChain, BlockNumber: taskBlock.BlockNumber, BlockHash: taskBlock.BlockHash, TaskType: 4, TaskStatus: 0}
 		c.kafkaCh <- c.taskStore.SendNodeTask([]*collect.NodeTask{s}, c.chain.TaskKafka.Partitions)
+	} else if c.chain.PullTx == 2 {
+		//发出多个 单笔交易任务
+		list := make([]*collect.NodeTask, 0, 10)
+		for _, v := range txs {
+			s := &collect.NodeTask{NodeId: taskBlock.NodeId, BlockChain: taskBlock.BlockChain, BlockNumber: taskBlock.BlockNumber, BlockHash: taskBlock.BlockHash, TxHash: v.TxHash, TaskType: 1, TaskStatus: 0}
+			list = append(list, s)
+		}
+		if len(list) > 0 {
+			c.kafkaCh <- c.taskStore.SendNodeTask(list, c.chain.TaskKafka.Partitions)
+		}
 	}
 
 	//发出block

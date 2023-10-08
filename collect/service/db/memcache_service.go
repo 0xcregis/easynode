@@ -15,6 +15,7 @@ import (
 	"github.com/0xcregis/easynode/collect/config"
 	"github.com/redis/go-redis/v9"
 	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
 )
@@ -31,7 +32,7 @@ var (
 )
 
 type Service struct {
-	log         *xlog.XLog
+	log         *logrus.Entry
 	lock        *sync.RWMutex
 	cacheClient *redis.Client
 }
@@ -146,12 +147,12 @@ func (s *Service) GetMonitorAddress(blockChain int64) ([]string, error) {
 	list, err := s.cacheClient.HKeys(context.Background(), fmt.Sprintf(MonitorKey, blockChain)).Result()
 	if err != nil {
 		s.log.Warnf("GetMonitorAddress|err=%v", err.Error())
-		return nil, errors.New("no record")
+		return nil, errors.New("no record for get monitorAddress")
 	}
 
 	if len(list) < 1 {
 		s.log.Warnf("GetMonitorAddress|err=no data")
-		return nil, errors.New("no record")
+		return nil, errors.New("no record for get monitorAddress")
 	}
 	return list, nil
 }
@@ -420,8 +421,30 @@ func NewTaskCacheService(cfg *config.Chain, x *xlog.XLog) collect.StoreTaskInter
 		DB:          0,  // use default DB
 		ReadTimeout: 1 * time.Minute,
 	})
+
+	log := x.WithFields(logrus.Fields{
+		"model": "DB",
+	})
 	return &Service{
-		log:         x,
+		log:         log,
+		cacheClient: client,
+		lock:        &sync.RWMutex{},
+	}
+}
+
+func NewTaskCacheService2(cfg *config.Chain, x *logrus.Entry) collect.StoreTaskInterface {
+	client := redis.NewClient(&redis.Options{
+		Addr:        fmt.Sprintf("%v:%v", cfg.Redis.Addr, cfg.Redis.Port),
+		Password:    "", // no password set
+		DB:          0,  // use default DB
+		ReadTimeout: 1 * time.Minute,
+	})
+
+	log := x.WithFields(logrus.Fields{
+		"subModel": "DB",
+	})
+	return &Service{
+		log:         log,
 		cacheClient: client,
 		lock:        &sync.RWMutex{},
 	}

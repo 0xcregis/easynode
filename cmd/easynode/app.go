@@ -82,10 +82,12 @@ func startStore(configPath string, ctx context.Context) {
 		panic("can not find config file")
 	}
 	cfg := storeConfig.LoadConfig(configPath)
-
+	if cfg.LogLevel == 0 {
+		cfg.LogLevel = 4
+	}
 	log.Printf("%+v\n", cfg)
 
-	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/store/store", 24*time.Hour)
+	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildLevel(xlog.Level(cfg.LogLevel)).BuildFile("./log/store/store", 24*time.Hour)
 
 	//是否存盘
 	service.NewStoreHandler(&cfg, xLog).Start(ctx)
@@ -122,10 +124,12 @@ func startTaskApi(configPath string, ctx context.Context) {
 		panic("can not find config file")
 	}
 	cfg := taskapiConfig.LoadConfig(configPath)
-
+	if cfg.LogLevel == 0 {
+		cfg.LogLevel = 4
+	}
 	log.Printf("%+v\n", cfg)
 
-	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/taskapi/task_api", 24*time.Hour)
+	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildLevel(xlog.Level(cfg.LogLevel)).BuildFile("./log/taskapi/task_api", 24*time.Hour)
 
 	e := gin.Default()
 
@@ -157,10 +161,12 @@ func startBlockchain(configPath string, ctx context.Context) {
 		panic("can not find config file")
 	}
 	cfg := blockchainConfig.LoadConfig(configPath)
-
+	if cfg.LogLevel == 0 {
+		cfg.LogLevel = 4
+	}
 	log.Printf("%+v\n", cfg)
 
-	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/blockchain/chain", 24*time.Hour)
+	xLog := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildLevel(xlog.Level(cfg.LogLevel)).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/blockchain/chain", 24*time.Hour)
 
 	e := gin.Default()
 

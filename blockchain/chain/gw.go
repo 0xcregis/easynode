@@ -2,6 +2,7 @@ package chain
 
 import (
 	"github.com/0xcregis/easynode/blockchain"
+	"github.com/0xcregis/easynode/blockchain/chain/bnb"
 	"github.com/0xcregis/easynode/blockchain/chain/btc"
 	"github.com/0xcregis/easynode/blockchain/chain/ether"
 	"github.com/0xcregis/easynode/blockchain/chain/filecoin"
@@ -20,6 +21,9 @@ func NewChain(blockchain int64) blockchain.ChainConn {
 	} else if blockchain == 201 {
 		//polygon-pos
 		return polygonpos.NewChainClient()
+	} else if blockchain == 202 {
+		//bnb
+		return bnb.NewChainClient()
 	} else if blockchain == 301 {
 		//file-coin
 		return filecoin.NewChainClient()
@@ -38,6 +42,8 @@ func NewNFT(blockchain int64) blockchain.NFT {
 	if blockchain == 200 {
 		//eth
 		return ether.NewNFTClient()
+	} else if blockchain == 202 {
+		return bnb.NewNFTClient()
 	} else {
 		return nil
 	}

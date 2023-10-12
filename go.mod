@@ -16,6 +16,7 @@ require (
 	github.com/ipfs/go-cid v0.4.1
 	github.com/multiformats/go-multihash v0.2.1
 	github.com/multiformats/go-varint v0.0.7
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/redis/go-redis/v9 v9.0.4
 	github.com/segmentio/kafka-go v0.4.39
 	github.com/shengdoushi/base58 v1.0.0

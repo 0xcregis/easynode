@@ -11,12 +11,12 @@ import (
 	"time"
 
 	"github.com/0xcregis/easynode/blockchain"
-	"github.com/patrickmn/go-cache"
+	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/tidwall/gjson"
 )
 
 type Btc struct {
-	lru *cache.Cache
+	lru *expirable.LRU[string, string]
 }
 
 func (e *Btc) GetToken721(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {
@@ -49,9 +49,9 @@ func (e *Btc) UnSubscribe(host string, token string) (string, error) {
 }
 
 func NewChainClient() blockchain.ChainConn {
-	c := cache.New(5*time.Minute, time.Minute*10)
+	cache := expirable.NewLRU[string, string](100, nil, time.Minute*5)
 	return &Btc{
-		lru: c,
+		lru: cache,
 	}
 }
 
@@ -79,7 +79,7 @@ func (e *Btc) SendRequestToChain(host string, token string, query string) (strin
 		keyCache = hex.EncodeToString(hash[:])
 		valueCache, ok := e.lru.Get(keyCache)
 		if ok {
-			return valueCache.(string), nil
+			return valueCache, nil
 		}
 	}
 
@@ -116,7 +116,7 @@ func (e *Btc) SendRequestToChain(host string, token string, query string) (strin
 
 	value := string(body)
 	if e.lru != nil && cacheOK {
-		e.lru.Set(keyCache, value, cache.DefaultExpiration)
+		e.lru.Add(keyCache, value)
 	}
 	return value, nil
 }

@@ -1,9 +1,9 @@
 -- 创建数据库：不同公链需要创建不同的数据库
 CREATE
-DATABASE IF NOT EXISTS Bnb;
+DATABASE IF NOT EXISTS bnb;
 
 -- 创建交易表
-CREATE TABLE IF NOT EXISTS Bnb.tx
+CREATE TABLE IF NOT EXISTS bnb.tx
 (
     id
     UInt64,--时间戳
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS Bnb.tx
 
 
 /**创建区块表*/
-CREATE TABLE IF NOT EXISTS Bnb.block
+CREATE TABLE IF NOT EXISTS bnb.block
 (
     id
     UInt64,--时间戳
@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS Bnb.block
 
 
 /**创建区块表*/
-CREATE TABLE IF NOT EXISTS Bnb.receipt
+CREATE TABLE IF NOT EXISTS bnb.receipt
 (
     id
     UInt64,--时间戳
@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS Bnb.receipt
     id
 ) ORDER BY transaction_hash;
 
-CREATE TABLE IF NOT EXISTS Bnb.sub_tx
+CREATE TABLE IF NOT EXISTS bnb.sub_tx
 (
     id
     UInt64,--时间戳
@@ -175,7 +175,7 @@ CREATE TABLE IF NOT EXISTS Bnb.sub_tx
     id
 ) ORDER BY hash;
 
-CREATE TABLE IF NOT EXISTS Bnb.backup_tx
+CREATE TABLE IF NOT EXISTS bnb.backup_tx
 (
     id
     UInt64,--时间戳

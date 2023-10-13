@@ -70,24 +70,8 @@ func NewWsHandler(cfg *config.Config, log *xlog.XLog) *WsHandler {
 	}
 }
 
-func (ws *WsHandler) Start(kafkaCtx context.Context) {
-
-	//更新监控地址池
-	go func() {
-		for {
-			for _, w := range ws.cfg {
-				l, err := ws.store.GetAddressByToken3(w.BlockChain)
-				if err != nil {
-					continue
-				}
-				_ = ws.cache.SetMonitorAddress(w.BlockChain, l)
-			}
-
-			<-time.After(100 * time.Second)
-		}
-	}()
-
-	//push message
+// pushMessage push message to user
+func (ws *WsHandler) pushMessage(kafkaCtx context.Context) {
 	go func(ctx context.Context, writer chan *store.WsPushMessage) {
 		interrupt := true
 		for interrupt {
@@ -107,6 +91,32 @@ func (ws *WsHandler) Start(kafkaCtx context.Context) {
 			time.Sleep(300 * time.Millisecond)
 		}
 	}(kafkaCtx, ws.writer)
+}
+
+// updateMonitorAddress update monitor address to use for collect server
+func (ws *WsHandler) updateMonitorAddress() {
+	go func() {
+		for {
+			for _, w := range ws.cfg {
+				l, err := ws.store.GetAddressByToken3(w.BlockChain)
+				if err != nil {
+					continue
+				}
+				_ = ws.cache.SetMonitorAddress(w.BlockChain, l)
+			}
+
+			<-time.After(100 * time.Second)
+		}
+	}()
+}
+
+func (ws *WsHandler) Start(kafkaCtx context.Context) {
+
+	//update address
+	ws.updateMonitorAddress()
+
+	//push message
+	ws.pushMessage(kafkaCtx)
 
 	// 消费kafka.tx
 	txKafkaParams := make(map[int64]*config.KafkaConfig, 2)
@@ -327,7 +337,7 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 		}
 	}(blockChain, ctx)
 
-	//get filters from db for verify tx
+	//get filters from db to verify tx
 	go func(blockChain int64, ctx context.Context) {
 		interrupt := true
 		for interrupt {
@@ -420,7 +430,7 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 
 }
 
-// TxEngine the method for verify tx and return
+// TxEngine the method to verify tx and return
 func (ws *WsHandler) TxEngine(filters map[string][]*store.SubFilter, monitorAddress map[string]*TokenAddress, msg *kafka.Message, blockChain int64, txType uint64) map[string]int64 {
 	pushMp := make(map[string]int64, 1)
 	for token, filter := range filters {

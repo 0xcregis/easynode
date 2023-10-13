@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -187,6 +188,7 @@ func (ws *WsHandler) Sub(w http.ResponseWriter, r *http.Request, token string) {
 
 	PingCh := make(chan string)
 	c.SetPingHandler(func(message string) error {
+		fmt.Printf("ping message: %v \n", message)
 		err := c.WriteControl(websocket.PongMessage, []byte(message), time.Now().Add(1*time.Second))
 		if err != nil {
 			cancel()
@@ -228,7 +230,13 @@ func (ws *WsHandler) Sub(w http.ResponseWriter, r *http.Request, token string) {
 			interrupt = false
 			ws.lock.Unlock()
 		default:
-			time.Sleep(5 * time.Second)
+			_, message, err := c.ReadMessage()
+			if err != nil {
+				log.Println("read:", err)
+				return
+			}
+			log.Println("recv: ", message)
+			//time.Sleep(5 * time.Second)
 		}
 	}
 

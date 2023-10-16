@@ -40,6 +40,7 @@
 | bitcoin     |    300    |   BTC   |
 | filecoin    |    301    |   FIL   |
 | ripple      |    310    |   XRP   |
+| bnb         |    202    |   BNB   |
 
 ## 入门指引
 

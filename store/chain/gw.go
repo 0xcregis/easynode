@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/0xcregis/easynode/store"
+	"github.com/0xcregis/easynode/store/chain/bnb"
 	"github.com/0xcregis/easynode/store/chain/btc"
 	"github.com/0xcregis/easynode/store/chain/ether"
 	"github.com/0xcregis/easynode/store/chain/filecoin"
@@ -20,6 +21,8 @@ func GetReceiptFromKafka(value []byte, blockChain int64) (*store.Receipt, error)
 		return tron.GetReceiptFromKafka(value)
 	} else if blockChain == 201 {
 		return polygonpos.GetReceiptFromKafka(value)
+	} else if blockChain == 202 {
+		return bnb.GetReceiptFromKafka(value)
 	} else if blockChain == 301 {
 		return filecoin.GetReceiptFromKafka(value)
 	} else if blockChain == 310 {
@@ -38,6 +41,8 @@ func GetBlockFromKafka(value []byte, blockChain int64) (*store.Block, error) {
 		return tron.GetBlockFromKafka(value)
 	} else if blockChain == 201 {
 		return polygonpos.GetBlockFromKafka(value)
+	} else if blockChain == 202 {
+		return bnb.GetBlockFromKafka(value)
 	} else if blockChain == 301 {
 		return filecoin.GetBlockFromKafka(value)
 	} else if blockChain == 310 {
@@ -56,6 +61,8 @@ func GetTxFromKafka(value []byte, blockChain int64) (*store.Tx, error) {
 		return tron.GetTxFromKafka(value)
 	} else if blockChain == 201 {
 		return polygonpos.GetTxFromKafka(value)
+	} else if blockChain == 202 {
+		return bnb.GetTxFromKafka(value)
 	} else if blockChain == 301 {
 		return filecoin.GetTxFromKafka(value)
 	} else if blockChain == 310 {
@@ -77,6 +84,9 @@ func ParseTx(blockchain int64, msg *kafka.Message) (*store.SubTx, error) {
 	if blockchain == 201 {
 		return polygonpos.ParseTx(msg.Value, store.PolygonTopic, blockchain)
 	}
+	if blockchain == 202 {
+		return bnb.ParseTx(msg.Value, store.EthTopic, store.EthTransferSingleTopic, blockchain)
+	}
 	if blockchain == 301 {
 		return filecoin.ParseTx(msg.Value, store.PolygonTopic, blockchain)
 	}
@@ -91,6 +101,9 @@ func ParseTx(blockchain int64, msg *kafka.Message) (*store.SubTx, error) {
 
 func GetTxType(blockchain int64, msg *kafka.Message) (uint64, error) {
 	if blockchain == 200 {
+		return ether.GetTxType(msg.Value)
+	}
+	if blockchain == 202 {
 		return ether.GetTxType(msg.Value)
 	}
 	if blockchain == 205 {
@@ -118,6 +131,8 @@ func GetCoreAddress(blockChain int64, address string) string {
 		return tron.GetCoreAddr(address)
 	} else if blockChain == 201 {
 		return polygonpos.GetCoreAddr(address)
+	} else if blockChain == 202 {
+		return bnb.GetCoreAddr(address)
 	} else if blockChain == 301 {
 		return filecoin.GetCoreAddr(address)
 	} else if blockChain == 310 {
@@ -139,6 +154,8 @@ func CheckAddress(blockChain int64, msg *kafka.Message, list map[string]*store.M
 		return tron.CheckAddress(msg.Value, list, store.TronTopic)
 	} else if blockChain == 201 {
 		return polygonpos.CheckAddress(msg.Value, list, store.PolygonTopic)
+	} else if blockChain == 202 {
+		return bnb.CheckAddress(msg.Value, list, store.EthTopic)
 	} else if blockChain == 301 {
 		return filecoin.CheckAddress(msg.Value, list, store.PolygonTopic)
 	} else if blockChain == 310 {

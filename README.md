@@ -42,6 +42,7 @@ Allow all developers to use on-chain services without deploying nodes or knowing
   | bitcoin     |    300    |   BTC   |
   | filecoin    |    301    |   FIL   |
   | ripple      |    310    |   XRP   |
+  | bnb         |    202    |   BNB   |
 
 ## Getting Started
 

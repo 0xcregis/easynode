@@ -3,6 +3,7 @@ package service
 import (
 	"github.com/0xcregis/easynode/blockchain"
 	"github.com/0xcregis/easynode/blockchain/config"
+	"github.com/0xcregis/easynode/blockchain/service/bnb"
 	"github.com/0xcregis/easynode/blockchain/service/btc"
 	"github.com/0xcregis/easynode/blockchain/service/ether"
 	"github.com/0xcregis/easynode/blockchain/service/filecoin"
@@ -19,6 +20,8 @@ func NewApi(blockchain int64, cluster []*config.NodeCluster, xlog *xlog.XLog) bl
 		return tron.NewTron(cluster, blockchain, xlog)
 	} else if blockchain == 201 {
 		return polygon.NewPolygonPos(cluster, blockchain, xlog)
+	} else if blockchain == 202 {
+		return bnb.NewBnb(cluster, blockchain, xlog)
 	} else if blockchain == 300 {
 		return btc.NewBtc(cluster, blockchain, xlog)
 	} else if blockchain == 301 {
@@ -32,6 +35,8 @@ func NewApi(blockchain int64, cluster []*config.NodeCluster, xlog *xlog.XLog) bl
 func NewNftApi(blockchain int64, cluster []*config.NodeCluster, xlog *xlog.XLog) blockchain.NftApi {
 	if blockchain == 200 {
 		return ether.NewNftEth(cluster, blockchain, xlog)
+	} else if blockchain == 202 {
+		return bnb.NewNftBnb(cluster, blockchain, xlog)
 	}
 	return nil
 }

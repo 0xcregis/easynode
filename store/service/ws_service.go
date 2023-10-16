@@ -3,10 +3,8 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -33,6 +31,7 @@ type WsHandler struct {
 	store   store.DbStoreInterface
 	cache   *db.CacheService
 	connMap map[string]*websocket.Conn //token:conn
+	lock    sync.RWMutex
 	//cmdMap  map[string]map[int64]store.CmdMessage //token:code-wsReq
 	//ctxMap         map[string]map[int64]context.CancelFunc
 	//monitorAddress map[int64]map[string]*TokenAddress //blockchain:token-tokenAddress
@@ -66,13 +65,38 @@ func NewWsHandler(cfg *config.Config, log *xlog.XLog) *WsHandler {
 		//cmdMap:  make(map[string]map[int64]store.CmdMessage, 5),
 		//ctxMap:         make(map[string]map[int64]context.CancelFunc, 5),
 		//monitorAddress: mp2,
+		lock:   sync.RWMutex{},
 		writer: make(chan *store.WsPushMessage),
 	}
 }
 
-func (ws *WsHandler) Start(kafkaCtx context.Context) {
+// pushMessage push message to user
+func (ws *WsHandler) pushMessage(kafkaCtx context.Context) {
+	go func(ctx context.Context, writer chan *store.WsPushMessage) {
+		interrupt := true
+		for interrupt {
+			select {
+			case <-ctx.Done():
+				interrupt = false
+				break
+			case ms := <-writer:
+				ws.lock.Lock()
+				if _, ok := ws.connMap[ms.Token]; ok {
+					bs, _ := json.Marshal(ms)
+					err := ws.connMap[ms.Token].WriteMessage(websocket.TextMessage, bs)
+					if err != nil {
+						ws.log.Errorf("sendMessage|error=%v", err.Error())
+					}
+				}
+				ws.lock.Unlock()
+			}
+			time.Sleep(300 * time.Millisecond)
+		}
+	}(kafkaCtx, ws.writer)
+}
 
-	//更新监控地址池
+// updateMonitorAddress update monitor address to use for collect server
+func (ws *WsHandler) updateMonitorAddress() {
 	go func() {
 		for {
 			for _, w := range ws.cfg {
@@ -86,27 +110,15 @@ func (ws *WsHandler) Start(kafkaCtx context.Context) {
 			<-time.After(100 * time.Second)
 		}
 	}()
+}
+
+func (ws *WsHandler) Start(kafkaCtx context.Context) {
+
+	//update address
+	ws.updateMonitorAddress()
 
 	//push message
-	go func(ctx context.Context, writer chan *store.WsPushMessage) {
-		interrupt := true
-		for interrupt {
-			select {
-			case <-ctx.Done():
-				interrupt = false
-				break
-			case ms := <-writer:
-				if _, ok := ws.connMap[ms.Token]; ok {
-					bs, _ := json.Marshal(ms)
-					err := ws.connMap[ms.Token].WriteMessage(websocket.TextMessage, bs)
-					if err != nil {
-						ws.log.Errorf("sendMessage|error=%v", err.Error())
-					}
-				}
-			}
-			time.Sleep(300 * time.Millisecond)
-		}
-	}(kafkaCtx, ws.writer)
+	ws.pushMessage(kafkaCtx)
 
 	// 消费kafka.tx
 	txKafkaParams := make(map[int64]*config.KafkaConfig, 2)
@@ -157,74 +169,75 @@ func (ws *WsHandler) Sub(w http.ResponseWriter, r *http.Request, token string) {
 		_ = c.Close()
 	}()
 
+	ws.lock.Lock()
 	if old, ok := ws.connMap[token]; ok {
 		_ = old.Close()
 		delete(ws.connMap, token)
 	}
 	ws.connMap[token] = c
-
-	c.SetPingHandler(func(message string) error {
-		err := c.WriteControl(websocket.PongMessage, []byte(message), time.Now().Add(1*time.Second))
-		if errors.Is(err, websocket.ErrCloseSent) {
-			return nil
-		} else if e, ok := err.(net.Error); ok && e.Timeout() {
-			return nil
-		}
-		return err
-	})
+	ws.lock.Unlock()
 
 	cx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	PongCh := make(chan string)
-	c.SetPongHandler(func(appData string) error {
-		PongCh <- appData
+	c.SetCloseHandler(func(code int, text string) error {
+		_ = c.WriteControl(websocket.CloseMessage, []byte(text), time.Now().Add(1*time.Second))
+		cancel()
 		return nil
 	})
 
-	//收到pong消息并处理
-	go func(PongCh chan string, ws *WsHandler, token string, cancel context.CancelFunc) {
-		ticker := time.NewTicker(10 * time.Minute)
+	PingCh := make(chan string)
+	c.SetPingHandler(func(message string) error {
+		fmt.Printf("ping message: %v \n", message)
+		err := c.WriteControl(websocket.PongMessage, []byte(message), time.Now().Add(1*time.Second))
+		if err != nil {
+			cancel()
+			return err
+		} else {
+			PingCh <- message
+			return nil
+		}
+	})
+
+	//收到ping消息并处理
+	go func(PingCh chan string, ws *WsHandler, token string, cancel context.CancelFunc) {
+		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
 		for {
 			select {
-			case <-PongCh: //收到 客户端响应
-				ticker.Reset(10 * time.Minute)
+			case <-PingCh: //收到 客户端响应
+				ticker.Reset(30 * time.Second)
 				continue
 			case <-ticker.C: //已经超时，仍然未收到客户端的响应
 				cancel()
 				return
 			}
 		}
-	}(PongCh, ws, token, cancel)
-
-	//定时发送 ping 命令
-	go func(ws *websocket.Conn, token string, ctx2 context.Context) {
-		ticker := time.NewTicker(2 * time.Minute)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				if err := ws.WriteControl(websocket.PingMessage, []byte(token), time.Now().Add(10*time.Second)); err != nil {
-					log.Println("ping:", err)
-				}
-			case <-ctx2.Done():
-				return
-			}
-		}
-	}(c, token, cx)
+	}(PingCh, ws, token, cancel)
 
 	interrupt := true
 	//read cmd
 	for interrupt {
-		<-cx.Done()
-		//清理
-		//delete(ws.cmdMap, token)
-		if c, ok := ws.connMap[token]; ok {
-			_ = c.Close()
+		select {
+		case <-cx.Done():
+			//清理
+			//delete(ws.cmdMap, token)
+			ws.lock.Lock()
+			if c, ok := ws.connMap[token]; ok {
+				_ = c.Close()
+			}
+			delete(ws.connMap, token)
+			interrupt = false
+			ws.lock.Unlock()
+		default:
+			_, message, err := c.ReadMessage()
+			if err != nil {
+				log.Println("read:", err)
+				return
+			}
+			log.Println("recv: ", message)
+			//time.Sleep(5 * time.Second)
 		}
-		delete(ws.connMap, token)
-		interrupt = false
 	}
 
 	//延迟时间，待其他服务清理
@@ -276,7 +289,14 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 				break
 			default:
 				mp := make(map[string]*TokenAddress, 10)
+				tokenList := make([]string, 0, 10)
+				ws.lock.RLock()
 				for token := range ws.connMap {
+					tokenList = append(tokenList, token)
+				}
+				ws.lock.RUnlock()
+
+				for _, token := range tokenList {
 					//path中包含serialId请求方式
 					newToken := token
 					if strings.Contains(token, "_") {
@@ -302,7 +322,7 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 				lock.Unlock()
 			}
 
-			<-time.After(3 * time.Second)
+			<-time.After(30 * time.Second)
 		}
 	}(blockChain, ctx)
 
@@ -327,7 +347,7 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 		}
 	}(blockChain, ctx)
 
-	//get filters from db for verify tx
+	//get filters from db to verify tx
 	go func(blockChain int64, ctx context.Context) {
 		interrupt := true
 		for interrupt {
@@ -354,7 +374,7 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 				lock.Unlock()
 			}
 
-			<-time.After(60 * time.Second)
+			<-time.After(30 * time.Second)
 
 		}
 	}(blockChain, ctx)
@@ -420,7 +440,7 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 
 }
 
-// TxEngine the method for verify tx and return
+// TxEngine the method to verify tx and return
 func (ws *WsHandler) TxEngine(filters map[string][]*store.SubFilter, monitorAddress map[string]*TokenAddress, msg *kafka.Message, blockChain int64, txType uint64) map[string]int64 {
 	pushMp := make(map[string]int64, 1)
 	for token, filter := range filters {

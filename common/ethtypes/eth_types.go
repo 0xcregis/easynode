@@ -21,7 +21,6 @@ import (
 	"github.com/filecoin-project/go-state-types/big"
 	builtintypes "github.com/filecoin-project/go-state-types/builtin"
 
-	"github.com/filecoin-project/lotus/build"
 	"github.com/filecoin-project/lotus/lib/must"
 )
 
@@ -194,28 +193,6 @@ func init() {
 	for i := range FullEthBloom {
 		FullEthBloom[i] = 0xff
 	}
-}
-
-func NewEthBlock(hasTransactions bool) EthBlock {
-	b := EthBlock{
-		Sha3Uncles:       EmptyUncleHash, // Sha3Uncles set to a hardcoded value which is used by some clients to determine if has no uncles.
-		StateRoot:        EmptyEthHash,
-		TransactionsRoot: EmptyRootHash, // TransactionsRoot set to a hardcoded value which is used by some clients to determine if has no transactions.
-		ReceiptsRoot:     EmptyEthHash,
-		Difficulty:       EmptyEthInt,
-		LogsBloom:        FullEthBloom[:],
-		Extradata:        []byte{},
-		MixHash:          EmptyEthHash,
-		Nonce:            EmptyEthNonce,
-		GasLimit:         EthUint64(build.BlockGasLimit), // TODO we map Ethereum blocks to Filecoin tipsets; this is inconsistent.
-		Uncles:           []EthHash{},
-		Transactions:     []interface{}{},
-	}
-	if hasTransactions {
-		b.TransactionsRoot = EmptyEthHash
-	}
-
-	return b
 }
 
 type EthCall struct {

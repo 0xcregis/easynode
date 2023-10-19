@@ -145,7 +145,7 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 			continue
 		}
 		msg := <-receiver
-		log := c.log.WithFields(logrus.Fields{"model": "Execution", "id": time.Now().UnixMilli()})
+		log := c.log.WithFields(logrus.Fields{"model": "Dispatch", "id": time.Now().UnixMilli()})
 		task := collect.NodeTask{}
 		err := json.Unmarshal(msg.Value, &task)
 		if err != nil {

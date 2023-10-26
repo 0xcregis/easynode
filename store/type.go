@@ -273,13 +273,14 @@ type WsPushMessage struct {
 }
 
 type ContractTx struct {
-	Contract string `json:"contract"`
+	Contract string `json:"contractAddress"`
 	From     string `json:"from"`
 	Method   string `json:"method"`
 	To       string `json:"to"`
 	Value    string `json:"value"`
 	EIP      int64  `json:"eip"`
-	Token    string `json:"token"`
+	Index    int64  `json:"index"`
+	Token    string `json:"tokenMeta"`
 }
 
 type SubTx struct {
@@ -287,7 +288,7 @@ type SubTx struct {
 	BlockChain  uint64        `json:"chainCode" gorm:"column:block_chain"`
 	BlockHash   string        `json:"blockHash" gorm:"column:block_hash"`
 	BlockNumber string        `json:"blockNumber" gorm:"column:block_number"`
-	ContractTx  []*ContractTx `json:"contractTx" gorm:"-"`
+	ContractTx  []*ContractTx `json:"txs" gorm:"-"`
 	ContractTxs string        `json:"-" gorm:"column:contract_tx"`
 	Fee         string        `json:"fee" gorm:"column:fee"`
 	FeeDetail   interface{}   `json:"-" gorm:"-"`
@@ -298,8 +299,8 @@ type SubTx struct {
 	Status      uint64        `json:"status" gorm:"column:tx_status"` //0x0:失败，0x1:成功
 	To          string        `json:"to" gorm:"column:to_addr"`
 	TxTime      string        `json:"txTime" gorm:"column:tx_time"`
-	TxType      uint64        `json:"txType" gorm:"column:tx_type"` //交易类型 1:合约调用，2:普通资产转移 3:资源代理 4:资源回收 5:激活 6:质押 7:解质押 8:解质押提现
-	Value       string        `json:"value" gorm:"column:value"`
+	TxType      uint64        `json:"-" gorm:"column:tx_type"` //交易类型 1:合约调用，2:普通资产转移 3:资源代理 4:资源回收 5:激活 6:质押 7:解质押 8:解质押提现
+	Value       string        `json:"-" gorm:"column:value"`
 }
 
 /*

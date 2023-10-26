@@ -78,6 +78,21 @@ func ParseTx(body []byte, blockchain int64) (*store.SubTx, error) {
 
 	//r.Status = root.Get("status").Int() //0x0:失败，0x1:成功
 	//r.ContractTx = contractTx
+
+	contractTx := make([]*store.ContractTx, 0, 5)
+	if r.TxType != 1 {
+		var c store.ContractTx
+		c.Contract = ""
+		c.Value = r.Value
+		c.From = r.From
+		c.To = r.To
+		c.Method = "Transfer"
+		c.EIP = 0
+		c.Index = 0
+		c.Token = ""
+		contractTx = append(contractTx, &c)
+	}
+	r.ContractTx = contractTx
 	return &r, nil
 }
 func GetCoreAddr(addr string) string {

@@ -125,9 +125,23 @@ func ParseTx(body []byte, transferTopic string, blocchain int64) (*store.SubTx, 
 		r.Status = 1
 	}
 
-	logs := receiptRoot.Get("logs").Array()
 	contractTx := make([]*store.ContractTx, 0, 5)
-	for _, v := range logs {
+	if r.TxType != 1 {
+		var c store.ContractTx
+		c.Contract = ""
+		c.Value = r.Value
+		c.From = r.From
+		c.To = r.To
+		c.Index = 0
+		c.Method = "Transfer"
+		c.EIP = 0
+		c.Token = ""
+		contractTx = append(contractTx, &c)
+	}
+
+	logs := receiptRoot.Get("logs").Array()
+	l := len(contractTx)
+	for index, v := range logs {
 		contract := v.Get("address").String()
 		data := v.Get("data").String()
 		r := gjson.Parse(data)
@@ -164,6 +178,7 @@ func ParseTx(body []byte, transferTopic string, blocchain int64) (*store.SubTx, 
 					var m store.ContractTx
 					m.Contract = contract
 					m.Value = data
+					m.Index = int64(index + l)
 					m.From, _ = util.Hex2Address(from)
 					m.To, _ = util.Hex2Address(to)
 					m.Method = "Transfer"
@@ -185,6 +200,7 @@ func ParseTx(body []byte, transferTopic string, blocchain int64) (*store.SubTx, 
 					m.Contract = contract
 					v, _ := util.HexToInt(tps[3].String())
 					m.Value = v
+					m.Index = int64(index + l)
 					m.From, _ = util.Hex2Address(from)
 					m.To, _ = util.Hex2Address(to)
 					m.Method = "Transfer"

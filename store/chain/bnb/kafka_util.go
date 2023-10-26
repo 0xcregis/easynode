@@ -124,9 +124,23 @@ func ParseTx(body []byte, transferTopic, nftTransferSingleTopic string, blockcha
 		r.Status = 1
 	}
 
-	logs := receiptRoot.Get("logs").Array()
 	contractTx := make([]*store.ContractTx, 0, 5)
-	for _, v := range logs {
+	if r.TxType != 1 {
+		var c store.ContractTx
+		c.Contract = ""
+		c.Value = r.Value
+		c.From = r.From
+		c.To = r.To
+		c.Method = "Transfer"
+		c.EIP = 0
+		c.Index = 0
+		c.Token = ""
+		contractTx = append(contractTx, &c)
+	}
+
+	logs := receiptRoot.Get("logs").Array()
+	l := len(contractTx)
+	for index, v := range logs {
 		contract := v.Get("address").String()
 		data := v.Get("data").String()
 		r := gjson.Parse(data)
@@ -163,6 +177,7 @@ func ParseTx(body []byte, transferTopic, nftTransferSingleTopic string, blockcha
 					var m store.ContractTx
 					m.Contract = contract
 					m.Value = data
+					m.Index = int64(index + l)
 					m.From, _ = util.Hex2Address(from)
 					m.To, _ = util.Hex2Address(to)
 					m.Method = "Transfer"
@@ -182,6 +197,7 @@ func ParseTx(body []byte, transferTopic, nftTransferSingleTopic string, blockcha
 					to = tps[2].String()
 					var m store.ContractTx
 					m.Contract = contract
+					m.Index = int64(index + l)
 					v, _ := util.HexToInt(tps[3].String())
 					m.Value = v
 					m.From, _ = util.Hex2Address(from)
@@ -207,6 +223,7 @@ func ParseTx(body []byte, transferTopic, nftTransferSingleTopic string, blockcha
 					to = tps[2].String()
 					var m store.ContractTx
 					m.Contract = contract
+					m.Index = int64(index + l)
 					m.Value = v
 					m.From, _ = util.Hex2Address(from)
 					m.To, _ = util.Hex2Address(to)

@@ -233,7 +233,7 @@ curl --location --request POST 'localhost:9003/api/store/filter/delete' \
 
 - code: messageType
 
-  1:资产转移交易 ，3:质押资产  5:解锁资产  7:提取  9:代理资源  11:回收资源（取消代理）  13:激活账号
+  1: Asset transfer transaction, 3: Pledged assets 5: Unlock assets 7: Withdraw 9: Agent resources 11: Recycle resources (cancel agent) 13: Activate account
 
 - txs: transaction list
 
@@ -323,15 +323,10 @@ curl --location --request POST 'localhost:9003/api/store/filter/delete' \
 
   Transaction execution time on chain
 
-- txType:tx type
-
-  1:合约调用，2:普通资产转移 3:资源代理 4:资源回收 5:激活 6:质押 7:解质押 8:解质押提现
-
-
 - notes
 
-    - 同一token ，多次连接时，会自动关闭上一个连接
-    - 客户端 必需 实现 ping 命令，长时间未收到客户端发出ping ，则会自动关闭连接
-    - ws://localhost:9003/api/store/ws/{token}?serialId={serialId} 这种请求时最终token=token_serialId
+    - When the same token is connected multiple times, the previous connection will be automatically closed.
+    - The client is required to implement the ping command. If a ping is not received from the client for a long time, the connection will be automatically closed.
+    - ws://localhost:9003/api/store/ws/{token}?serialId={serialId}
 
 

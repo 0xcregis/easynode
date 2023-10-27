@@ -243,6 +243,7 @@ type Block struct {
 }
 
 type WsPushMessage struct {
+	//  1: Asset transfer transaction, 3: Pledged assets 5: Unlock assets 7: Withdraw 9: Agent resources 11: Recycle resources (cancel agent) 13: Activate account
 	Code       int64  `json:"code"`
 	BlockChain int64  `json:"blockChain"`
 	Token      string `json:"token"`

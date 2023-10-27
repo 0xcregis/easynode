@@ -257,7 +257,7 @@ func ParseTx(body []byte, transferTopic string, blockchain int64) (*store.SubTx,
 			c.From = r.From
 			c.To = r.To
 			c.Method = "Transfer"
-			c.EIP = 0
+			c.EIP = -1
 			c.Token = ""
 			contractTx = append(contractTx, &c)
 		}

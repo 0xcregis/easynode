@@ -284,34 +284,34 @@ notes:
 ``````
    url: ws://localhost:9003/api/store/ws/{token}
                
-   return of push：
+   receive：
    {
-     "code": 1, //message type, 1: transaction message
-     "blockChain": 200, //public chain code
-     "data": { //transaction data
-       "id": 1685094437357929000,
-       "blockHash": "0x067fbc694c5ca3540ee965b25c286e55d40f3e5e5fd336d1f398868dfc18feec", //block hash
-       "blockNumber": "17284552", //block height
-       "chainCode": 200,
-       "contractTx": [ //EVM event during contract transaction
-         {
-           "contract": "0xdac17f958d2ee523a2206206994597c13d831ec7", //contract address
-           "from": "0x54b50187becd0bbcfd52ec5d538433dab044d2a8", //from address
-           "method": "Transfer", //contract method
-           "to": "0x408be4b8a862c1a372976521401fd77f9a0178d7", //to address
-           "value": "59.327379" //transaction content
-         }
-       ],
-       "fee": "0.002053016771146819",//transaction fee
-       "from": "0x54b50187becd0bbcfd52ec5d538433dab044d2a8", //from address
-       "hash": "0x323c08a889ed99d8bfc6c72b1580432f7a13ca7c992fd1bac523e46bfe7ab98f", //transaction hash
-       "status": "1", //transaction status 1: successful, 0: transaction failed
-       "to": "0xdac17f958d2ee523a2206206994597c13d831ec7", //to address
-       "txTime": "1684390019", //transaction time
-       "txType": 1, //transaction type 1: contract call, 2: normal asset transfer
-       "value": "0" //transaction amount
-     }
-  }        
+      "code": 1, //消息类型，1:交易消息
+      "blockChain": 200, //公链代码
+      "data": { //交易数据
+          "id":1698395758827420000,
+          "chainCode":200,
+          "blockHash":"0xbe36cdcfce377f7415bd91be3be10555fc705cd9c48ac077b3de9a1c298c4a36",
+          "blockNumber":"18117360",
+          "txs":[
+              {
+                  "contractAddress":"0xd9ec62e6927082ad28b73fb5d4b5e9d571e00768",
+                  "from":"0x0000000000000000000000000000000000000000",
+                  "method":"Transfer",
+                  "to":"0x2c2ab61d2506308c0017f26c36e81e5b22942d57",
+                  "value":"1315",
+                  "token_type":721,
+                  "index":9
+              }
+          ],
+          "fee":"0.00182692522485181",
+          "from":"0x2c2ab61d2506308c0017f26c36e81e5b22942d57",
+          "hash":"0x2b7b684d469c365e0f8d9e2bf94bee672878aff4604b7715a48a7f37432f1a21",
+          "status":1,
+          "to":"0xd9ec62e6927082ad28b73fb5d4b5e9d571e00768",
+          "txTime":"1684390019000"
+       }
+  }      
                              
 ``````
 

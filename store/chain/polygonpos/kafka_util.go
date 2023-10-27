@@ -134,7 +134,7 @@ func ParseTx(body []byte, transferTopic string, blocchain int64) (*store.SubTx, 
 		c.To = r.To
 		c.Index = 0
 		c.Method = "Transfer"
-		c.EIP = 0
+		c.EIP = -1
 		c.Token = ""
 		contractTx = append(contractTx, &c)
 	}

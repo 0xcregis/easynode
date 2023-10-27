@@ -32,7 +32,6 @@ type WsHandler struct {
 	cache   *db.CacheService
 	connMap map[string]*websocket.Conn //token:conn
 	lock    sync.RWMutex
-	//cmdMap  map[string]map[int64]store.CmdMessage //token:code-wsReq
 	//ctxMap         map[string]map[int64]context.CancelFunc
 	//monitorAddress map[int64]map[string]*TokenAddress //blockchain:token-tokenAddress
 	writer chan *store.WsPushMessage

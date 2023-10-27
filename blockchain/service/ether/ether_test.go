@@ -14,9 +14,34 @@ func Init() blockchain.API {
 	return NewEth(cfg.Cluster[200], 200, xlog.NewXLogger())
 }
 
+func Init2() blockchain.NftApi {
+	cfg := config.LoadConfig("./../../../cmd/blockchain/config_ether.json")
+	return NewNftEth(cfg.Cluster[200], 200, xlog.NewXLogger())
+}
+
 func TestEther_Token(t *testing.T) {
 	s := Init()
 	resp, err := s.Token(200, "0x4577fcfB0642afD21b5f2502753ED6D497B830E9", "", "721")
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log(resp)
+	}
+}
+
+func TestEther_BalanceOf(t *testing.T) {
+	s := Init2()
+	resp, err := s.BalanceOf(200, "0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d", "0xE093b32E23646248990d121aA02d2B493B538E41", "2095", 721)
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log(resp)
+	}
+}
+
+func TestEther_TokenURI(t *testing.T) {
+	s := Init2()
+	resp, err := s.TokenURI(200, "0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d", "2095", 721)
 	if err != nil {
 		t.Error(err)
 	} else {

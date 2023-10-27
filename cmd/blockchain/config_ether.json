@@ -10,7 +10,7 @@
   "Cluster": {
     "200": [
       {
-        "NodeUrl": "https://ethereum-mainnet-rpc.allthatnode.com",
+        "NodeUrl": "https://ethereum.publicnode.com",
         "NodeToken": ""
       }
     ]

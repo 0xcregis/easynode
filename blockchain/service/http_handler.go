@@ -232,7 +232,7 @@ func (h *HttpHandler) GetTokenBalance(ctx *gin.Context) {
 	r := gjson.ParseBytes(b)
 	blockChainCode := r.Get("chain").Int()
 	addr := r.Get("address").String()
-	codeHash := r.Get("codeHash").String()
+	codeHash := r.Get("contract").String()
 	abi := r.Get("abi").String()
 
 	res, err := h.blockChainClients[blockChainCode].TokenBalance(blockChainCode, codeHash, addr, abi)

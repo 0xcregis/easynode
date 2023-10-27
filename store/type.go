@@ -280,7 +280,7 @@ type ContractTx struct {
 	Value    string `json:"value"`
 	EIP      int64  `json:"eip"`
 	Index    int64  `json:"index"`
-	Token    string `json:"tokenMeta"`
+	Token    string `json:"-"`
 }
 
 type SubTx struct {

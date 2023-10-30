@@ -247,10 +247,24 @@ func ParseTx(body []byte, transferTopic string, blockchain int64) (*store.SubTx,
 		r.FeeDetail = gasFee
 		number := receiptRoot.Get("blockNumber").String()
 		r.BlockNumber = number
+		contractTx := make([]*store.ContractTx, 0, 5)
+
+		if r.TxType != 1 {
+			var c store.ContractTx
+			c.Contract = ""
+			c.Index = 0
+			c.Value = r.Value
+			c.From = r.From
+			c.To = r.To
+			c.Method = "Transfer"
+			c.EIP = -1
+			c.Token = ""
+			contractTx = append(contractTx, &c)
+		}
 
 		logs := receiptRoot.Get("log").Array()
-		contractTx := make([]*store.ContractTx, 0, 5)
-		for _, v := range logs {
+		l := len(contractTx)
+		for index, v := range logs {
 			contract := v.Get("address").String()
 			//value := v.Get("data").String()
 			tps := v.Get("topics").Array()
@@ -293,6 +307,7 @@ func ParseTx(body []byte, transferTopic string, blockchain int64) (*store.SubTx,
 				var m store.ContractTx
 				m.Contract = util.HexToAddress(fmt.Sprintf("41%v", contract)).Base58()
 				m.Value = data
+				m.Index = int64(index + l)
 
 				from, _ := util.Hex2Address2(from)
 				m.From = util.HexToAddress(from).Base58()

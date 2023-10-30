@@ -242,30 +242,8 @@ type Block struct {
 	Nonce           string   `json:"nonce" gorm:"column:nonce"`
 }
 
-type WsReqMessage struct {
-	Id         int64             `json:"id"`
-	Code       []int64           `json:"code"` //1:订阅资产转移交易，2:取消订阅：资产转移交易 ，3:质押资产 4:取消订阅：质押资产 5:解锁资产 6:取消订阅：解锁资产 7:提取 8:取消订阅：提取 9:代理资源 10:取消订阅：代理资源 11:回收资源（取消代理） 12:取消订阅： 回收资源（取消代理） 13:激活账号  14:取消订阅：激活账号
-	BlockChain []int64           `json:"blockChain"`
-	Params     map[string]string `json:"params"`
-}
-
-type CmdMessage struct {
-	Id         int64   `json:"id"`
-	Code       int64   `json:"code"` //1:订阅资产转移交易，2:取消订阅：资产转移交易 ，3:质押资产 4:取消订阅：质押资产 5:解锁资产 6:取消订阅：解锁资产 7:提取 8:取消订阅：提取 9:代理资源 10:取消订阅：代理资源 11:回收资源（取消代理） 12:取消订阅： 回收资源（取消代理） 13:激活账号  14:取消订阅：激活账号
-	BlockChain []int64 `json:"blockChain"`
-}
-
-type WsRespMessage struct {
-	Id         int64             `json:"id"`
-	Code       []int64           `json:"code"`
-	BlockChain []int64           `json:"blockChain"`
-	Status     int               `json:"status"` //0:成功 1：失败
-	Err        string            `json:"err"`
-	Params     map[string]string `json:"params"`
-	Resp       interface{}       `json:"resp"`
-}
-
 type WsPushMessage struct {
+	//  1: Asset transfer transaction, 3: Pledged assets 5: Unlock assets 7: Withdraw 9: Agent resources 11: Recycle resources (cancel agent) 13: Activate account
 	Code       int64  `json:"code"`
 	BlockChain int64  `json:"blockChain"`
 	Token      string `json:"token"`
@@ -273,13 +251,14 @@ type WsPushMessage struct {
 }
 
 type ContractTx struct {
-	Contract string `json:"contract"`
+	Contract string `json:"contractAddress"`
 	From     string `json:"from"`
 	Method   string `json:"method"`
 	To       string `json:"to"`
 	Value    string `json:"value"`
-	EIP      int64  `json:"eip"`
-	Token    string `json:"token"`
+	EIP      int64  `json:"token_type"`
+	Index    int64  `json:"index"`
+	Token    string `json:"-"`
 }
 
 type SubTx struct {
@@ -287,7 +266,7 @@ type SubTx struct {
 	BlockChain  uint64        `json:"chainCode" gorm:"column:block_chain"`
 	BlockHash   string        `json:"blockHash" gorm:"column:block_hash"`
 	BlockNumber string        `json:"blockNumber" gorm:"column:block_number"`
-	ContractTx  []*ContractTx `json:"contractTx" gorm:"-"`
+	ContractTx  []*ContractTx `json:"txs" gorm:"-"`
 	ContractTxs string        `json:"-" gorm:"column:contract_tx"`
 	Fee         string        `json:"fee" gorm:"column:fee"`
 	FeeDetail   interface{}   `json:"-" gorm:"-"`
@@ -298,8 +277,8 @@ type SubTx struct {
 	Status      uint64        `json:"status" gorm:"column:tx_status"` //0x0:失败，0x1:成功
 	To          string        `json:"to" gorm:"column:to_addr"`
 	TxTime      string        `json:"txTime" gorm:"column:tx_time"`
-	TxType      uint64        `json:"txType" gorm:"column:tx_type"` //交易类型 1:合约调用，2:普通资产转移 3:资源代理 4:资源回收 5:激活 6:质押 7:解质押 8:解质押提现
-	Value       string        `json:"value" gorm:"column:value"`
+	TxType      uint64        `json:"-" gorm:"column:tx_type"` //交易类型 1:合约调用，2:普通资产转移 3:资源代理 4:资源回收 5:激活 6:质押 7:解质押 8:解质押提现
+	Value       string        `json:"-" gorm:"column:value"`
 }
 
 /*

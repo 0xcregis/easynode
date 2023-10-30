@@ -286,9 +286,9 @@ notes:
                
    receive：
    {
-      "code": 1, //消息类型，1:交易消息
-      "blockChain": 200, //公链代码
-      "data": { //交易数据
+      "code": 1, //message type
+      "blockChain": 200, //chain code
+      "data": { 
           "id":1698395758827420000,
           "chainCode":200,
           "blockHash":"0xbe36cdcfce377f7415bd91be3be10555fc705cd9c48ac077b3de9a1c298c4a36",

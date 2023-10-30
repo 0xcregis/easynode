@@ -32,7 +32,6 @@ type WsHandler struct {
 	cache   *db.CacheService
 	connMap map[string]*websocket.Conn //token:conn
 	lock    sync.RWMutex
-	//cmdMap  map[string]map[int64]store.CmdMessage //token:code-wsReq
 	//ctxMap         map[string]map[int64]context.CancelFunc
 	//monitorAddress map[int64]map[string]*TokenAddress //blockchain:token-tokenAddress
 	writer chan *store.WsPushMessage
@@ -100,13 +99,9 @@ func (ws *WsHandler) updateMonitorAddress() {
 	go func() {
 		for {
 			for _, w := range ws.cfg {
-				l, err := ws.store.GetAddressByToken3(w.BlockChain)
-				if err != nil {
-					continue
-				}
+				l, _ := ws.store.GetAddressByToken3(w.BlockChain)
 				_ = ws.cache.SetMonitorAddress(w.BlockChain, l)
 			}
-
 			<-time.After(100 * time.Second)
 		}
 	}()

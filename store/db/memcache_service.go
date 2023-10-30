@@ -49,6 +49,10 @@ func (s *CacheService) SetMonitorAddress(blockChain int64, addrList []*store.Mon
 		return err
 	}
 
+	if len(addrList) < 1 {
+		return fmt.Errorf("blockChain:%v ,no monitor address to save", blockChain)
+	}
+
 	mp := make(map[string]string, 20)
 	for _, v := range addrList {
 		mp[v.Address] = v.Address
@@ -62,6 +66,9 @@ func (s *CacheService) SetMonitorAddress(blockChain int64, addrList []*store.Mon
 		}
 	}
 
+	if len(mp) < 1 {
+		return fmt.Errorf("blockChain:%v ,no monitor address to save", blockChain)
+	}
 	_, err = s.cacheClient[blockChain].HSet(context.Background(), fmt.Sprintf(MonitorKey, blockChain), mp).Result()
 	if err != nil {
 		s.log.Warnf("GetMonitorAddress|err=%v", err.Error())

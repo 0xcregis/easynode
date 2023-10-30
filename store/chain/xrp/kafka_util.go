@@ -247,6 +247,22 @@ func ParseTx(value []byte, transferTopic string, blockchain int64) (*store.SubTx
 		blockTime := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC).Add(d).Unix()
 		tx.TxTime = fmt.Sprintf("%v000", blockTime)
 	}
+
+	contractTx := make([]*store.ContractTx, 0, 5)
+	if tx.TxType != 1 {
+		var c store.ContractTx
+		c.Contract = ""
+		c.Value = tx.Value
+		c.From = tx.From
+		c.To = tx.To
+		c.Method = "Transfer"
+		c.EIP = -1
+		c.Index = 0
+		c.Token = ""
+		contractTx = append(contractTx, &c)
+	}
+	tx.ContractTx = contractTx
+
 	return &tx, nil
 }
 

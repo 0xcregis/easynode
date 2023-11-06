@@ -302,7 +302,7 @@ notes:
                   "method":"Transfer",
                   "to":"0x2c2ab61d2506308c0017f26c36e81e5b22942d57",
                   "value":"1315",
-                  "token_type":721,
+                  "tokenType":721,
                   "index":9
               }
           ],

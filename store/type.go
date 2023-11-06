@@ -256,7 +256,7 @@ type ContractTx struct {
 	Method   string `json:"method"`
 	To       string `json:"to"`
 	Value    string `json:"value"`
-	EIP      int64  `json:"token_type"`
+	EIP      int64  `json:"tokenType"`
 	Index    int64  `json:"index"`
 	Token    string `json:"-"`
 }

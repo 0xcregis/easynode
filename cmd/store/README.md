@@ -215,7 +215,7 @@ curl --location --request POST 'localhost:9003/api/store/filter/delete' \
                   "method":"Transfer",
                   "to":"0x2c2ab61d2506308c0017f26c36e81e5b22942d57",
                   "value":"1315",
-                  "token_type":721,
+                  "tokenType":721,
                   "index":9
               }
           ],
@@ -248,7 +248,7 @@ curl --location --request POST 'localhost:9003/api/store/filter/delete' \
             "method":"Transfer",
             "to":"0xd9ec62e6927082ad28b73fb5d4b5e9d571e00768",
             "value":"0.209636442559786101",
-            "token_type":-1,
+            "tokenType":-1,
             "index":0
         }
      
@@ -263,7 +263,7 @@ curl --location --request POST 'localhost:9003/api/store/filter/delete' \
             "method":"Transfer",
             "to":"0x2c2ab61d2506308c0017f26c36e81e5b22942d57",
             "value":"1315",
-            "token_type":721,
+            "tokenType":721,
             "index":9
         }
       ``````
@@ -288,7 +288,7 @@ curl --location --request POST 'localhost:9003/api/store/filter/delete' \
   what was transferred and how much was transferred，it has different values, affected by token_type
   It is the transaction amount, if token_type=-1 or 20. it is tokenId ,if token_type=721. it may be tokenId and amount,if  token_type=1155
 
-- data.txs.token_type
+- data.txs.tokenType
 
   int32,contract type ,include -1,20,721,1155
 

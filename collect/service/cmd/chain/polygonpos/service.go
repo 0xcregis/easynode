@@ -20,10 +20,12 @@ import (
 )
 
 type Service struct {
-	log                *xlog.XLog
-	chain              *config.Chain
-	nodeId             string
-	transferTopic      string
+	log                    *xlog.XLog
+	chain                  *config.Chain
+	nodeId                 string
+	transferTopic          string
+	nftTransferSingleTopic string
+	//nftTransferBatchTopic  string
 	store              collect.StoreTaskInterface
 	txChainClient      blockchain.API
 	blockChainClient   blockchain.API
@@ -465,6 +467,24 @@ func (s *Service) CheckAddress(tx []byte, addrList map[string]int64) bool {
 					txAddressList[getCoreAddr(to)] = 1
 				}
 			}
+
+			//Transfer(),erc1155
+			if len(topics) == 4 && topics[0].String() == s.nftTransferSingleTopic {
+				operator, _ := util.Hex2Address(topics[1].String())
+				if len(operator) > 0 {
+					txAddressList[getCoreAddr(operator)] = 1
+				}
+
+				from, _ := util.Hex2Address(topics[2].String())
+				if len(from) > 0 {
+					txAddressList[getCoreAddr(from)] = 1
+				}
+
+				to, _ := util.Hex2Address(topics[3].String())
+				if len(to) > 0 {
+					txAddressList[getCoreAddr(to)] = 1
+				}
+			}
 		}
 	}
 
@@ -485,7 +505,7 @@ func (s *Service) CheckAddress(tx []byte, addrList map[string]int64) bool {
 	return has
 }
 
-func NewService(c *config.Chain, x *xlog.XLog, store collect.StoreTaskInterface, nodeId string, transferTopic string) collect.BlockChainInterface {
+func NewService(c *config.Chain, x *xlog.XLog, store collect.StoreTaskInterface, nodeId string, transferTopic, nftTransferSingleTopic string) collect.BlockChainInterface {
 
 	var blockClient blockchain.API
 	if c.BlockTask != nil {
@@ -531,13 +551,14 @@ func NewService(c *config.Chain, x *xlog.XLog, store collect.StoreTaskInterface,
 	}
 
 	return &Service{
-		log:                x,
-		chain:              c,
-		store:              store,
-		txChainClient:      txClient,
-		blockChainClient:   blockClient,
-		receiptChainClient: receiptClient,
-		nodeId:             nodeId,
-		transferTopic:      transferTopic,
+		log:                    x,
+		chain:                  c,
+		store:                  store,
+		txChainClient:          txClient,
+		blockChainClient:       blockClient,
+		receiptChainClient:     receiptClient,
+		nodeId:                 nodeId,
+		transferTopic:          transferTopic,
+		nftTransferSingleTopic: nftTransferSingleTopic,
 	}
 }

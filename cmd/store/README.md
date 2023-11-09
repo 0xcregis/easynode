@@ -262,11 +262,37 @@ curl --location --request POST 'localhost:9003/api/store/filter/delete' \
             "from":"0x0000000000000000000000000000000000000000",
             "method":"Transfer",
             "to":"0x2c2ab61d2506308c0017f26c36e81e5b22942d57",
+            "value":"19.56",
+            "tokenType":20,
+            "index":9
+        }
+      ``````
+      
+      ``````
+      {
+            "contractAddress":"0xd9ec62e6927082ad28b73fb5d4b5e9d571e00768",
+            "from":"0x0000000000000000000000000000000000000000",
+            "method":"Transfer",
+            "to":"0x2c2ab61d2506308c0017f26c36e81e5b22942d57",
             "value":"1315",
             "tokenType":721,
             "index":9
         }
       ``````
+      `````` 
+      {
+        "contractAddress": "0x9a06ef3a841316a9e2c1c93b9c21a7342abe484f",
+        "from": "0x1e0049783f008a0085193e00003d00cd54003c71",
+        "method": "Transfer",
+        "to": "0xf698cb85014702653c6c17d55cfa380618e8f098",
+        "value": "id=7009&value=1",
+        "tokenType": 1155,
+        "index": 1
+      }
+      
+      ``````      
+
+
 - data.txs.contractAddress
 
   The contract address where the event occurred, If it is the main transaction, it may be empty, otherwise it is the contract address

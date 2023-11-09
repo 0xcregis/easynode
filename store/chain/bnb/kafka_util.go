@@ -214,7 +214,7 @@ func ParseTx(body []byte, transferTopic, nftTransferSingleTopic string, blockcha
 				v := r.Get("data").String()
 				id, amount, err := util.NftData(v)
 				if err == nil {
-					v = fmt.Sprintf("id=%v&value=%v", id, amount)
+					v = fmt.Sprintf("%v,%v", id, amount)
 				}
 				var from, to string
 				if len(tps) == 4 && tps[0].String() == nftTransferSingleTopic {

@@ -285,7 +285,7 @@ curl --location --request POST 'localhost:9003/api/store/filter/delete' \
         "from": "0x1e0049783f008a0085193e00003d00cd54003c71",
         "method": "Transfer",
         "to": "0xf698cb85014702653c6c17d55cfa380618e8f098",
-        "value": "id=7009&value=1",//the value include 2 element，id is tokenId, value is token value
+        "value": "7009,1",//the value include 2 element，1st is tokenId, 2nd is token value
         "tokenType": 1155,
         "index": 1
       }
@@ -311,8 +311,8 @@ curl --location --request POST 'localhost:9003/api/store/filter/delete' \
 
 - data.txs.value
 
-  what was transferred and how much was transferred，it has different values, affected by token_type
-  It is the transaction amount, if token_type=-1 or 20. it is tokenId ,if token_type=721. it may be tokenId and amount,if  token_type=1155
+  what was transferred and how much was transferred，it has different values, affected by tokenType
+  It is the transaction amount, if tokenType=-1 or 20. it is tokenId ,if tokenType=721. it may be tokenId and amount,if  tokenType=1155
 
 - data.txs.tokenType
 

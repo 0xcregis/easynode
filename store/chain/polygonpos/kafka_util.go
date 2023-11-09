@@ -57,7 +57,7 @@ func GetTxType(body []byte) (uint64, error) {
 	}
 }
 
-func ParseTx(body []byte, transferTopic string, blocchain int64) (*store.SubTx, error) {
+func ParseTx(body []byte, transferTopic, nftTransferSingleTopic string, blocchain int64) (*store.SubTx, error) {
 	var r store.SubTx
 	root := gjson.ParseBytes(body)
 	r.BlockChain = uint64(blocchain)
@@ -198,9 +198,34 @@ func ParseTx(body []byte, transferTopic string, blocchain int64) (*store.SubTx, 
 					to = tps[2].String()
 					var m store.ContractTx
 					m.Contract = contract
+					m.Index = int64(index + l)
 					v, _ := util.HexToInt(tps[3].String())
 					m.Value = v
+					m.From, _ = util.Hex2Address(from)
+					m.To, _ = util.Hex2Address(to)
+					m.Method = "Transfer"
+					m.EIP = eip
+					m.Token = token
+					contractTx = append(contractTx, &m)
+				}
+			}
+
+			if eip == 1155 {
+				tps := v.Get("topics").Array()
+				v := r.Get("data").String()
+				id, amount, err := util.NftData(v)
+				if err == nil {
+					v = fmt.Sprintf("%v,%v", id, amount)
+				}
+				var from, to string
+				if len(tps) == 4 && tps[0].String() == nftTransferSingleTopic {
+					//method = tps[0].String()
+					from = tps[1].String()
+					to = tps[2].String()
+					var m store.ContractTx
+					m.Contract = contract
 					m.Index = int64(index + l)
+					m.Value = v
 					m.From, _ = util.Hex2Address(from)
 					m.To, _ = util.Hex2Address(to)
 					m.Method = "Transfer"

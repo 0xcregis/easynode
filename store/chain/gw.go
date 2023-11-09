@@ -82,7 +82,7 @@ func ParseTx(blockchain int64, msg *kafka.Message) (*store.SubTx, error) {
 		return tron.ParseTx(msg.Value, store.TronTopic, blockchain)
 	}
 	if blockchain == 201 {
-		return polygonpos.ParseTx(msg.Value, store.PolygonTopic, blockchain)
+		return polygonpos.ParseTx(msg.Value, store.PolygonTopic, store.EthTransferSingleTopic, blockchain)
 	}
 	if blockchain == 202 {
 		return bnb.ParseTx(msg.Value, store.EthTopic, store.EthTransferSingleTopic, blockchain)

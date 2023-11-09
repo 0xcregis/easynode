@@ -66,7 +66,6 @@ func TestParseTx(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	} else {
-
 		bs, _ := json.Marshal(tx)
 		t.Log(string(bs))
 

@@ -262,7 +262,7 @@ curl --location --request POST 'localhost:9003/api/store/filter/delete' \
             "from":"0x0000000000000000000000000000000000000000",
             "method":"Transfer",
             "to":"0x2c2ab61d2506308c0017f26c36e81e5b22942d57",
-            "value":"19.56",
+            "value":"19.56",// value of token
             "tokenType":20,
             "index":9
         }
@@ -274,7 +274,7 @@ curl --location --request POST 'localhost:9003/api/store/filter/delete' \
             "from":"0x0000000000000000000000000000000000000000",
             "method":"Transfer",
             "to":"0x2c2ab61d2506308c0017f26c36e81e5b22942d57",
-            "value":"1315",
+            "value":"1315",// the value is tokenId
             "tokenType":721,
             "index":9
         }
@@ -285,7 +285,7 @@ curl --location --request POST 'localhost:9003/api/store/filter/delete' \
         "from": "0x1e0049783f008a0085193e00003d00cd54003c71",
         "method": "Transfer",
         "to": "0xf698cb85014702653c6c17d55cfa380618e8f098",
-        "value": "id=7009&value=1",
+        "value": "id=7009&value=1",//the value include 2 element，id is tokenId, value is token value
         "tokenType": 1155,
         "index": 1
       }

@@ -82,7 +82,7 @@ func ParseTx(blockchain int64, msg *kafka.Message) (*store.SubTx, error) {
 		return tron.ParseTx(msg.Value, store.TronTopic, blockchain)
 	}
 	if blockchain == 201 {
-		return polygonpos.ParseTx(msg.Value, store.PolygonTopic, blockchain)
+		return polygonpos.ParseTx(msg.Value, store.PolygonTopic, store.EthTransferSingleTopic, blockchain)
 	}
 	if blockchain == 202 {
 		return bnb.ParseTx(msg.Value, store.EthTopic, store.EthTransferSingleTopic, blockchain)
@@ -149,13 +149,13 @@ func CheckAddress(blockChain int64, msg *kafka.Message, list map[string]*store.M
 		return false
 	}
 	if blockChain == 200 {
-		return ether.CheckAddress(msg.Value, list, store.EthTopic)
+		return ether.CheckAddress(msg.Value, list, store.EthTopic, store.EthTransferSingleTopic)
 	} else if blockChain == 205 {
 		return tron.CheckAddress(msg.Value, list, store.TronTopic)
 	} else if blockChain == 201 {
-		return polygonpos.CheckAddress(msg.Value, list, store.PolygonTopic)
+		return polygonpos.CheckAddress(msg.Value, list, store.PolygonTopic, store.EthTransferSingleTopic)
 	} else if blockChain == 202 {
-		return bnb.CheckAddress(msg.Value, list, store.EthTopic)
+		return bnb.CheckAddress(msg.Value, list, store.EthTopic, store.EthTransferSingleTopic)
 	} else if blockChain == 301 {
 		return filecoin.CheckAddress(msg.Value, list, store.PolygonTopic)
 	} else if blockChain == 310 {

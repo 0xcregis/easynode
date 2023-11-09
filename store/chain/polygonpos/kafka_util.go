@@ -57,7 +57,7 @@ func GetTxType(body []byte) (uint64, error) {
 	}
 }
 
-func ParseTx(body []byte, transferTopic string, blocchain int64) (*store.SubTx, error) {
+func ParseTx(body []byte, transferTopic, nftTransferSingleTopic string, blocchain int64) (*store.SubTx, error) {
 	var r store.SubTx
 	root := gjson.ParseBytes(body)
 	r.BlockChain = uint64(blocchain)
@@ -198,9 +198,34 @@ func ParseTx(body []byte, transferTopic string, blocchain int64) (*store.SubTx, 
 					to = tps[2].String()
 					var m store.ContractTx
 					m.Contract = contract
+					m.Index = int64(index + l)
 					v, _ := util.HexToInt(tps[3].String())
 					m.Value = v
+					m.From, _ = util.Hex2Address(from)
+					m.To, _ = util.Hex2Address(to)
+					m.Method = "Transfer"
+					m.EIP = eip
+					m.Token = token
+					contractTx = append(contractTx, &m)
+				}
+			}
+
+			if eip == 1155 {
+				tps := v.Get("topics").Array()
+				v := r.Get("data").String()
+				id, amount, err := util.NftData(v)
+				if err == nil {
+					v = fmt.Sprintf("%v,%v", id, amount)
+				}
+				var from, to string
+				if len(tps) == 4 && tps[0].String() == nftTransferSingleTopic {
+					//method = tps[0].String()
+					from = tps[1].String()
+					to = tps[2].String()
+					var m store.ContractTx
+					m.Contract = contract
 					m.Index = int64(index + l)
+					m.Value = v
 					m.From, _ = util.Hex2Address(from)
 					m.To, _ = util.Hex2Address(to)
 					m.Method = "Transfer"
@@ -227,7 +252,7 @@ func GetCoreAddr(addr string) string {
 	}
 	return addr
 }
-func CheckAddress(tx []byte, addrList map[string]*store.MonitorAddress, transferTopic string) bool {
+func CheckAddress(tx []byte, addrList map[string]*store.MonitorAddress, transferTopic, nftTransferSingleTopic string) bool {
 
 	if len(addrList) < 1 || len(tx) < 1 {
 		return false
@@ -270,6 +295,24 @@ func CheckAddress(tx []byte, addrList map[string]*store.MonitorAddress, transfer
 					txAddressList[GetCoreAddr(from)] = 1
 				}
 				to, _ := util.Hex2Address(topics[2].String())
+				if len(to) > 0 {
+					txAddressList[GetCoreAddr(to)] = 1
+				}
+			}
+
+			//Transfer(),erc1155
+			if len(topics) == 4 && topics[0].String() == nftTransferSingleTopic {
+				operator, _ := util.Hex2Address(topics[1].String())
+				if len(operator) > 0 {
+					txAddressList[GetCoreAddr(operator)] = 1
+				}
+
+				from, _ := util.Hex2Address(topics[2].String())
+				if len(from) > 0 {
+					txAddressList[GetCoreAddr(from)] = 1
+				}
+
+				to, _ := util.Hex2Address(topics[3].String())
 				if len(to) > 0 {
 					txAddressList[GetCoreAddr(to)] = 1
 				}

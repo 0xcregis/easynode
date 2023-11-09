@@ -47,7 +47,11 @@ func (s *HttpHandler) AddSubFilter(c *gin.Context) {
 
 	var list []*store.SubFilter
 
-	_ = json.Unmarshal(bs, &list)
+	err = json.Unmarshal(bs, &list)
+	if err != nil {
+		s.Error(c, c.Request.URL.Path, err.Error())
+		return
+	}
 
 	err = s.store.NewSubFilter(list)
 	if err != nil {

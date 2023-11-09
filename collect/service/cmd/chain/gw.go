@@ -28,7 +28,7 @@ func GetBlockchain(blockchain int, c *config.Chain, store collect.StoreTaskInter
 	} else if blockchain == 205 {
 		srv = tron2.NewService(c, x, store, nodeId, collect.TronTopic)
 	} else if blockchain == 201 {
-		srv = polygonpos.NewService(c, x, store, nodeId, collect.PolygonTopic)
+		srv = polygonpos.NewService(c, x, store, nodeId, collect.PolygonTopic, collect.EthNftTransferSingleTopic)
 	} else if blockchain == 202 {
 		srv = bnb.NewService(c, x, store, nodeId, collect.EthTopic, collect.EthNftTransferSingleTopic)
 	} else if blockchain == 301 {

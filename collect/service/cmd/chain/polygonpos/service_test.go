@@ -14,7 +14,7 @@ func Init() (collect.BlockChainInterface, config.Config, *xlog.XLog) {
 	cfg := config.LoadConfig("./../../../../../cmd/collect/config_polygon.json")
 	x := xlog.NewXLogger()
 	store := db.NewTaskCacheService(cfg.Chains[0], x)
-	return NewService(cfg.Chains[0], x, store, "9587acc2-04ab-4154-ae11-f6d588c6493f", "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"), cfg, x
+	return NewService(cfg.Chains[0], x, store, "9587acc2-04ab-4154-ae11-f6d588c6493f", "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", collect.EthNftTransferSingleTopic), cfg, x
 }
 
 func TestService_GetBlockByNumber(t *testing.T) {

@@ -249,7 +249,7 @@ func GetCoreAddr(addr string) string {
 	}
 	return addr
 }
-func CheckAddress(tx []byte, addrList map[string]*store.MonitorAddress, transferTopic string) bool {
+func CheckAddress(tx []byte, addrList map[string]*store.MonitorAddress, transferTopic, nftTransferSingleTopic string) bool {
 
 	if len(addrList) < 1 || len(tx) < 1 {
 		return false
@@ -293,6 +293,24 @@ func CheckAddress(tx []byte, addrList map[string]*store.MonitorAddress, transfer
 					txAddressList[GetCoreAddr(from)] = 1
 				}
 				to, _ := util.Hex2Address(topics[2].String())
+				if len(to) > 0 {
+					txAddressList[GetCoreAddr(to)] = 1
+				}
+			}
+
+			//Transfer(),erc1155
+			if len(topics) == 4 && topics[0].String() == nftTransferSingleTopic {
+				operator, _ := util.Hex2Address(topics[1].String())
+				if len(operator) > 0 {
+					txAddressList[GetCoreAddr(operator)] = 1
+				}
+
+				from, _ := util.Hex2Address(topics[2].String())
+				if len(from) > 0 {
+					txAddressList[GetCoreAddr(from)] = 1
+				}
+
+				to, _ := util.Hex2Address(topics[3].String())
 				if len(to) > 0 {
 					txAddressList[GetCoreAddr(to)] = 1
 				}

@@ -87,7 +87,7 @@ func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool
 		return nil, nil
 	}
 
-	r := &collect.BlockInterface{BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, Block: block}
+	r := &collect.BlockInterface{BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, Block: block, BlockTime: block.BlockTime}
 	if !flag { //仅区块，不涉及交易
 		return r, nil
 	}
@@ -118,7 +118,6 @@ func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool
 			txs = append(txs, t)
 		}
 	}
-	//r := &service.BlockInterface{BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, Block: block}
 	return r, txs
 }
 
@@ -158,7 +157,7 @@ func (s *Service) GetBlockByNumber(blockNumber string, eLog *logrus.Entry, flag 
 		return nil, nil
 	}
 
-	r := &collect.BlockInterface{BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, Block: block}
+	r := &collect.BlockInterface{BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, Block: block, BlockTime: block.BlockTime}
 	if !flag { //仅区块数据，不涉及交易
 		return r, nil
 	}
@@ -191,7 +190,6 @@ func (s *Service) GetBlockByNumber(blockNumber string, eLog *logrus.Entry, flag 
 			eLog.Warnf("the tx is ignored,hash=%v", tx.TxHash)
 		}
 	}
-	//r := &service.BlockInterface{BlockHash: block.BlockHash, BlockNumber: block.BlockNumber, Block: block}
 	return r, txs
 }
 
@@ -218,6 +216,14 @@ func (s *Service) GetTx(txHash string, eLog *logrus.Entry) *collect.TxInterface 
 	if len(tx.TxHash) < 1 {
 		eLog.Errorf("GetTx|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, resp, txHash)
 		return nil
+	}
+
+	//fix tx.time
+	if len(tx.TxTime) < 1 {
+		b, _ := s.GetBlockByNumber(tx.BlockNumber, eLog, false)
+		if b != nil {
+			tx.TxTime = b.BlockTime
+		}
 	}
 
 	receipt, err := s.GetReceipt(tx.TxHash, eLog)

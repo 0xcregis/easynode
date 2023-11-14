@@ -26,7 +26,11 @@ func TestService_GetBlockByNumber(t *testing.T) {
 func TestService_GetTx(t *testing.T) {
 	s, _, x := Init()
 	tx := s.GetTx("0xb7959ab3ed0f8b424f897ba8ec28168358079be0030a9337d20252f7d4c18cfd", x.WithFields(logrus.Fields{}))
-	t.Log(tx)
+	if tx == nil {
+		t.Error("fail")
+	} else {
+		t.Logf("%+v", tx.Tx)
+	}
 }
 
 func TestService_GetReceipt(t *testing.T) {

@@ -291,6 +291,7 @@ type Block struct {
 
 type BlockInterface struct {
 	BlockHash   string      `json:"hash" gorm:"column:hash"`
+	BlockTime   string      `json:"blockTime"`
 	BlockNumber string      `json:"number" gorm:"column:block_number"`
 	Block       interface{} `json:"block"`
 }

@@ -91,24 +91,43 @@ func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool
 	if !flag { //仅区块，不涉及交易
 		return r, nil
 	}
-	//list := s.GetReceiptByBlock(block.BlockHash, block.BlockNumber, nil, eLog)
 
-	for _, v := range txList {
-		receipt, err := s.GetReceipt(v.TxHash, eLog)
-		if err != nil {
-			eLog.Errorf("GetBlockByHash|BlockChainCode=%v,err=%v,blockHash=%v,txHash=%v", s.chain.BlockChainCode, err.Error(), blockHash, v.TxHash)
-		} else {
-			if receipt != nil && v.TxHash == receipt.TransactionHash {
-				bs, _ := json.Marshal(receipt.Receipt)
-				v.Receipt = string(bs)
+	m := make(map[string]*collect.ReceiptInterface, 10)
+
+	list, err := s.GetReceiptByBlock(block.BlockHash, block.BlockNumber, eLog)
+	if err == nil && len(list) > 0 {
+		for _, v := range list {
+			m[v.TransactionHash] = v
+		}
+	} else {
+		for _, v := range txList {
+			receipt, err := s.GetReceipt(v.TxHash, eLog)
+			if err != nil {
+				eLog.Errorf("GetBlockByHash|BlockChainCode=%v,err=%v,blockHash=%v,txHash=%v", s.chain.BlockChainCode, err.Error(), blockHash, v.TxHash)
+			} else {
+				m[receipt.TransactionHash] = receipt
 			}
 		}
 	}
 
+	for _, v := range txList {
+		if receipt, ok := m[v.TxHash]; ok {
+			bs, _ := json.Marshal(receipt.Receipt)
+			v.Receipt = string(bs)
+		}
+	}
+
+	//get monitor address list
 	addressList, err := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
 	if err != nil {
 		eLog.Errorf("GetBlockByHash|BlockChainName=%v,err=%v,blockHash=%v", s.chain.BlockChainName, err, blockHash)
 	}
+	if len(addressList) < 1 {
+		eLog.Warnf("the tx is ignored due to monitor address is empty,blockHash=%v", blockHash)
+		return r, nil
+	}
+
+	//filter tx
 	addressMp := rebuildAddress(addressList)
 	txs := make([]*collect.TxInterface, 0, len(txList))
 	for _, tx := range txList {
@@ -116,6 +135,8 @@ func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool
 		if s.CheckAddress(bs, addressMp) {
 			t := &collect.TxInterface{TxHash: tx.TxHash, Tx: tx}
 			txs = append(txs, t)
+		} else {
+			eLog.Warnf("the tx is ignored,hash=%v", tx.TxHash)
 		}
 	}
 	return r, txs
@@ -162,23 +183,41 @@ func (s *Service) GetBlockByNumber(blockNumber string, eLog *logrus.Entry, flag 
 		return r, nil
 	}
 
-	//list := s.GetReceiptByBlock(block.BlockHash, block.BlockNumber, nil, eLog)
-	for _, v := range txList {
-		receipt, err := s.GetReceipt(v.TxHash, eLog)
-		if err != nil {
-			eLog.Errorf("GetBlockByNumber|BlockChainCode=%v,err=%v,blockNumber=%v,txHash=%v", s.chain.BlockChainCode, err.Error(), blockNumber, v.TxHash)
-		} else {
-			if receipt != nil && v.TxHash == receipt.TransactionHash {
-				bs, _ := json.Marshal(receipt.Receipt)
-				v.Receipt = string(bs)
+	m := make(map[string]*collect.ReceiptInterface, 10)
+	list, err := s.GetReceiptByBlock(block.BlockHash, block.BlockNumber, eLog)
+	if err == nil && len(list) > 0 {
+		for _, v := range list {
+			m[v.TransactionHash] = v
+		}
+	} else {
+		for _, v := range txList {
+			receipt, err := s.GetReceipt(v.TxHash, eLog)
+			if err != nil {
+				eLog.Errorf("GetBlockByNumber|BlockChainCode=%v,err=%v,blockNumber=%v,txHash=%v", s.chain.BlockChainCode, err.Error(), blockNumber, v.TxHash)
+			} else {
+				m[receipt.TransactionHash] = receipt
 			}
 		}
 	}
 
+	for _, v := range txList {
+		if receipt, ok := m[v.TxHash]; ok {
+			bs, _ := json.Marshal(receipt.Receipt)
+			v.Receipt = string(bs)
+		}
+	}
+
+	//get monitor address list
 	addressList, err := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
 	if err != nil {
 		eLog.Errorf("GetBlockByNumber|BlockChainName=%v,err=%v,blockNumber=%v", s.chain.BlockChainName, err, blockNumber)
 	}
+	if len(addressList) < 1 {
+		eLog.Warnf("the tx is ignored due to monitor address is empty,blockNumber=%v", blockNumber)
+		return r, nil
+	}
+
+	//filter tx
 	addressMp := rebuildAddress(addressList)
 	txs := make([]*collect.TxInterface, 0, len(txList))
 	for _, tx := range txList {
@@ -340,7 +379,8 @@ func (s *Service) buildContract(receipt *collect.Receipt) (*collect.Receipt, err
 	// 仅有 合约交易，才能有logs
 	for _, g := range receipt.Logs {
 
-		//erc20 odo save contract of erc-20 to receipt.log
+		//erc20
+		//save contract of erc-20 to receipt.log
 		if len(g.Topics) == 3 && g.Topics[0] == s.transferTopic {
 			//处理 普通资产和 20 协议 资产转移
 			mp := make(map[string]interface{}, 2)
@@ -378,7 +418,17 @@ func (s *Service) buildContract(receipt *collect.Receipt) (*collect.Receipt, err
 		}
 
 		//erc1155
-		//todo save contract of erc-1155 to receipt.log
+		// save contract of erc-1155 to receipt.log
+		if len(g.Topics) == 4 && g.Topics[0] == s.nftTransferSingleTopic {
+			//处理 普通资产和 1155 协议 资产转移
+			mp := make(map[string]interface{}, 3)
+			token, _ := s.getToken(int64(s.chain.BlockChainCode), receipt.From, g.Address, "1155")
+			mp["token"] = token
+			mp["eip"] = 1155
+			mp["data"] = g.Data
+			bs, _ := json.Marshal(mp)
+			g.Data = string(bs)
+		}
 	}
 
 	if has {

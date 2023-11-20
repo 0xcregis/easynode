@@ -22,11 +22,90 @@ type PolygonPos struct {
 	log              *xlog.XLog
 	nodeCluster      []*config.NodeCluster
 	blockChainClient blockchain.ChainConn
+	nftClient        blockchain.NFT
+}
+
+func (e *PolygonPos) TokenURI(chainCode int64, contractAddress string, tokenId string, eip int64) (string, error) {
+	cluster := e.BalanceCluster()
+	if cluster == nil {
+		//不存在节点
+		return "", errors.New("blockchain node has not found")
+	}
+	resp, err := e.nftClient.TokenURI(cluster.NodeUrl, cluster.NodeToken, contractAddress, tokenId, eip)
+	if err != nil {
+		cluster.ErrorCount += 1
+		return "", err
+	}
+	return resp, nil
+}
+
+func (e *PolygonPos) BalanceOf(chainCode int64, contractAddress string, address string, tokenId string, eip int64) (string, error) {
+	cluster := e.BalanceCluster()
+	if cluster == nil {
+		//不存在节点
+		return "", errors.New("blockchain node has not found")
+	}
+	resp, err := e.nftClient.BalanceOf(cluster.NodeUrl, cluster.NodeToken, contractAddress, address, tokenId, eip)
+	if err != nil {
+		cluster.ErrorCount += 1
+		return "", err
+	}
+	return resp, nil
+}
+
+func (e *PolygonPos) OwnerOf(chainCode int64, contractAddress string, tokenId string, eip int64) (string, error) {
+	cluster := e.BalanceCluster()
+	if cluster == nil {
+		//不存在节点
+		return "", errors.New("blockchain node has not found")
+	}
+	resp, err := e.nftClient.OwnerOf(cluster.NodeUrl, cluster.NodeToken, contractAddress, tokenId, eip)
+	if err != nil {
+		cluster.ErrorCount += 1
+		return "", err
+	}
+	return resp, nil
+}
+
+func (e *PolygonPos) TotalSupply(chainCode int64, contractAddress string, eip int64) (string, error) {
+	cluster := e.BalanceCluster()
+	if cluster == nil {
+		//不存在节点
+		return "", errors.New("blockchain node has not found")
+	}
+	resp, err := e.nftClient.TotalSupply(cluster.NodeUrl, cluster.NodeToken, contractAddress, eip)
+	if err != nil {
+		cluster.ErrorCount += 1
+		return "", err
+	}
+	return resp, nil
 }
 
 func (e *PolygonPos) Token(chainCode int64, contractAddr string, abi string, eip string) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	cluster := e.BalanceCluster()
+	if cluster == nil {
+		//不存在节点
+		return "", errors.New("blockchain node has not found")
+	}
+
+	var resp map[string]any
+	var err error
+	if eip == "721" {
+		resp, err = e.blockChainClient.GetToken721(cluster.NodeUrl, cluster.NodeToken, contractAddr, "")
+	} else if eip == "1155" {
+		resp, err = e.blockChainClient.GetToken1155(cluster.NodeUrl, cluster.NodeToken, contractAddr, "")
+	} else if eip == "20" {
+		resp, err = e.blockChainClient.GetToken20(cluster.NodeUrl, cluster.NodeToken, contractAddr, "")
+	} else {
+		return "", fmt.Errorf("unknow the eip:%v", eip)
+	}
+
+	if err != nil {
+		cluster.ErrorCount += 1
+	}
+
+	bs, _ := json.Marshal(resp)
+	return string(bs), err
 }
 
 func (e *PolygonPos) GetCode(chainCode int64, address string) (string, error) {
@@ -232,6 +311,22 @@ func NewPolygonPos(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.X
 		log:              xlog,
 		nodeCluster:      cluster,
 		blockChainClient: blockChainClient,
+	}
+	e.StartWDT()
+	return e
+}
+
+func NewNftPolygonPos(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.NftApi {
+	nftClient := chain.NewNFT(blockchain)
+	if nftClient == nil {
+		return nil
+	}
+
+	chain.NewNFT(blockchain)
+	e := &PolygonPos{
+		log:         xlog,
+		nodeCluster: cluster,
+		nftClient:   nftClient,
 	}
 	e.StartWDT()
 	return e

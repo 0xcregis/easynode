@@ -35,6 +35,8 @@ func NewApi(blockchain int64, cluster []*config.NodeCluster, xlog *xlog.XLog) bl
 func NewNftApi(blockchain int64, cluster []*config.NodeCluster, xlog *xlog.XLog) blockchain.NftApi {
 	if blockchain == 200 {
 		return ether.NewNftEth(cluster, blockchain, xlog)
+	} else if blockchain == 201 {
+		return polygon.NewNftPolygonPos(cluster, blockchain, xlog)
 	} else if blockchain == 202 {
 		return bnb.NewNftBnb(cluster, blockchain, xlog)
 	}

@@ -32,7 +32,7 @@
       "BlockTask": {
         "FromCluster": [
           {
-            "Host": "https://polygon-bor.publicnode.com",
+            "Host": "https://polygon-rpc.com",
             "Key": ""
           }
         ],
@@ -44,7 +44,7 @@
       "TxTask": {
         "FromCluster": [
           {
-            "Host": "https://polygon-bor.publicnode.com",
+            "Host": "https://polygon-rpc.com",
             "Key": ""
           }
         ],
@@ -56,7 +56,7 @@
       "ReceiptTask": {
         "FromCluster": [
           {
-            "Host": "https://polygon-bor.publicnode.com",
+            "Host": "https://polygon-rpc.com",
             "Key": ""
           }
         ],

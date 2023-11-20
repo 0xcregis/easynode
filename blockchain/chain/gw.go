@@ -42,6 +42,8 @@ func NewNFT(blockchain int64) blockchain.NFT {
 	if blockchain == 200 {
 		//eth
 		return ether.NewNFTClient()
+	} else if blockchain == 201 {
+		return polygonpos.NewNFTClient()
 	} else if blockchain == 202 {
 		return bnb.NewNFTClient()
 	} else {

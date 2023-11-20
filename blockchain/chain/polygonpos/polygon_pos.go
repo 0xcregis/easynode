@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/big"
 	"net/http"
 	"strings"
 
@@ -19,14 +20,230 @@ import (
 type PolygonPos struct {
 }
 
-func (e *PolygonPos) GetToken721(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
-	//TODO implement me
-	panic("implement me")
+func (e *PolygonPos) TokenURI(host string, key string, contractAddress string, tokenId string, eip int64) (string, error) {
+
+	if len(key) > 1 {
+		host = fmt.Sprintf("%v/%v", host, key)
+	}
+
+	client, err := ethclient.Dial(host)
+	if err != nil {
+		return "", err
+	}
+
+	tokenAddress := common.HexToAddress(contractAddress)
+	if eip == 721 {
+		instance, err := token.NewToken721(tokenAddress, client)
+		if err != nil {
+			return "", err
+		}
+
+		i, b := new(big.Int).SetString(tokenId, 0)
+
+		if !b {
+			return "", fmt.Errorf("tokenId is error,tokenId=%v", tokenId)
+		}
+
+		return instance.TokenURI(&bind.CallOpts{Pending: false}, i)
+
+	} else if eip == 1155 {
+		instance, err := token.NewToken1155(tokenAddress, client)
+		if err != nil {
+			return "", err
+		}
+
+		i, b := new(big.Int).SetString(tokenId, 0)
+
+		if !b {
+			return "", fmt.Errorf("tokenId is error,tokenId=%v", tokenId)
+		}
+
+		return instance.Uri(&bind.CallOpts{Pending: false}, i)
+	} else {
+		return "", fmt.Errorf("unknow eip:%v", eip)
+	}
 }
 
-func (e *PolygonPos) GetToken1155(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
-	//TODO implement me
-	panic("implement me")
+func (e *PolygonPos) BalanceOf(host string, key string, contractAddress string, address string, tokenId string, eip int64) (string, error) {
+	if len(key) > 1 {
+		host = fmt.Sprintf("%v/%v", host, key)
+	}
+
+	client, err := ethclient.Dial(host)
+	if err != nil {
+		return "", err
+	}
+
+	tokenAddress := common.HexToAddress(contractAddress)
+	if eip == 721 {
+		instance, err := token.NewToken721(tokenAddress, client)
+		if err != nil {
+			return "", err
+		}
+
+		count, err := instance.BalanceOf(&bind.CallOpts{Pending: false}, common.HexToAddress(address))
+		if err == nil {
+			return count.String(), nil
+		} else {
+			return "", err
+		}
+
+	} else if eip == 1155 {
+		instance, err := token.NewToken1155(tokenAddress, client)
+		if err != nil {
+			return "", err
+		}
+
+		i, b := new(big.Int).SetString(tokenId, 0)
+		if !b {
+			return "", fmt.Errorf("tokenId is error,tokenId=%v", tokenId)
+		}
+		count, err := instance.BalanceOf(&bind.CallOpts{Pending: false}, common.HexToAddress(address), i)
+		if err == nil {
+			return count.String(), nil
+		} else {
+			return "", err
+		}
+	} else {
+		return "", fmt.Errorf("unknow eip:%v", eip)
+	}
+}
+
+func (e *PolygonPos) OwnerOf(host string, key string, contractAddress string, tokenId string, eip int64) (string, error) {
+	if len(key) > 1 {
+		host = fmt.Sprintf("%v/%v", host, key)
+	}
+
+	client, err := ethclient.Dial(host)
+	if err != nil {
+		return "", err
+	}
+
+	tokenAddress := common.HexToAddress(contractAddress)
+	if eip == 721 {
+		instance, err := token.NewToken721(tokenAddress, client)
+		if err != nil {
+			return "", err
+		}
+		i, b := new(big.Int).SetString(tokenId, 0)
+		if !b {
+			return "", fmt.Errorf("tokenId is error,tokenId=%v", tokenId)
+		}
+		addr, err := instance.OwnerOf(&bind.CallOpts{Pending: false}, i)
+		if err == nil {
+			return addr.String(), nil
+		} else {
+			return "", err
+		}
+
+	} else {
+		return "", fmt.Errorf("unknow eip:%v", eip)
+	}
+}
+
+func (e *PolygonPos) TotalSupply(host string, key string, contractAddress string, eip int64) (string, error) {
+	if len(key) > 1 {
+		host = fmt.Sprintf("%v/%v", host, key)
+	}
+
+	client, err := ethclient.Dial(host)
+	if err != nil {
+		return "", err
+	}
+
+	tokenAddress := common.HexToAddress(contractAddress)
+	if eip == 721 {
+		instance, err := token.NewToken721(tokenAddress, client)
+		if err != nil {
+			return "", err
+		}
+
+		count, err := instance.TotalSupply(&bind.CallOpts{Pending: false})
+		if err == nil {
+			return count.String(), nil
+		} else {
+			return "", err
+		}
+
+	} else {
+		return "", fmt.Errorf("unknow eip:%v", eip)
+	}
+}
+
+func (e *PolygonPos) GetToken721(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+	mp := make(map[string]interface{}, 2)
+	if len(key) > 1 {
+		host = fmt.Sprintf("%v/%v", host, key)
+	}
+
+	client, err := ethclient.Dial(host)
+	if err != nil {
+		return nil, err
+	}
+
+	tokenAddress := common.HexToAddress(contractAddress)
+	instance, err := token.NewToken721(tokenAddress, client)
+	if err != nil {
+		return nil, err
+	}
+
+	address := common.HexToAddress(userAddress)
+	name, err := instance.Name(&bind.CallOpts{Pending: false, From: address})
+	if err != nil {
+		log.Printf("contract:%v,from:%v,err=%v", contractAddress, userAddress, err.Error())
+		return nil, err
+	}
+	mp["name"] = name
+
+	symbol, err := instance.Symbol(&bind.CallOpts{Pending: false, From: address})
+	if err != nil {
+		log.Printf("contract:%v,from:%v,err=%v", contractAddress, userAddress, err.Error())
+		return nil, err
+	} else {
+		mp["symbol"] = symbol
+	}
+
+	//balance, err := instance.BalanceOf(&bind.CallOpts{Pending: false, From: address}, address)
+	//if err == nil {
+	//	mp["balance"] = balance.String()
+	//}
+	return mp, nil
+}
+
+func (e *PolygonPos) GetToken1155(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+	mp := make(map[string]interface{}, 2)
+	//if len(key) > 1 {
+	//	host = fmt.Sprintf("%v/%v", host, key)
+	//}
+
+	//client, err := ethclient.Dial(host)
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	//tokenAddress := common.HexToAddress(contractAddress)
+	//instance, err := token.NewToken1155(tokenAddress, client)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//address := common.HexToAddress(userAddress)
+	//name, err := instance.Uri(&bind.CallOpts{Pending: false, From: address})
+	//if err != nil {
+	//	log.Printf("contract:%v,from:%v,err=%v", contractAddress, userAddress, err.Error())
+	//	return nil, err
+	//}
+	//mp["name"] = name
+	//
+	//symbol, err := instance.Symbol(&bind.CallOpts{Pending: false, From: address})
+	//if err != nil {
+	//	log.Printf("contract:%v,from:%v,err=%v", contractAddress, userAddress, err.Error())
+	//	return nil, err
+	//} else {
+	//	mp["symbol"] = symbol
+	//}
+
+	return mp, nil
 }
 
 func (e *PolygonPos) Subscribe(host string, token string) (string, error) {
@@ -49,6 +266,10 @@ func (e *PolygonPos) UnSubscribe(host string, token string) (string, error) {
 }
 
 func NewChainClient() blockchain.ChainConn {
+	return &PolygonPos{}
+}
+
+func NewNFTClient() blockchain.NFT {
 	return &PolygonPos{}
 }
 

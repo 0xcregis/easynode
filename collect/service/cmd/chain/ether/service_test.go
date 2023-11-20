@@ -43,12 +43,12 @@ func TestService_GetReceipt(t *testing.T) {
 	}
 }
 
-//func TestService_GetReceiptByBlock(t *testing.T) {
-//	s, _, x := Init()
-//	r, err := s.GetReceiptByBlock("", "17658423", x.WithFields(logrus.Fields{}))
-//	if err != nil {
-//		t.Error(err)
-//	} else {
-//		t.Logf("%+v", r)
-//	}
-//}
+func TestService_GetReceiptByBlock(t *testing.T) {
+	s, _, x := Init()
+	r, err := s.GetReceiptByBlock("", "17658423", x.WithFields(logrus.Fields{}))
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Logf("%+v", r)
+	}
+}

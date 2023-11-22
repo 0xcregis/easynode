@@ -55,6 +55,8 @@ func main() {
 	root.POST("/account/nonce", srv.GetNonce)
 	root.POST("/block/latest", srv.GetLatestBlock)
 	root.POST("/tx/sendRawTransaction", srv.SendRawTx)
+	root.POST("/gas/price", srv.GasPrice)
+	root.POST("/gas/estimateGas", srv.EstimateGas)
 	root.POST("/nft/tokenUri", srv.TokenUri)
 	root.POST("/nft/balanceOf", srv.BalanceOf)
 	root.POST("/nft/owner", srv.OwnerOf)

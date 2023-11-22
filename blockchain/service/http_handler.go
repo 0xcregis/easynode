@@ -63,6 +63,10 @@ func (h *HttpHandler) TokenUri(ctx *gin.Context) {
 	contract := root.Get("contract").String()
 	tokenId := root.Get("tokenId").String()
 	eip := root.Get("eip").Int()
+	if _, ok := h.nftClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
 	res, err := h.nftClients[blockChainCode].TokenURI(blockChainCode, contract, tokenId, eip)
 	if err != nil {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
@@ -84,6 +88,10 @@ func (h *HttpHandler) BalanceOf(ctx *gin.Context) {
 	addr := root.Get("address").String()
 	tokenId := root.Get("tokenId").String()
 	eip := root.Get("eip").Int()
+	if _, ok := h.nftClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
 	res, err := h.nftClients[blockChainCode].BalanceOf(blockChainCode, contract, addr, tokenId, eip)
 	if err != nil {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
@@ -104,6 +112,10 @@ func (h *HttpHandler) OwnerOf(ctx *gin.Context) {
 	contract := root.Get("contract").String()
 	tokenId := root.Get("tokenId").String()
 	eip := root.Get("eip").Int()
+	if _, ok := h.nftClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
 	res, err := h.nftClients[blockChainCode].OwnerOf(blockChainCode, contract, tokenId, eip)
 	if err != nil {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
@@ -123,6 +135,10 @@ func (h *HttpHandler) TotalSupply(ctx *gin.Context) {
 	blockChainCode := root.Get("chain").Int()
 	contract := root.Get("contract").String()
 	eip := root.Get("eip").Int()
+	if _, ok := h.nftClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
 	res, err := h.nftClients[blockChainCode].TotalSupply(blockChainCode, contract, eip)
 	if err != nil {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
@@ -139,6 +155,12 @@ func (h *HttpHandler) GetBlockByHash(ctx *gin.Context) {
 	}
 	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
 	hash := gjson.ParseBytes(b).Get("hash").String()
+
+	if _, ok := h.blockChainClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
+
 	res, err := h.blockChainClients[blockChainCode].GetBlockByHash(blockChainCode, hash, true)
 
 	if err != nil {
@@ -157,6 +179,10 @@ func (h *HttpHandler) GetBlockByNumber(ctx *gin.Context) {
 	}
 	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
 	number := gjson.ParseBytes(b).Get("number").String()
+	if _, ok := h.blockChainClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
 	res, err := h.blockChainClients[blockChainCode].GetBlockByNumber(blockChainCode, number, true)
 
 	if err != nil {
@@ -175,6 +201,10 @@ func (h *HttpHandler) GetTxByHash(ctx *gin.Context) {
 	}
 	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
 	hash := gjson.ParseBytes(b).Get("hash").String()
+	if _, ok := h.blockChainClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
 	res, err := h.blockChainClients[blockChainCode].GetTxByHash(blockChainCode, hash)
 
 	if err != nil {
@@ -193,6 +223,10 @@ func (h *HttpHandler) GetTxReceiptByHash(ctx *gin.Context) {
 	}
 	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
 	hash := gjson.ParseBytes(b).Get("hash").String()
+	if _, ok := h.blockChainClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
 	res, err := h.blockChainClients[blockChainCode].GetTransactionReceiptByHash(blockChainCode, hash)
 
 	if err != nil {
@@ -212,6 +246,10 @@ func (h *HttpHandler) GetBalance(ctx *gin.Context) {
 	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
 	addr := gjson.ParseBytes(b).Get("address").String()
 	tag := gjson.ParseBytes(b).Get("tag").String()
+	if _, ok := h.blockChainClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
 	res, err := h.blockChainClients[blockChainCode].Balance(blockChainCode, addr, tag)
 
 	if err != nil {
@@ -235,6 +273,10 @@ func (h *HttpHandler) GetTokenBalance(ctx *gin.Context) {
 	codeHash := r.Get("contract").String()
 	abi := r.Get("abi").String()
 
+	if _, ok := h.blockChainClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
 	res, err := h.blockChainClients[blockChainCode].TokenBalance(blockChainCode, codeHash, addr, abi)
 	if err != nil {
 		h.Error(ctx, r.String(), ctx.Request.RequestURI, err.Error())
@@ -254,6 +296,10 @@ func (h *HttpHandler) GetNonce(ctx *gin.Context) {
 	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
 	addr := gjson.ParseBytes(b).Get("address").String()
 	tag := gjson.ParseBytes(b).Get("tag").String() //pending,latest
+	if _, ok := h.blockChainClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
 	res, err := h.blockChainClients[blockChainCode].Nonce(blockChainCode, addr, tag)
 	if err != nil {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
@@ -270,6 +316,10 @@ func (h *HttpHandler) GetLatestBlock(ctx *gin.Context) {
 		return
 	}
 	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
+	if _, ok := h.blockChainClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
 	res, err := h.blockChainClients[blockChainCode].LatestBlock(blockChainCode)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
@@ -277,6 +327,81 @@ func (h *HttpHandler) GetLatestBlock(ctx *gin.Context) {
 	}
 
 	h.Success(ctx, "", res, ctx.Request.RequestURI)
+}
+
+// GasPrice Returns the current price per gas in wei.
+func (h *HttpHandler) GasPrice(ctx *gin.Context) {
+	req := `
+		{
+		"id": 1,
+		"jsonrpc": "2.0",
+		"method": "eth_gasPrice"
+		}
+		`
+
+	b, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
+		return
+	}
+
+	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
+	if _, ok := h.blockChainClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
+	res, err := h.blockChainClients[blockChainCode].SendJsonRpc(blockChainCode, req)
+	if err != nil {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
+		return
+	}
+
+	h.Success(ctx, string(b), res, ctx.Request.RequestURI)
+}
+
+// EstimateGas Generates and returns an estimate of how much gas is necessary to allow the transaction to complete. The transaction will not be added to the blockchain.
+func (h *HttpHandler) EstimateGas(ctx *gin.Context) {
+	req := `
+	{
+		  "id": 1,
+		  "jsonrpc": "2.0",
+		  "method": "eth_estimateGas",
+		  "params": [
+			{
+			  "from":"%v",
+			  "to": "%v",
+			  "data": "%v"
+			}
+		  ]
+	}`
+
+	b, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
+		return
+	}
+	root := gjson.ParseBytes(b)
+	blockChainCode := root.Get("chain").Int()
+	from := root.Get("from").String()
+	to := root.Get("to").String()
+	data := root.Get("data").String()
+	if len(data) < 1 {
+		data = "0x"
+	}
+
+	if _, ok := h.blockChainClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
+
+	req = fmt.Sprintf(req, from, to, data)
+	res, err := h.blockChainClients[blockChainCode].SendJsonRpc(blockChainCode, req)
+	if err != nil {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
+		return
+	}
+
+	h.Success(ctx, string(b), res, ctx.Request.RequestURI)
 }
 
 func (h *HttpHandler) SendRawTx(ctx *gin.Context) {
@@ -301,7 +426,7 @@ func (h *HttpHandler) SendRawTx(ctx *gin.Context) {
 	backup["extra"] = extra
 
 	if _, ok := h.blockChainClients[blockChainCode]; !ok {
-		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return
 	}
 
@@ -331,6 +456,10 @@ func (h *HttpHandler) HandlerReq(ctx *gin.Context) {
 	}
 	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
 	data := gjson.ParseBytes(b).Get("data").String()
+	if _, ok := h.blockChainClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
 	res, err := h.blockChainClients[blockChainCode].SendJsonRpc(blockChainCode, data)
 	if err != nil {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
@@ -348,6 +477,9 @@ const (
 func (h *HttpHandler) Success(c *gin.Context, req string, resp interface{}, path string) {
 	req = strings.Replace(req, "\t", "", -1)
 	req = strings.Replace(req, "\n", "", -1)
+	if v, ok := resp.(string); ok {
+		resp = strings.Replace(v, "\n", "", -1)
+	}
 	h.log.Printf("path=%v,req=%v,resp=%v\n", path, req, resp)
 	mp := make(map[string]interface{})
 	mp["code"] = SUCCESS

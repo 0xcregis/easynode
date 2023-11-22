@@ -224,4 +224,28 @@ curl -X POST \
     "eip":721
     }'
 
+// query GasPrice
+curl -X POST \
+  http://127.0.0.1:9002/api/chain/gas/price \
+  -H 'Content-Type: application/json' \
+  -H 'Postman-Token: e65c8170-65f9-482f-92d6-49ed01194444' \
+  -H 'cache-control: no-cache' \
+  -d '{
+    "chain": 200
+}'
+
+//query EstimateGas
+curl -X POST \
+  http://127.0.0.1:9002/api/chain/gas/estimateGas \
+  -H 'Content-Type: application/json' \
+  -H 'Postman-Token: 9a8fb36b-0ed3-47c5-b82f-eecd8631c2be' \
+  -H 'cache-control: no-cache' \
+  -d '{
+    "chain": 202,
+    "from":"0xd46e8dd67c5d32be8058bb8eb970870f07244567",
+    "to":"0xd46e8dd67c5d32be8058bb8eb970870f07244567",
+    "data":"0x"
+}'
+
+
 ``````

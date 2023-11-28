@@ -536,9 +536,10 @@ func (e *Ether) SendReqByWs(blockChain int64, receiverCh chan string, sendCh cha
 func (e *Ether) SendReq(blockChain int64, reqBody string) (resp string, err error) {
 	reqBody = strings.Replace(reqBody, "\t", "", -1)
 	reqBody = strings.Replace(reqBody, "\n", "", -1)
+	var uri string
 	defer func() {
 		if err != nil {
-			e.log.Errorf("method:%v,blockChain:%v,req:%v,err:%v", "SendReq", blockChain, reqBody, err)
+			e.log.Errorf("method:%v,blockChain:%v,req:%v,err:%v,uri:%v", "SendReq", blockChain, reqBody, err, uri)
 		} else {
 			e.log.Printf("method:%v,blockChain:%v,req:%v,resp:%v", "SendReq", blockChain, reqBody, "ok")
 		}
@@ -548,6 +549,8 @@ func (e *Ether) SendReq(blockChain int64, reqBody string) (resp string, err erro
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
 	}
+
+	uri = fmt.Sprintf("%v/%v", cluster.NodeUrl, cluster.NodeToken)
 
 	resp, err = e.blockChainClient.SendRequestToChain(cluster.NodeUrl, cluster.NodeToken, reqBody)
 	if err != nil {

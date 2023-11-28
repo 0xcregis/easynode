@@ -274,7 +274,7 @@ func (t *Tron) SendReq(blockChain int64, reqBody string, url string) (resp strin
 	reqBody = strings.Replace(reqBody, "\n", "", -1)
 	defer func() {
 		if err != nil {
-			t.log.Errorf("method:%v,blockChain:%v,req:%v,err:%v", "SendReq", blockChain, reqBody, err)
+			t.log.Errorf("method:%v,blockChain:%v,req:%v,err:%v,uri:%v", "SendReq", blockChain, reqBody, err, url)
 		} else {
 			t.log.Printf("method:%v,blockChain:%v,req:%v,resp:%v", "SendReq", blockChain, reqBody, "ok")
 		}

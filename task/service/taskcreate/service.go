@@ -74,6 +74,8 @@ func (s *Service) updateLatestBlock(ctx context.Context, cfg *config.BlockConfig
 			err = s.store.UpdateLastNumber(cfg.BlockChainCode, lastNumber)
 			if err == nil { //通知分配区块任务
 				notify <- struct{}{}
+			} else {
+				log.Warnf("UpdateLatestBlock|UpdateLastNumber|err=%v", err.Error())
 			}
 		}
 

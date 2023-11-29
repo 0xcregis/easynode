@@ -76,17 +76,20 @@ func (t *TaskCreateFile) ToKafkaMessage(list []*task.NodeTask) ([]*kafka.Message
 
 func (t *TaskCreateFile) UpdateLastNumber(blockChainCode int64, latestNumber int64) error {
 
-	Number, err := t.client.HGet(context.Background(), BlockChain, fmt.Sprintf("latestNumber_%v", blockChainCode)).Int64()
-	if err != nil {
-		t.log.Warnf("GetRecentNumber,err=%v", err.Error())
-		return err
+	has, _ := t.client.HExists(context.Background(), BlockChain, fmt.Sprintf("latestNumber_%v", blockChainCode)).Result()
+	if has { //已经存在
+		Number, err := t.client.HGet(context.Background(), BlockChain, fmt.Sprintf("latestNumber_%v", blockChainCode)).Int64()
+		if err != nil {
+			t.log.Warnf("GetRecentNumber,err=%v", err.Error())
+			return err
+		}
+
+		if Number >= latestNumber {
+			return fmt.Errorf("the latestNumber(%v) is not the latest block height", latestNumber)
+		}
 	}
 
-	if Number >= latestNumber {
-		return fmt.Errorf("the latestNumber(%v) is not the latest block height", latestNumber)
-	}
-
-	err = t.client.HSet(context.Background(), BlockChain, fmt.Sprintf("latestNumber_%v", blockChainCode), latestNumber).Err()
+	err := t.client.HSet(context.Background(), BlockChain, fmt.Sprintf("latestNumber_%v", blockChainCode), latestNumber).Err()
 	if err != nil {
 		return err
 	}
@@ -95,17 +98,20 @@ func (t *TaskCreateFile) UpdateLastNumber(blockChainCode int64, latestNumber int
 
 func (t *TaskCreateFile) UpdateRecentNumber(blockChainCode int64, recentNumber int64) error {
 
-	Number, err := t.client.HGet(context.Background(), BlockChain, fmt.Sprintf("recentNumber_%v", blockChainCode)).Int64()
-	if err != nil {
-		t.log.Warnf("GetRecentNumber,err=%v", err.Error())
-		return err
+	has, _ := t.client.HExists(context.Background(), BlockChain, fmt.Sprintf("recentNumber_%v", blockChainCode)).Result()
+	if has { //已经存在
+		Number, err := t.client.HGet(context.Background(), BlockChain, fmt.Sprintf("recentNumber_%v", blockChainCode)).Int64()
+		if err != nil {
+			t.log.Warnf("GetRecentNumber,err=%v", err.Error())
+			return err
+		}
+
+		if Number >= recentNumber {
+			return fmt.Errorf("the latestNumber(%v) is not the latest block height", recentNumber)
+		}
 	}
 
-	if Number >= recentNumber {
-		return fmt.Errorf("the latestNumber(%v) is not the latest block height", recentNumber)
-	}
-
-	err = t.client.HSet(context.Background(), BlockChain, fmt.Sprintf("recentNumber_%v", blockChainCode), recentNumber).Err()
+	err := t.client.HSet(context.Background(), BlockChain, fmt.Sprintf("recentNumber_%v", blockChainCode), recentNumber).Err()
 	if err != nil {
 		return err
 	}

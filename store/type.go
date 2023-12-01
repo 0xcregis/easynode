@@ -77,6 +77,7 @@ block_hash String
 
 type Tx struct {
 	Id          uint64 `json:"id" gorm:"column:id"`
+	BlockChain  uint64 `json:"chainCode" gorm:"column:block_chain"`
 	TxHash      string `json:"hash" gorm:"column:hash"`
 	TxTime      string `json:"txTime" gorm:"column:tx_time"`
 	TxStatus    string `json:"txStatus" gorm:"column:tx_status"`
@@ -137,6 +138,7 @@ type Tx struct {
 
 type Receipt struct {
 	Id                uint64 `json:"id"`
+	BlockChain        uint64 `json:"chainCode" gorm:"column:block_chain"`
 	BlockHash         string `json:"blockHash" gorm:"column:block_hash"`
 	LogsBloom         string `json:"logsBloom" gorm:"column:logs_bloom"`
 	ContractAddress   string `json:"contractAddress" gorm:"column:contract_address"`
@@ -220,6 +222,7 @@ nonce String
 
 type Block struct {
 	Id              uint64   `json:"id" gorm:"column:id"`
+	BlockChain      uint64   `json:"chainCode" gorm:"column:block_chain"`
 	BlockHash       string   `json:"hash" gorm:"column:hash"`
 	BlockTime       string   `json:"timestamp" gorm:"column:block_time"`
 	BlockStatus     string   `json:"blockStatus" gorm:"column:block_status"`

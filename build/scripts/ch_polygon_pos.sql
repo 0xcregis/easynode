@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS polygon_pos.tx
 (
     id
     UInt64,--时间戳
+    block_chain
+    UInt64,
     hash
     String,
     tx_time
@@ -54,6 +56,8 @@ CREATE TABLE IF NOT EXISTS polygon_pos.block
 (
     id
     UInt64,--时间戳
+    block_chain
+    UInt64,
     hash
     String,
     block_time
@@ -103,6 +107,8 @@ CREATE TABLE IF NOT EXISTS polygon_pos.receipt
 (
     id
     UInt64,--时间戳
+    block_chain
+    UInt64,
     block_hash
     String,
     logs_bloom

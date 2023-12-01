@@ -204,6 +204,7 @@ func (s *StoreHandler) ReadTxFromKafka(blockChain int64, kafkaCfg map[string]*co
 				s.log.Errorf("ReadTxFromKafka|blockChain=%v,error=%v", blockChain, err.Error())
 				continue
 			}
+			tx.BlockChain = uint64(blockChain)
 
 			lock.Lock()
 			list = append(list, tx)
@@ -251,6 +252,7 @@ func (s *StoreHandler) ReadBlockFromKafka(blockChain int64, kafkaCfg map[string]
 				s.log.Errorf("ReadBlockFromKafka|blockChain=%v,error=%v", blockChain, err.Error())
 				continue
 			}
+			block.BlockChain = uint64(blockChain)
 
 			lock.Lock()
 			list = append(list, block)
@@ -300,6 +302,7 @@ func (s *StoreHandler) ReadReceiptFromKafka(blockChain int64, kafkaCfg map[strin
 				s.log.Errorf("ReadReceiptFromKafka|blockChain=%v,error=%v", blockChain, err.Error())
 				continue
 			}
+			receipt.BlockChain = uint64(blockChain)
 
 			lock.Lock()
 			list = append(list, receipt)

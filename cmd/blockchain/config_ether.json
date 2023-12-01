@@ -7,12 +7,11 @@
     "Topic": "backup_tx",
     "Partition": 0
   },
-  "Cluster": {
-    "200": [
-      {
-        "NodeUrl": "https://ethereum.publicnode.com",
-        "NodeToken": ""
-      }
-    ]
-  }
+  "Nodes": [
+    {
+      "BlockChain": 200,
+      "NodeUrl": "https://ethereum.publicnode.com",
+      "NodeToken": ""
+    }
+  ]
 }

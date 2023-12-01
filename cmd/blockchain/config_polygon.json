@@ -7,12 +7,11 @@
     "Topic": "backup_tx",
     "Partition": 0
   },
-  "Cluster": {
-    "201": [
-      {
-        "NodeUrl": "https://polygon-bor.publicnode.com",
-        "NodeToken": ""
-      }
-    ]
-  }
+  "Nodes": [
+    {
+      "BlockChain": 201,
+      "NodeUrl": "https://polygon-bor.publicnode.com",
+      "NodeToken": ""
+    }
+  ]
 }

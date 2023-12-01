@@ -7,12 +7,11 @@
     "Topic": "backup_tx",
     "Partition": 0
   },
-  "Cluster": {
-    "301": [
-      {
-        "NodeUrl": "https://api.node.glif.io/rpc/v0",
-        "NodeToken": ""
-      }
-    ]
-  }
+  "Nodes": [
+    {
+      "BlockChain": 301,
+      "NodeUrl": "https://api.node.glif.io/rpc/v0",
+      "NodeToken": ""
+    }
+  ]
 }

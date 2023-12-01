@@ -7,13 +7,12 @@
     "Topic": "backup_tx",
     "Partition": 0
   },
-  "Cluster": {
-    "300": [
-      {
-        "NodeUrl": "https://docs-demo.btc.quiknode.pro",
-        "NodeToken": "",
-        "Utxo": "https://www.oklink.com/api/v5/explorer/address/utxo#a6938ee9-4678-4cd1-90ca-ba13ee472ede"
-      }
-    ]
-  }
+  "Nodes": [
+    {
+      "BlockChain": 300,
+      "NodeUrl": "https://docs-demo.btc.quiknode.pro",
+      "NodeToken": "",
+      "Utxo": "https://www.oklink.com/api/v5/explorer/address/utxo#a6938ee9-4678-4cd1-90ca-ba13ee472ede"
+    }
+  ]
 }

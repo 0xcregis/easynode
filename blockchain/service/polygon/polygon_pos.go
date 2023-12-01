@@ -303,7 +303,7 @@ func (e *PolygonPos) SendJsonRpc(chainCode int64, req string) (string, error) {
 }
 
 func NewPolygonPos(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.API {
-	blockChainClient := chain.NewChain(blockchain)
+	blockChainClient := chain.NewChain(blockchain, xlog)
 	if blockChainClient == nil {
 		return nil
 	}
@@ -317,12 +317,12 @@ func NewPolygonPos(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.X
 }
 
 func NewNftPolygonPos(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.NftApi {
-	nftClient := chain.NewNFT(blockchain)
+	nftClient := chain.NewNFT(blockchain, xlog)
 	if nftClient == nil {
 		return nil
 	}
 
-	chain.NewNFT(blockchain)
+	chain.NewNFT(blockchain, xlog)
 	e := &PolygonPos{
 		log:         xlog,
 		nodeCluster: cluster,

@@ -303,12 +303,12 @@ func (e *Ether) SendJsonRpc(chainCode int64, req string) (string, error) {
 }
 
 func NewNftEth(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.NftApi {
-	nftClient := chain.NewNFT(blockchain)
+	nftClient := chain.NewNFT(blockchain, xlog)
 	if nftClient == nil {
 		return nil
 	}
 
-	chain.NewNFT(blockchain)
+	chain.NewNFT(blockchain, xlog)
 	e := &Ether{
 		log:         xlog,
 		nodeCluster: cluster,
@@ -319,7 +319,7 @@ func NewNftEth(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog)
 }
 
 func NewEth(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.API {
-	blockChainClient := chain.NewChain(blockchain)
+	blockChainClient := chain.NewChain(blockchain, xlog)
 	if blockChainClient == nil {
 		return nil
 	}

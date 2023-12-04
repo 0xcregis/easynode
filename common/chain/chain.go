@@ -8,14 +8,26 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+//dev
+//var defaultChainCode = map[string]map[int64]int8{
+//	"ETH":     {200: 1, 2001: 1},
+//	"POLYGON": {201: 1, 2011: 1},
+//	"BSC":     {202: 1},
+//	"TRON":    {205: 1},
+//	"BTC":     {300: 1},
+//	"FIL":     {301: 1},
+//	"XRP":     {310: 1},
+//}
+
+// main
 var defaultChainCode = map[string]map[int64]int8{
-	"ETH":     {200: 1, 2001: 1},
-	"POLYGON": {201: 1, 2011: 1},
-	"BSC":     {202: 1},
-	"TRON":    {205: 1},
-	"BTC":     {300: 1},
-	"FIL":     {301: 1},
-	"XRP":     {310: 1},
+	"ETH":     {60: 1, 6001: 1},
+	"POLYGON": {62: 1, 6201: 1},
+	"BSC":     {2510: 1, 2610: 1},
+	"TRON":    {195: 1, 198: 1},
+	"BTC":     {0: 1, 1: 1},
+	"FIL":     {2307: 1},
+	"XRP":     {144: 1},
 }
 
 func LoadConfig(path string) (string, error) {

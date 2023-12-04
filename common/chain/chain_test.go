@@ -8,6 +8,6 @@ import (
 )
 
 func TestGetChainCode(t *testing.T) {
-	code := GetChainCode("ETH", xlog.NewXLogger())
+	code := GetChainCode(200, "ETH", xlog.NewXLogger())
 	log.Println(code)
 }

@@ -14,25 +14,25 @@ import (
 )
 
 func NewChain(blockchain int64, log *xlog.XLog) blockchain.ChainConn {
-	if blockchain == chain.GetChainCode("ETH", log) {
+	if chain.GetChainCode(blockchain, "ETH", log) {
 		//eth
 		return ether.NewChainClient()
-	} else if blockchain == chain.GetChainCode("TRON", log) {
+	} else if chain.GetChainCode(blockchain, "TRON", log) {
 		//tron
 		return tron.NewChainClient()
-	} else if blockchain == chain.GetChainCode("POLYGON", log) {
+	} else if chain.GetChainCode(blockchain, "POLYGON", log) {
 		//polygon-pos
 		return polygonpos.NewChainClient()
-	} else if blockchain == chain.GetChainCode("BSC", log) {
+	} else if chain.GetChainCode(blockchain, "BSC", log) {
 		//bnb
 		return bnb.NewChainClient()
-	} else if blockchain == chain.GetChainCode("FIL", log) {
+	} else if chain.GetChainCode(blockchain, "FIL", log) {
 		//file-coin
 		return filecoin.NewChainClient()
-	} else if blockchain == chain.GetChainCode("BTC", log) {
+	} else if chain.GetChainCode(blockchain, "BTC", log) {
 		//btc
 		return btc.NewChainClient()
-	} else if blockchain == chain.GetChainCode("XRP", log) {
+	} else if chain.GetChainCode(blockchain, "XRP", log) {
 		//xrp
 		return xrp.NewChainClient()
 	} else {
@@ -41,12 +41,12 @@ func NewChain(blockchain int64, log *xlog.XLog) blockchain.ChainConn {
 }
 
 func NewNFT(blockchain int64, log *xlog.XLog) blockchain.NFT {
-	if blockchain == chain.GetChainCode("ETH", log) {
+	if chain.GetChainCode(blockchain, "ETH", log) {
 		//eth
 		return ether.NewNFTClient()
-	} else if blockchain == chain.GetChainCode("POLYGON", log) {
+	} else if chain.GetChainCode(blockchain, "POLYGON", log) {
 		return polygonpos.NewNFTClient()
-	} else if blockchain == chain.GetChainCode("BSC", log) {
+	} else if chain.GetChainCode(blockchain, "BSC", log) {
 		return bnb.NewNFTClient()
 	} else {
 		return nil

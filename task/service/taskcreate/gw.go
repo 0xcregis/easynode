@@ -15,19 +15,19 @@ import (
 )
 
 func NewApi(blockchain int64, log *xlog.XLog, v *config.BlockConfig) task.BlockChainInterface {
-	if blockchain == chain.GetChainCode("ETH", log) {
+	if chain.GetChainCode(blockchain, "ETH", log) {
 		return ether.NewEther(log, v)
-	} else if blockchain == chain.GetChainCode("TRON", log) {
+	} else if chain.GetChainCode(blockchain, "TRON", log) {
 		return tron.NewTron(log, v)
-	} else if blockchain == chain.GetChainCode("POLYGON", log) {
+	} else if chain.GetChainCode(blockchain, "POLYGON", log) {
 		return polygonpos.NewPolygonPos(log, v)
-	} else if blockchain == chain.GetChainCode("BSC", log) {
+	} else if chain.GetChainCode(blockchain, "BSC", log) {
 		return bnb.NewBnb(log, v)
-	} else if blockchain == chain.GetChainCode("FIL", log) {
+	} else if chain.GetChainCode(blockchain, "FIL", log) {
 		return filecoin.NewFileCoin(log, v)
-	} else if blockchain == chain.GetChainCode("XRP", log) {
+	} else if chain.GetChainCode(blockchain, "XRP", log) {
 		return xrp.NewXRP(log, v)
-	} else if blockchain == chain.GetChainCode("BTC", log) {
+	} else if chain.GetChainCode(blockchain, "BTC", log) {
 		return btc.NewBtc(log, v)
 	}
 	return nil

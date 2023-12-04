@@ -25,19 +25,19 @@ func GetBlockchain(blockchain int, c *config.Chain, store collect.StoreTaskInter
 	code := int64(blockchain)
 	x := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildLevel(xlog.Level(logConfig.LogLevel)).BuildFile(fmt.Sprintf("%v/chain_info", logConfig.Path), 24*time.Hour)
 	var srv collect.BlockChainInterface
-	if code == chainCode.GetChainCode("ETH", x) {
+	if chainCode.GetChainCode(code, "ETH", x) {
 		srv = ether.NewService(c, x, store, nodeId, collect.EthTopic, collect.EthNftTransferSingleTopic)
-	} else if code == chainCode.GetChainCode("TRON", x) {
+	} else if chainCode.GetChainCode(code, "TRON", x) {
 		srv = tron2.NewService(c, x, store, nodeId, collect.TronTopic)
-	} else if code == chainCode.GetChainCode("POLYGON", x) {
+	} else if chainCode.GetChainCode(code, "POLYGON", x) {
 		srv = polygonpos.NewService(c, x, store, nodeId, collect.PolygonTopic, collect.EthNftTransferSingleTopic)
-	} else if code == chainCode.GetChainCode("BSC", x) {
+	} else if chainCode.GetChainCode(code, "BSC", x) {
 		srv = bnb.NewService(c, x, store, nodeId, collect.EthTopic, collect.EthNftTransferSingleTopic)
-	} else if code == chainCode.GetChainCode("FIL", x) {
+	} else if chainCode.GetChainCode(code, "FIL", x) {
 		srv = filecoin.NewService(c, x, store, nodeId, "")
-	} else if code == chainCode.GetChainCode("XRP", x) {
+	} else if chainCode.GetChainCode(code, "XRP", x) {
 		srv = xrp.NewService(c, x, store, nodeId, "")
-	} else if code == chainCode.GetChainCode("BTC", x) {
+	} else if chainCode.GetChainCode(code, "BTC", x) {
 		srv = btc.NewService(c, x, store, nodeId)
 	}
 
@@ -48,18 +48,18 @@ func GetTxHashFromKafka(blockchain int, txMsg []byte) string {
 	code := int64(blockchain)
 	r := gjson.ParseBytes(txMsg)
 	var txHash string
-	if code == chainCode.GetChainCode("ETH", nil) {
+	if chainCode.GetChainCode(code, "ETH", nil) {
 		txHash = r.Get("hash").String()
-	} else if code == chainCode.GetChainCode("TRON", nil) {
+	} else if chainCode.GetChainCode(code, "TRON", nil) {
 		tx := r.Get("tx").String()
 		txHash = gjson.Parse(tx).Get("txID").String()
-	} else if code == chainCode.GetChainCode("POLYGON", nil) {
+	} else if chainCode.GetChainCode(code, "POLYGON", nil) {
 		txHash = r.Get("hash").String()
-	} else if code == chainCode.GetChainCode("BSC", nil) {
+	} else if chainCode.GetChainCode(code, "BSC", nil) {
 		txHash = r.Get("hash").String()
-	} else if code == chainCode.GetChainCode("FIL", nil) {
+	} else if chainCode.GetChainCode(code, "FIL", nil) {
 		txHash = r.Get("hash").String()
-	} else if code == chainCode.GetChainCode("XRP", nil) {
+	} else if chainCode.GetChainCode(code, "XRP", nil) {
 		txHash = r.Get("hash").String()
 	}
 
@@ -70,17 +70,17 @@ func GetBlockHashFromKafka(blockchain int, blockMsg []byte) string {
 	code := int64(blockchain)
 	r := gjson.ParseBytes(blockMsg)
 	var blockHash string
-	if code == chainCode.GetChainCode("ETH", nil) {
+	if chainCode.GetChainCode(code, "ETH", nil) {
 		blockHash = r.Get("hash").String()
-	} else if code == chainCode.GetChainCode("TRON", nil) {
+	} else if chainCode.GetChainCode(code, "TRON", nil) {
 		blockHash = r.Get("blockID").String()
-	} else if code == chainCode.GetChainCode("POLYGON", nil) {
+	} else if chainCode.GetChainCode(code, "POLYGON", nil) {
 		blockHash = r.Get("hash").String()
-	} else if code == chainCode.GetChainCode("BSC", nil) {
+	} else if chainCode.GetChainCode(code, "BSC", nil) {
 		blockHash = r.Get("hash").String()
-	} else if code == chainCode.GetChainCode("FIL", nil) {
+	} else if chainCode.GetChainCode(code, "FIL", nil) {
 		blockHash = r.Get("blockHash").String()
-	} else if code == chainCode.GetChainCode("XRP", nil) {
+	} else if chainCode.GetChainCode(code, "XRP", nil) {
 		blockHash = r.Get("ledger_hash").String()
 	}
 	return blockHash
@@ -90,17 +90,17 @@ func GetReceiptHashFromKafka(blockchain int, receiptMsg []byte) string {
 	code := int64(blockchain)
 	r := gjson.ParseBytes(receiptMsg)
 	var txHash string
-	if code == chainCode.GetChainCode("ETH", nil) {
+	if chainCode.GetChainCode(code, "ETH", nil) {
 		txHash = r.Get("transactionHash").String()
-	} else if code == chainCode.GetChainCode("TRON", nil) {
+	} else if chainCode.GetChainCode(code, "TRON", nil) {
 		txHash = r.Get("id").String()
-	} else if code == chainCode.GetChainCode("POLYGON", nil) {
+	} else if chainCode.GetChainCode(code, "POLYGON", nil) {
 		txHash = r.Get("transactionHash").String()
-	} else if code == chainCode.GetChainCode("BSC", nil) {
+	} else if chainCode.GetChainCode(code, "BSC", nil) {
 		txHash = r.Get("transactionHash").String()
-	} else if code == chainCode.GetChainCode("FIL", nil) {
+	} else if chainCode.GetChainCode(code, "FIL", nil) {
 		txHash = r.Get("transactionHash").String()
-	} else if code == chainCode.GetChainCode("XRP", nil) {
+	} else if chainCode.GetChainCode(code, "XRP", nil) {
 		txHash = r.Get("hash").String()
 	}
 	return txHash

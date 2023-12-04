@@ -1,24 +1,47 @@
 package chain
 
 import (
-	"encoding/json"
 	"io"
 	"os"
 
 	"github.com/sunjiangjun/xlog"
+	"github.com/tidwall/gjson"
 )
 
-var defaultChain = `
-  {
-  "ETH": 200,
-  "POLYGON": 201,
-  "BSC": 202,
-  "TRON": 205,
-  "BTC": 300,
-  "FIL": 301,
-  "XRP": 310
-}
-`
+//var defaultChain = `
+//{
+//  "ETH": [
+//    200,
+//    2001
+//  ],
+//  "POLYGON": [
+//    201,
+//    2011
+//  ],
+//  "BSC": [
+//    202,
+//    2021
+//  ],
+//  "TRON": [
+//    205,
+//    2051
+//  ],
+//  "BTC": [
+//    300,
+//    3001
+//  ],
+//  "FIL": [
+//    301,
+//    3011
+//  ],
+//  "XRP": [
+//    310,
+//    3101
+//  ]
+//}
+//`
+
+var defaultChainCode = map[string]map[int64]int{"ETH": {200: 1, 2001: 1}, "POLYGON": {201: 1, 2011: 1}, "BSC": {202: 1}, "TRON": {205: 1}, "BTC": {300: 1}, "FIL": {301: 1}, "XRP": {310: 1}}
 
 func LoadConfig(path string) (string, error) {
 	f, err := os.OpenFile(path, os.O_RDONLY, os.ModeAppend)
@@ -35,44 +58,56 @@ func LoadConfig(path string) (string, error) {
 	return string(b), nil
 }
 
-func LoadChainCodeFile(file string) map[string]int64 {
-	//default
-	body := defaultChain
+func LoadChainCodeFile(file string) map[string]map[int64]int {
+
+	mp := make(map[string]map[int64]int)
 
 	//set customer config
 	if len(file) > 1 {
-		f, _ := LoadConfig(file)
-		if len(f) > 1 {
-			body = f
+		body, _ := LoadConfig(file)
+		if len(body) > 1 {
+			gjson.Parse(body).ForEach(func(key, v gjson.Result) bool {
+				k := key.String()
+				list := v.Array()
+				m := make(map[int64]int)
+				for _, v := range list {
+					code := v.Int()
+					m[code] = 1
+				}
+				mp[k] = m
+				return true
+			})
 		}
+
 	}
 
-	if len(body) < 1 {
-		return nil
+	if len(mp) < 1 {
+		// default
+		mp = defaultChainCode
 	}
 
-	mp := make(map[string]int64)
-	err := json.Unmarshal([]byte(body), &mp)
-	if err != nil {
-		return nil
-	}
 	return mp
 }
 
-func GetChainCode(chainName string, log *xlog.XLog) int64 {
+func GetChainCode(chainCode int64, chainName string, log *xlog.XLog) bool {
 	if log == nil {
 		log = xlog.NewXLogger()
 	}
 	mp := LoadChainCodeFile("./chain.json")
 	if mp == nil {
 		log.Errorf("unknown all chainCode，this is a fatal error")
-		return 0
+		return false
 	}
 
-	if code, ok := mp[chainName]; ok {
-		return code
+	if m, ok := mp[chainName]; ok {
+		if _, ok := m[chainCode]; ok {
+			return true
+		} else {
+			log.Errorf("unknown chainCode:%v，please check whether the system supports this chain", chainCode)
+			return false
+		}
 	} else {
-		log.Errorf("unknown chainCode:%v，please check whether the system supports this chain", code)
-		return 0
+		log.Errorf("unknown chainCode:%v，please check whether the system supports this chain", chainCode)
+		return false
 	}
 }

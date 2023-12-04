@@ -15,30 +15,30 @@ import (
 )
 
 func NewApi(blockchain int64, cluster []*config.NodeCluster, xlog *xlog.XLog) blockchain.API {
-	if blockchain == chain.GetChainCode("ETH", xlog) {
+	if chain.GetChainCode(blockchain, "ETH", xlog) {
 		return ether.NewEth(cluster, blockchain, xlog)
-	} else if blockchain == chain.GetChainCode("TRON", xlog) {
+	} else if chain.GetChainCode(blockchain, "TRON", xlog) {
 		return tron.NewTron(cluster, blockchain, xlog)
-	} else if blockchain == chain.GetChainCode("POLYGON", xlog) {
+	} else if chain.GetChainCode(blockchain, "POLYGON", xlog) {
 		return polygon.NewPolygonPos(cluster, blockchain, xlog)
-	} else if blockchain == chain.GetChainCode("BSC", xlog) {
+	} else if chain.GetChainCode(blockchain, "BSC", xlog) {
 		return bnb.NewBnb(cluster, blockchain, xlog)
-	} else if blockchain == chain.GetChainCode("BTC", xlog) {
+	} else if chain.GetChainCode(blockchain, "BTC", xlog) {
 		return btc.NewBtc(cluster, blockchain, xlog)
-	} else if blockchain == chain.GetChainCode("FIL", xlog) {
+	} else if chain.GetChainCode(blockchain, "FIL", xlog) {
 		return filecoin.NewFileCoin(cluster, blockchain, xlog)
-	} else if blockchain == chain.GetChainCode("XRP", xlog) {
+	} else if chain.GetChainCode(blockchain, "XRP", xlog) {
 		return xrp.NewXRP(cluster, blockchain, xlog)
 	}
 	return nil
 }
 
 func NewNftApi(blockchain int64, cluster []*config.NodeCluster, xlog *xlog.XLog) blockchain.NftApi {
-	if blockchain == chain.GetChainCode("ETH", xlog) {
+	if chain.GetChainCode(blockchain, "ETH", xlog) {
 		return ether.NewNftEth(cluster, blockchain, xlog)
-	} else if blockchain == chain.GetChainCode("POLYGON", xlog) {
+	} else if chain.GetChainCode(blockchain, "POLYGON", xlog) {
 		return polygon.NewNftPolygonPos(cluster, blockchain, xlog)
-	} else if blockchain == chain.GetChainCode("BSC", xlog) {
+	} else if chain.GetChainCode(blockchain, "BSC", xlog) {
 		return bnb.NewNftBnb(cluster, blockchain, xlog)
 	}
 	return nil

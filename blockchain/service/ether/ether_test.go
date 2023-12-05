@@ -60,6 +60,16 @@ func TestEther_TokenBalance(t *testing.T) {
 	}
 }
 
+func TestEther_Nonce(t *testing.T) {
+	s := Init()
+	resp, err := s.Nonce(200, "0xae2Fc483527B8EF99EB5D9B44875F005ba1FaE13", "latest")
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log(resp)
+	}
+}
+
 func TestEther_GetLatestBlock(t *testing.T) {
 	s := Init()
 	resp, err := s.LatestBlock(200)

@@ -27,6 +27,7 @@ func LoadConfig(path string) Config {
 	}
 
 	list := gjson.ParseBytes(b).Get("Nodes").Array()
+	cfg.Cluster = make(map[int64][]*NodeCluster)
 	for _, v := range list {
 		chainCode := v.Get("BlockChain").Int()
 		var node NodeCluster
@@ -39,10 +40,8 @@ func LoadConfig(path string) Config {
 			m = append(m, &node)
 			cfg.Cluster[chainCode] = m
 		} else {
-			m := make(map[int64][]*NodeCluster, 1)
 			nodeList := []*NodeCluster{&node}
-			m[chainCode] = nodeList
-			cfg.Cluster = m
+			cfg.Cluster[chainCode] = nodeList
 		}
 	}
 

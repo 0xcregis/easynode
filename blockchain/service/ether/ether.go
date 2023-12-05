@@ -13,6 +13,7 @@ import (
 	"github.com/0xcregis/easynode/blockchain"
 	"github.com/0xcregis/easynode/blockchain/chain"
 	"github.com/0xcregis/easynode/blockchain/config"
+	"github.com/0xcregis/easynode/common/util"
 	"github.com/gorilla/websocket"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
@@ -275,6 +276,8 @@ func (e *Ether) GetBlockByNumber(chainCode int64, number string, flag bool) (str
 			  ]
 			}
 			`
+
+	number, _ = util.Int2Hex(number)
 	req = fmt.Sprintf(req, number, flag)
 	return e.SendReq(chainCode, req)
 }

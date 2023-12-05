@@ -24,6 +24,27 @@ func TestTron_Balance(t *testing.T) {
 	}
 }
 
+func TestTron_TokenBalance(t *testing.T) {
+	s := Init()
+	resp, err := s.TokenBalance(205, "TWGZbjofbTLY3UCjCV4yiLkRg89zLqwRgi", "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", "")
+
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log(resp)
+	}
+}
+
+func TestTron_Nonce(t *testing.T) {
+	s := Init()
+	resp, err := s.Nonce(205, "TWGZbjofbTLY3UCjCV4yiLkRg89zLqwRgi", "latest")
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log(resp)
+	}
+}
+
 func TestTron_GetLatestBlock(t *testing.T) {
 	s := Init()
 	resp, err := s.LatestBlock(205)
@@ -37,6 +58,16 @@ func TestTron_GetLatestBlock(t *testing.T) {
 func TestTron_GetTxByHash(t *testing.T) {
 	s := Init()
 	resp, err := s.GetTxByHash(205, "d0ff91487dd11ab6bd2cffa4af97bb472ede4f1713786fa2b15bf32011d0b681")
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log(resp)
+	}
+}
+
+func TestTron_GetTransactionReceiptByHash(t *testing.T) {
+	s := Init()
+	resp, err := s.GetTransactionReceiptByHash(205, "d0ff91487dd11ab6bd2cffa4af97bb472ede4f1713786fa2b15bf32011d0b681")
 	if err != nil {
 		t.Error(err)
 	} else {

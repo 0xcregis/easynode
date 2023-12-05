@@ -245,8 +245,7 @@ func (t *Tron) TokenBalance(chainCode int64, address string, contractAddr string
 }
 
 func (t *Tron) Nonce(chainCode int64, address string, tag string) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	return "", errors.New("unknown the method")
 }
 
 func (t *Tron) LatestBlock(chainCode int64) (string, error) {

@@ -434,7 +434,7 @@ func (h *HttpHandler) SendRawTx(ctx *gin.Context) {
 
 	defer func(backup map[string]any, chainCode int64) {
 		bs, _ := json.Marshal(backup)
-		msg := &kafka.Message{Topic: fmt.Sprintf("%v_%v", h.kafkaCfg.Topic, chainCode), Partition: h.kafkaCfg.Partition, Key: []byte(fmt.Sprintf("%v", time.Now().UnixNano())), Value: bs}
+		msg := &kafka.Message{Topic: fmt.Sprintf("%v-%v", h.kafkaCfg.Topic, chainCode), Partition: h.kafkaCfg.Partition, Key: []byte(fmt.Sprintf("%v", time.Now().UnixNano())), Value: bs}
 		h.sendCh <- []*kafka.Message{msg}
 	}(backup, blockChainCode)
 

@@ -785,7 +785,7 @@ func (c *Cmd) HandlerBlock(block *collect.BlockInterface) (*kafka.Message, error
 		}
 		r = b
 	}
-	return &kafka.Message{Topic: k.Topic, Partition: k.Partition, Time: time.Now(), Key: []byte(block.BlockHash), Value: r}, nil
+	return &kafka.Message{Topic: fmt.Sprintf("%v-%v", c.chain.BlockChainCode, k.Topic), Partition: k.Partition, Time: time.Now(), Key: []byte(block.BlockHash), Value: r}, nil
 }
 
 func (c *Cmd) HandlerTx(tx *collect.TxInterface) (*kafka.Message, error) {
@@ -808,7 +808,7 @@ func (c *Cmd) HandlerTx(tx *collect.TxInterface) (*kafka.Message, error) {
 		r = b
 	}
 
-	return &kafka.Message{Topic: k.Topic, Partition: k.Partition, Time: time.Now(), Key: []byte(tx.TxHash), Value: r}, nil
+	return &kafka.Message{Topic: fmt.Sprintf("%v-%v", c.chain.BlockChainCode, k.Topic), Partition: k.Partition, Time: time.Now(), Key: []byte(tx.TxHash), Value: r}, nil
 }
 
 func (c *Cmd) HandlerReceipt(receipt *collect.ReceiptInterface) (*kafka.Message, error) {
@@ -835,7 +835,7 @@ func (c *Cmd) HandlerReceipt(receipt *collect.ReceiptInterface) (*kafka.Message,
 		}
 		r = b
 	}
-	return &kafka.Message{Topic: k.Topic, Partition: k.Partition, Time: time.Now(), Key: []byte(receipt.TransactionHash), Value: r}, nil
+	return &kafka.Message{Topic: fmt.Sprintf("%v-%v", c.chain.BlockChainCode, k.Topic), Partition: k.Partition, Time: time.Now(), Key: []byte(receipt.TransactionHash), Value: r}, nil
 }
 
 func (c *Cmd) Stop() {

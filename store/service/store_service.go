@@ -70,7 +70,7 @@ func (s *StoreHandler) ReadBackupTxFromKafka(blockChain int64, kafkaCfg map[stri
 		Kafka := kafkaCfg["BackupTx"]
 		broker := fmt.Sprintf("%v:%v", Kafka.Host, Kafka.Port)
 		group := fmt.Sprintf("gr_store_backuptx_%v", Kafka.Group)
-		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: fmt.Sprintf("%v_%v", Kafka.Topic, blockChain), Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx2)
+		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: fmt.Sprintf("%v-%v", Kafka.Topic, blockChain), Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx2)
 	}()
 
 	list := make([]*store.BackupTx, 0, 20)
@@ -120,7 +120,7 @@ func (s *StoreHandler) ReadSubTxFromKafka(blockChain int64, kafkaCfg map[string]
 		Kafka := kafkaCfg["SubTx"]
 		broker := fmt.Sprintf("%v:%v", Kafka.Host, Kafka.Port)
 		group := fmt.Sprintf("gr_store_subtx_%v", Kafka.Group)
-		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: Kafka.Topic, Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx2)
+		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: fmt.Sprintf("%v-%v", blockChain, Kafka.Topic), Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx2)
 	}()
 
 	list := make([]*store.SubTx, 0, 20)
@@ -170,7 +170,7 @@ func (s *StoreHandler) ReadTxFromKafka(blockChain int64, kafkaCfg map[string]*co
 		Kafka := kafkaCfg["Tx"]
 		broker := fmt.Sprintf("%v:%v", Kafka.Host, Kafka.Port)
 		group := fmt.Sprintf("gr_store_tx_%v", Kafka.Group)
-		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: Kafka.Topic, Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx2)
+		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: fmt.Sprintf("%v-%v", blockChain, Kafka.Topic), Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx2)
 	}()
 
 	list := make([]*store.Tx, 0, 20)
@@ -221,7 +221,7 @@ func (s *StoreHandler) ReadBlockFromKafka(blockChain int64, kafkaCfg map[string]
 		Kafka := kafkaCfg["Block"]
 		broker := fmt.Sprintf("%v:%v", Kafka.Host, Kafka.Port)
 		group := fmt.Sprintf("gr_store_block_%v", Kafka.Group)
-		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: Kafka.Topic, Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx2)
+		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: fmt.Sprintf("%v-%v", blockChain, Kafka.Topic), Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx2)
 	}()
 
 	list := make([]*store.Block, 0, 20)
@@ -269,7 +269,7 @@ func (s *StoreHandler) ReadReceiptFromKafka(blockChain int64, kafkaCfg map[strin
 		Kafka := kafkaCfg["Receipt"]
 		broker := fmt.Sprintf("%v:%v", Kafka.Host, Kafka.Port)
 		group := fmt.Sprintf("gr_store_receipt_%v", Kafka.Group)
-		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: Kafka.Topic, Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx2)
+		s.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: fmt.Sprintf("%v-%v", blockChain, Kafka.Topic), Group: group, Partition: Kafka.Partition, StartOffset: Kafka.StartOffset}, receiver, ctx2)
 	}()
 
 	list := make([]*store.Receipt, 0, 20)

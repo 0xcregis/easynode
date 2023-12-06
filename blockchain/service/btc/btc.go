@@ -126,7 +126,7 @@ func (e *Btc) SendJsonRpc(chainCode int64, req string) (string, error) {
 }
 
 func NewBtc(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.API {
-	blockChainClient := chain.NewChain(blockchain)
+	blockChainClient := chain.NewChain(blockchain, xlog)
 	if blockChainClient == nil {
 		return nil
 	}

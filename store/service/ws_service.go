@@ -427,7 +427,7 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 		//save to kafka
 		if len(pushMp) > 0 && SubKafkaConfig != nil {
 			r, _ := json.Marshal(tx)
-			m := &kafka.Message{Topic: SubKafkaConfig.Topic, Key: []byte(uuid.New().String()), Value: r}
+			m := &kafka.Message{Topic: fmt.Sprintf("%v-%v", blockChain, SubKafkaConfig.Topic), Key: []byte(uuid.New().String()), Value: r}
 			bufferMessage = append(bufferMessage, m)
 		}
 

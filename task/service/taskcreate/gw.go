@@ -1,6 +1,7 @@
 package taskcreate
 
 import (
+	"github.com/0xcregis/easynode/common/chain"
 	"github.com/0xcregis/easynode/task"
 	"github.com/0xcregis/easynode/task/config"
 	"github.com/0xcregis/easynode/task/service/taskcreate/bnb"
@@ -14,19 +15,19 @@ import (
 )
 
 func NewApi(blockchain int64, log *xlog.XLog, v *config.BlockConfig) task.BlockChainInterface {
-	if blockchain == 200 {
+	if chain.GetChainCode(blockchain, "ETH", log) {
 		return ether.NewEther(log, v)
-	} else if blockchain == 205 {
+	} else if chain.GetChainCode(blockchain, "TRON", log) {
 		return tron.NewTron(log, v)
-	} else if blockchain == 201 {
+	} else if chain.GetChainCode(blockchain, "POLYGON", log) {
 		return polygonpos.NewPolygonPos(log, v)
-	} else if blockchain == 202 {
+	} else if chain.GetChainCode(blockchain, "BSC", log) {
 		return bnb.NewBnb(log, v)
-	} else if blockchain == 301 {
+	} else if chain.GetChainCode(blockchain, "FIL", log) {
 		return filecoin.NewFileCoin(log, v)
-	} else if blockchain == 310 {
+	} else if chain.GetChainCode(blockchain, "XRP", log) {
 		return xrp.NewXRP(log, v)
-	} else if blockchain == 300 {
+	} else if chain.GetChainCode(blockchain, "BTC", log) {
 		return btc.NewBtc(log, v)
 	}
 	return nil

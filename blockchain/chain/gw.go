@@ -9,28 +9,30 @@ import (
 	"github.com/0xcregis/easynode/blockchain/chain/polygonpos"
 	"github.com/0xcregis/easynode/blockchain/chain/tron"
 	"github.com/0xcregis/easynode/blockchain/chain/xrp"
+	"github.com/0xcregis/easynode/common/chain"
+	"github.com/sunjiangjun/xlog"
 )
 
-func NewChain(blockchain int64) blockchain.ChainConn {
-	if blockchain == 200 {
+func NewChain(blockchain int64, log *xlog.XLog) blockchain.ChainConn {
+	if chain.GetChainCode(blockchain, "ETH", log) {
 		//eth
 		return ether.NewChainClient()
-	} else if blockchain == 205 {
+	} else if chain.GetChainCode(blockchain, "TRON", log) {
 		//tron
 		return tron.NewChainClient()
-	} else if blockchain == 201 {
+	} else if chain.GetChainCode(blockchain, "POLYGON", log) {
 		//polygon-pos
 		return polygonpos.NewChainClient()
-	} else if blockchain == 202 {
+	} else if chain.GetChainCode(blockchain, "BSC", log) {
 		//bnb
 		return bnb.NewChainClient()
-	} else if blockchain == 301 {
+	} else if chain.GetChainCode(blockchain, "FIL", log) {
 		//file-coin
 		return filecoin.NewChainClient()
-	} else if blockchain == 300 {
+	} else if chain.GetChainCode(blockchain, "BTC", log) {
 		//btc
 		return btc.NewChainClient()
-	} else if blockchain == 310 {
+	} else if chain.GetChainCode(blockchain, "XRP", log) {
 		//xrp
 		return xrp.NewChainClient()
 	} else {
@@ -38,13 +40,13 @@ func NewChain(blockchain int64) blockchain.ChainConn {
 	}
 }
 
-func NewNFT(blockchain int64) blockchain.NFT {
-	if blockchain == 200 {
+func NewNFT(blockchain int64, log *xlog.XLog) blockchain.NFT {
+	if chain.GetChainCode(blockchain, "ETH", log) {
 		//eth
 		return ether.NewNFTClient()
-	} else if blockchain == 201 {
+	} else if chain.GetChainCode(blockchain, "POLYGON", log) {
 		return polygonpos.NewNFTClient()
-	} else if blockchain == 202 {
+	} else if chain.GetChainCode(blockchain, "BSC", log) {
 		return bnb.NewNFTClient()
 	} else {
 		return nil

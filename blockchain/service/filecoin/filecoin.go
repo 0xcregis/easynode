@@ -30,7 +30,7 @@ func (e *FileCoin) Token(chainCode int64, contractAddr string, abi string, eip s
 }
 
 func NewFileCoin(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.API {
-	blockChainClient := chain.NewChain(blockchain)
+	blockChainClient := chain.NewChain(blockchain, xlog)
 	if blockChainClient == nil {
 		return nil
 	}

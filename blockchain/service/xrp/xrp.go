@@ -242,7 +242,7 @@ func (e *XRP) SendJsonRpc(chainCode int64, req string) (string, error) {
 }
 
 func NewXRP(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.API {
-	blockChainClient := chain.NewChain(blockchain)
+	blockChainClient := chain.NewChain(blockchain, xlog)
 	if blockChainClient == nil {
 		return nil
 	}

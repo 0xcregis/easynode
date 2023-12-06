@@ -11,6 +11,7 @@ import (
 	"github.com/0xcregis/easynode/blockchain"
 	"github.com/0xcregis/easynode/blockchain/chain"
 	"github.com/0xcregis/easynode/blockchain/config"
+	"github.com/0xcregis/easynode/common/util"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
 )
@@ -256,6 +257,7 @@ func (e *Bnb) GetBlockByNumber(chainCode int64, number string, flag bool) (strin
 			  ]
 			}
 			`
+	number, _ = util.Int2Hex(number)
 	req = fmt.Sprintf(req, number, flag)
 	return e.SendReq(chainCode, req)
 }
@@ -284,12 +286,12 @@ func (e *Bnb) SendJsonRpc(chainCode int64, req string) (string, error) {
 }
 
 func NewNftBnb(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.NftApi {
-	nftClient := chain.NewNFT(blockchain)
+	nftClient := chain.NewNFT(blockchain, xlog)
 	if nftClient == nil {
 		return nil
 	}
 
-	chain.NewNFT(blockchain)
+	chain.NewNFT(blockchain, xlog)
 	e := &Bnb{
 		log:         xlog,
 		nodeCluster: cluster,
@@ -300,7 +302,7 @@ func NewNftBnb(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog)
 }
 
 func NewBnb(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.API {
-	blockChainClient := chain.NewChain(blockchain)
+	blockChainClient := chain.NewChain(blockchain, xlog)
 	if blockChainClient == nil {
 		return nil
 	}

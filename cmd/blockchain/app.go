@@ -42,31 +42,37 @@ func main() {
 	//start kafka listener
 	srv.StartKafka(ctx)
 
+	origin := root.Group("origin")
 	//支持JSON-RPC协议的公链
-	root.POST("/jsonrpc", srv.HandlerReq)
+	origin.POST("/jsonrpc", srv.HandlerReq)
 
 	//自定义或不支持JSON-RPC协议的公链
-	root.POST("/block/hash", srv.GetBlockByHash)
-	root.POST("/block/number", srv.GetBlockByNumber)
-	root.POST("/tx/hash", srv.GetTxByHash)
-	root.POST("/receipts/hash", srv.GetTxReceiptByHash)
-	root.POST("/account/balance", srv.GetBalance)
-	root.POST("/account/tokenBalance", srv.GetTokenBalance)
-	root.POST("/account/nonce", srv.GetNonce)
-	root.POST("/block/latest", srv.GetLatestBlock)
-	root.POST("/tx/sendRawTransaction", srv.SendRawTx)
-	root.POST("/gas/price", srv.GasPrice)
-	root.POST("/gas/estimateGas", srv.EstimateGas)
-	root.POST("/nft/tokenUri", srv.TokenUri)
-	root.POST("/nft/balanceOf", srv.BalanceOf)
-	root.POST("/nft/owner", srv.OwnerOf)
-	root.POST("/nft/totalSupply", srv.TotalSupply)
+	origin.POST("/block/hash", srv.GetBlockByHash)
+	origin.POST("/block/number", srv.GetBlockByNumber)
+	origin.POST("/tx/hash", srv.GetTxByHash)
+	origin.POST("/receipts/hash", srv.GetTxReceiptByHash)
+	origin.POST("/account/balance", srv.GetBalance)
+	origin.POST("/account/tokenBalance", srv.GetTokenBalance)
+	origin.POST("/account/nonce", srv.GetNonce)
+	origin.POST("/block/latest", srv.GetLatestBlock)
+	origin.POST("/tx/sendRawTransaction", srv.SendRawTx)
+	origin.POST("/gas/price", srv.GasPrice)
+	origin.POST("/gas/estimateGas", srv.EstimateGas)
+	origin.POST("/nft/tokenUri", srv.TokenUri)
+	origin.POST("/nft/balanceOf", srv.BalanceOf)
+	origin.POST("/nft/owner", srv.OwnerOf)
+	origin.POST("/nft/totalSupply", srv.TotalSupply)
 
-	//ws 协议
-	wsServer := service.NewWsHandler(cfg.Cluster, xLog)
-	root.Handle("GET", "/ws", func(ctx *gin.Context) {
-		wsServer.Start(ctx.Writer, ctx.Request)
-	})
+	myRoot := root.Group("easynode")
+	myRoot.POST("/block/hash", srv.GetBlockByHash1)
+	myRoot.POST("/block/number", srv.GetBlockByNumber1)
+	myRoot.POST("/tx/hash", srv.GetTxByHash1)
+	myRoot.POST("/account/balance", srv.GetBalance1)
+	myRoot.POST("/account/tokenBalance", srv.GetTokenBalance1)
+	myRoot.POST("/account/nonce", srv.GetNonce1)
+	myRoot.POST("/block/latest", srv.GetLatestBlock1)
+	myRoot.POST("/gas/price", srv.GasPrice1)
+	myRoot.POST("/gas/estimateGas", srv.EstimateGas1)
 
 	err := e.Run(fmt.Sprintf(":%v", cfg.Port))
 	if err != nil {

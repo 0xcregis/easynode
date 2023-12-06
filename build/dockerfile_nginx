@@ -1,0 +1,18 @@
+# Dockerfile
+
+# 使用官方的 Nginx 镜像作为基础镜像
+FROM nginx:latest
+
+# 将自定义的 nginx.conf 复制到容器内的 /etc/nginx/ 目录
+COPY conf.d /etc/nginx/conf.d
+
+# 在容器内创建目录用于存储自定义日志文件
+RUN mkdir -p /var/log/nginx
+
+# 暴露 Nginx 的默认端口
+EXPOSE 9001
+EXPOSE 9002
+EXPOSE 9003
+
+# 启动 Nginx
+CMD ["nginx", "-g", "daemon off;"]

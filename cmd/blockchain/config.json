@@ -7,18 +7,16 @@
     "Topic": "backup_tx",
     "Partition": 0
   },
-  "Cluster": {
-    "200": [
-      {
-        "NodeUrl": "https://ethereum-mainnet-rpc.allthatnode.com",
-        "NodeToken": ""
-      }
-    ],
-    "205": [
-      {
-        "NodeUrl": "https://api.trongrid.io",
-        "NodeToken": "244f918d-56b5-4a16-9665-9637598b1223"
-      }
-    ]
-  }
+  "Nodes": [
+    {
+      "BlockChain": 200,
+      "NodeUrl": "https://ethereum-mainnet-rpc.allthatnode.com",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 205,
+      "NodeUrl": "https://api.trongrid.io",
+      "NodeToken": "244f918d-56b5-4a16-9665-9637598b1223"
+    }
+  ]
 }

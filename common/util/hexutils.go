@@ -3,6 +3,7 @@ package util
 import (
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"math/big"
 	"strconv"
 	"strings"
@@ -200,4 +201,25 @@ func HexToInt2(hex string) (int64, error) {
 		return 0, err
 	}
 	return i, nil
+}
+
+func Int2Hex(data string) (string, error) {
+	if len(data) < 1 {
+		return data, nil
+	}
+
+	if strings.HasPrefix(data, "0x") {
+		return data, nil
+	}
+
+	// 将字符串解析为整数
+	num, err := strconv.Atoi(data)
+	if err != nil {
+		return "", err
+	}
+
+	// 将整数转换为十六进制字符串
+	hexString := fmt.Sprintf("0x%X", num)
+
+	return hexString, nil
 }

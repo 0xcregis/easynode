@@ -22,3 +22,7 @@ func TestHexToInt(t *testing.T) {
 	//log.Println(strconv.ParseInt("0x000000000000000000000000000000000000000000000000000000001dcd6500", 16, 64))
 	log.Println(HexToInt("0000000000000000000000000000000000000000000004cb433cf96ff45c0000"))
 }
+
+func TestInt2Hex(t *testing.T) {
+	log.Println(Int2Hex("1"))
+}

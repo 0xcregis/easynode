@@ -13,6 +13,7 @@ import (
 	"github.com/0xcregis/easynode/blockchain"
 	"github.com/0xcregis/easynode/blockchain/chain"
 	"github.com/0xcregis/easynode/blockchain/config"
+	"github.com/0xcregis/easynode/common/util"
 	"github.com/gorilla/websocket"
 	"github.com/sunjiangjun/xlog"
 	"github.com/tidwall/gjson"
@@ -275,6 +276,7 @@ func (e *PolygonPos) GetBlockByNumber(chainCode int64, number string, flag bool)
 			  ]
 			}
 			`
+	number, _ = util.Int2Hex(number)
 	req = fmt.Sprintf(req, number, flag)
 	return e.SendReq(chainCode, req)
 }
@@ -303,7 +305,7 @@ func (e *PolygonPos) SendJsonRpc(chainCode int64, req string) (string, error) {
 }
 
 func NewPolygonPos(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.API {
-	blockChainClient := chain.NewChain(blockchain)
+	blockChainClient := chain.NewChain(blockchain, xlog)
 	if blockChainClient == nil {
 		return nil
 	}
@@ -317,12 +319,12 @@ func NewPolygonPos(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.X
 }
 
 func NewNftPolygonPos(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.NftApi {
-	nftClient := chain.NewNFT(blockchain)
+	nftClient := chain.NewNFT(blockchain, xlog)
 	if nftClient == nil {
 		return nil
 	}
 
-	chain.NewNFT(blockchain)
+	chain.NewNFT(blockchain, xlog)
 	e := &PolygonPos{
 		log:         xlog,
 		nodeCluster: cluster,

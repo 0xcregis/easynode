@@ -279,7 +279,7 @@ func (h *HttpHandler) GetTokenBalance(ctx *gin.Context) {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return
 	}
-	res, err := h.blockChainClients[blockChainCode].TokenBalance(blockChainCode, codeHash, addr, abi)
+	res, err := h.blockChainClients[blockChainCode].TokenBalance(blockChainCode, addr, codeHash, abi)
 	if err != nil {
 		h.Error(ctx, r.String(), ctx.Request.RequestURI, err.Error())
 		return
@@ -653,28 +653,30 @@ func (h *HttpHandler) GetBalance1(ctx *gin.Context) {
 	}
 
 	r := make(map[string]any)
+	r["utxo"] = ""
+	r["address"] = addr
+	var nonce string
 	//{"jsonrpc":"2.0","id":1,"result":"0x20ef7755b4d96faf5"}
-	if chain.GetChainCode(blockChainCode, "ETH", nil) {
+	if chain.GetChainCode(blockChainCode, "ETH", nil) || chain.GetChainCode(blockChainCode, "BSC", nil) || chain.GetChainCode(blockChainCode, "POLYGON", nil) {
 		balance := gjson.Parse(res).Get("result").String()
 		balance, _ = util.HexToInt(balance)
 		r["balance"] = balance
+		resNonce, err := h.blockChainClients[blockChainCode].Nonce(blockChainCode, addr, tag)
+		if err == nil && len(resNonce) > 1 {
+			nonce = gjson.Parse(resNonce).Get("result").String()
+			nonce, _ = util.HexToInt(nonce)
+		}
 	} else if chain.GetChainCode(blockChainCode, "TRON", nil) {
 		// {"balance":309739}
 		balance := gjson.Parse(res).Get("balance").String()
 		r["balance"] = balance
-
-	} else if chain.GetChainCode(blockChainCode, "BSC", nil) {
-		balance := gjson.Parse(res).Get("result").String()
-		balance, _ = util.HexToInt(balance)
-		r["balance"] = balance
-	} else if chain.GetChainCode(blockChainCode, "POLYGON", nil) {
-		balance := gjson.Parse(res).Get("result").String()
-		balance, _ = util.HexToInt(balance)
-		r["balance"] = balance
+		nonce = "0"
 	} else {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return
 	}
+	r["totalAmount"] = r["balance"]
+	r["nonce"] = nonce
 
 	h.Success(ctx, string(b), r, ctx.Request.RequestURI)
 }
@@ -696,36 +698,40 @@ func (h *HttpHandler) GetTokenBalance1(ctx *gin.Context) {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return
 	}
-	res, err := h.blockChainClients[blockChainCode].TokenBalance(blockChainCode, codeHash, addr, abi)
+	res, err := h.blockChainClients[blockChainCode].TokenBalance(blockChainCode, addr, codeHash, abi)
 	if err != nil {
 		h.Error(ctx, r.String(), ctx.Request.RequestURI, err.Error())
 		return
 	}
 
 	m := make(map[string]any)
+	m["utxo"] = ""
+	m["address"] = addr
+	m["totalAmount"] = ""
+	var nonce string
 
 	//  {"balance":"1233764293093","decimals":6,"name":"Tether USD","symbol":"USDT"}
-	if chain.GetChainCode(blockChainCode, "ETH", nil) {
-		balance := gjson.Parse(res).Get("balance").String()
+	if chain.GetChainCode(blockChainCode, "ETH", nil) || chain.GetChainCode(blockChainCode, "BSC", nil) || chain.GetChainCode(blockChainCode, "POLYGON", nil) {
+		balance := gjson.Parse(res).Get("result").String()
+		balance, _ = util.HexToInt(balance)
 		m["balance"] = balance
-
+		resNonce, err := h.blockChainClients[blockChainCode].Nonce(blockChainCode, addr, "latest")
+		if err == nil && len(resNonce) > 1 {
+			nonce = gjson.Parse(resNonce).Get("result").String()
+			nonce, _ = util.HexToInt(nonce)
+		}
 	} else if chain.GetChainCode(blockChainCode, "TRON", nil) {
 		//{"balance":"74305000412789","decimals":"6"}
 		balance := gjson.Parse(res).Get("balance").String()
 		m["balance"] = balance
-
-	} else if chain.GetChainCode(blockChainCode, "BSC", nil) {
-		balance := gjson.Parse(res).Get("balance").String()
-		m["balance"] = balance
-
-	} else if chain.GetChainCode(blockChainCode, "POLYGON", nil) {
-		balance := gjson.Parse(res).Get("balance").String()
-		m["balance"] = balance
-
+		nonce = "0"
 	} else {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return
 	}
+
+	m["totalAmount"] = m["balance"]
+	m["nonce"] = nonce
 
 	h.Success(ctx, r.String(), m, ctx.Request.RequestURI)
 }

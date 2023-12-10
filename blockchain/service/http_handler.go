@@ -449,6 +449,101 @@ func (h *HttpHandler) SendRawTx(ctx *gin.Context) {
 	h.Success(ctx, string(b), res, ctx.Request.RequestURI)
 }
 
+func (h *HttpHandler) SendRawTx1(ctx *gin.Context) {
+	b, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
+		return
+	}
+
+	backup := make(map[string]any, 5)
+	root := gjson.ParseBytes(b)
+	blockChainCode := root.Get("chain").Int()
+	backup["chainCode"] = blockChainCode
+	signedTx := root.Get("signed_tx").String()
+	backup["signed"] = signedTx
+	backup["id"] = time.Now().UnixMicro()
+	from := root.Get("from").String()
+	backup["from"] = from
+	to := root.Get("to").String()
+	backup["to"] = to
+	extra := root.Get("extra").String()
+	backup["extra"] = extra
+
+	if _, ok := h.blockChainClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
+
+	defer func(backup map[string]any, chainCode int64) {
+		bs, _ := json.Marshal(backup)
+		msg := &kafka.Message{Topic: fmt.Sprintf("%v-%v", h.kafkaCfg.Topic, chainCode), Partition: h.kafkaCfg.Partition, Key: []byte(fmt.Sprintf("%v", time.Now().UnixNano())), Value: bs}
+		h.sendCh <- []*kafka.Message{msg}
+	}(backup, blockChainCode)
+
+	res, err := h.blockChainClients[blockChainCode].SendRawTransaction(blockChainCode, signedTx)
+	if err != nil {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
+		backup["status"] = 0
+		return
+	}
+	backup["status"] = 1
+	backup["response"] = res
+
+	m := make(map[string]any)
+	//{
+	//  "id": 1,
+	//  "jsonrpc": "2.0",
+	//  "result": "0x2a7e11bcb80ea248e09975c48da02b7d0c29d42521d6e9e65e112358132134"
+	//}
+	if chain.GetChainCode(blockChainCode, "ETH", nil) || chain.GetChainCode(blockChainCode, "BSC", nil) || chain.GetChainCode(blockChainCode, "POLYGON", nil) {
+		hash := gjson.Parse(res).Get("result").String()
+		m["hash"] = hash
+	} else if chain.GetChainCode(blockChainCode, "TRON", nil) {
+		//{
+		//  "result": {
+		//    "code": "SUCCESS",
+		//    "message": "SUCCESS",
+		//    "transaction": {
+		//      "txID": "a6a4c7d5b7f2c3871f4a8271f8b690c324f8c350d0e4b9abaddfe7c2294a1737",
+		//      "raw_data": {
+		//        // 其他原始数据
+		//      },
+		//      "signature": [
+		//        // 签名信息
+		//      ],
+		//      // 其他交易信息
+		//    }
+		//  }
+		//}
+
+		//{"code":"SIGERROR","txid":"77ddfa7093cc5f745c0d3a54abb89ef070f983343c05e0f89e5a52f3e5401299","message":"56616c6964617465207369676e6174757265206572726f723a206d69737320736967206f7220636f6e7472616374"}
+
+		root := gjson.Parse(res)
+		if root.Get("result.code").Exists() {
+			status := root.Get("result.code").String()
+			if status == "SUCCESS" {
+				m["status"] = status
+				id := root.Get("result.transaction.txID").String()
+				m["hash"] = id
+			} else {
+				h.Error(ctx, string(b), ctx.Request.RequestURI, res)
+				return
+			}
+
+		} else {
+			h.Error(ctx, string(b), ctx.Request.RequestURI, res)
+			return
+		}
+
+	} else {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
+
+	h.Success(ctx, string(b), m, ctx.Request.RequestURI)
+}
+
 // HandlerReq  有用户自定义请求内容，然后直接发送到节点 ，和eth_call 函数无关
 func (h *HttpHandler) HandlerReq(ctx *gin.Context) {
 	b, err := io.ReadAll(ctx.Request.Body)
@@ -675,7 +770,7 @@ func (h *HttpHandler) GetBalance1(ctx *gin.Context) {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return
 	}
-	r["totalAmount"] = r["balance"]
+	//r["totalAmount"] = r["balance"]
 	r["nonce"] = nonce
 
 	h.Success(ctx, string(b), r, ctx.Request.RequestURI)
@@ -707,7 +802,6 @@ func (h *HttpHandler) GetTokenBalance1(ctx *gin.Context) {
 	m := make(map[string]any)
 	m["utxo"] = ""
 	m["address"] = addr
-	m["totalAmount"] = ""
 	var nonce string
 
 	//  {"balance":"1233764293093","decimals":6,"name":"Tether USD","symbol":"USDT"}
@@ -730,7 +824,7 @@ func (h *HttpHandler) GetTokenBalance1(ctx *gin.Context) {
 		return
 	}
 
-	m["totalAmount"] = m["balance"]
+	//m["totalAmount"] = m["balance"]
 	m["nonce"] = nonce
 
 	h.Success(ctx, r.String(), m, ctx.Request.RequestURI)
@@ -939,6 +1033,7 @@ func (h *HttpHandler) Success(c *gin.Context, req string, resp interface{}, path
 	h.log.Printf("path=%v,req=%v,resp=%v\n", path, req, resp)
 	mp := make(map[string]interface{})
 	mp["code"] = SUCCESS
+	mp["message"] = "ok"
 	mp["data"] = resp
 	c.JSON(200, mp)
 }
@@ -949,6 +1044,7 @@ func (h *HttpHandler) Error(c *gin.Context, req string, path string, err string)
 	h.log.Errorf("path=%v,req=%v,err=%v\n", path, req, err)
 	mp := make(map[string]interface{})
 	mp["code"] = FAIL
-	mp["data"] = err
+	mp["message"] = err
+	mp["data"] = ""
 	c.JSON(200, mp)
 }

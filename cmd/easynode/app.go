@@ -213,6 +213,7 @@ func startBlockchain(configPath string, ctx context.Context) {
 	myRoot.POST("/block/latest", srv.GetLatestBlock1)
 	myRoot.POST("/gas/price", srv.GasPrice1)
 	myRoot.POST("/gas/estimateGas", srv.EstimateGas1)
+	myRoot.POST("/tx/sendRawTransaction", srv.SendRawTx1)
 
 	err := e.Run(fmt.Sprintf(":%v", cfg.Port))
 	if err != nil {

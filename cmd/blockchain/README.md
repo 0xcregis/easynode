@@ -371,7 +371,8 @@ curl -X POST \
   -H 'cache-control: no-cache' \
   -d '{
 	"chain":205,
-	"address":"TUtAk64jJqdf1pY3SiHeooVikP2SFWXjZ6"
+	"address":"TUtAk64jJqdf1pY3SiHeooVikP2SFWXjZ6",
+	"tag":"latest"
 }'
 
 response:

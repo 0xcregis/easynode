@@ -757,7 +757,7 @@ func (h *HttpHandler) GetBalance1(ctx *gin.Context) {
 		balance := gjson.Parse(res).Get("result").String()
 		balance, _ = util.HexToInt(balance)
 		r["balance"] = balance
-		resNonce, err := h.blockChainClients[blockChainCode].Nonce(blockChainCode, addr, tag)
+		resNonce, err := h.blockChainClients[blockChainCode].Nonce(blockChainCode, addr, "latest")
 		if err == nil && len(resNonce) > 1 {
 			nonce = gjson.Parse(resNonce).Get("result").String()
 			nonce, _ = util.HexToInt(nonce)

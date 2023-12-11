@@ -265,7 +265,7 @@ func (t *Tron) LatestBlock(chainCode int64) (string, error) {
 }
 
 func (t *Tron) SendRawTransaction(chainCode int64, signedTx string) (string, error) {
-	return t.SendReq(chainCode, signedTx, "wallet/broadcasttransaction")
+	return t.SendReq(chainCode, signedTx, "wallet/broadcasthex")
 }
 
 func (t *Tron) SendReq(blockChain int64, reqBody string, url string) (resp string, err error) {

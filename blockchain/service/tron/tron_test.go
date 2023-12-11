@@ -14,6 +14,11 @@ func Init() blockchain.API {
 	return NewTron(cfg.Cluster[195], 195, xlog.NewXLogger())
 }
 
+func Init2() *Tron {
+	cfg := config.LoadConfig("./../../../cmd/blockchain/config_tron.json")
+	return NewTron2(cfg.Cluster[195], 195, xlog.NewXLogger())
+}
+
 func TestTron_Balance(t *testing.T) {
 	s := Init()
 	resp, err := s.Balance(205, "TXeZAknJe2gbqSJyZYXbNMVvQgsKQbSoxX", "latest")
@@ -94,6 +99,16 @@ func TestTron_SendRawTransaction(t *testing.T) {
 	c := Init()
 	tx := `0A8A010A0202DB2208C89D4811359A28004098A4E0A6B52D5A730802126F0A32747970652E676F6F676C65617069732E636F6D2F70726F746F636F6C2E5472616E736665724173736574436F6E747261637412390A07313030303030311215415A523B449890854C8FC460AB602DF9F31FE4293F1A15416B0580DA195542DDABE288FEC436C7D5AF769D24206412418BF3F2E492ED443607910EA9EF0A7EF79728DAAAAC0EE2BA6CB87DA38366DF9AC4ADE54B2912C1DEB0EE6666B86A07A6C7DF68F1F9DA171EEE6A370B3CA9CBBB00`
 	resp, err := c.SendRawTransaction(195, tx)
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log(resp)
+	}
+}
+
+func TestTron_GetAccountResource(t *testing.T) {
+	c := Init2()
+	resp, err := c.GetAccountResource(195, "TXeZAknJe2gbqSJyZYXbNMVvQgsKQbSoxX")
 	if err != nil {
 		t.Error(err)
 	} else {

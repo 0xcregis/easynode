@@ -59,3 +59,12 @@ func NewNftApis(clusters map[int64][]*config.NodeCluster, xlog *xlog.XLog) map[i
 	}
 	return blockChainClients
 }
+
+func NewTronApi(clusters map[int64][]*config.NodeCluster, xlog *xlog.XLog) *tron.Tron {
+	for chainCode, cluster := range clusters {
+		if chain.GetChainCode(chainCode, "TRON", xlog) {
+			return tron.NewTron2(cluster, chainCode, xlog)
+		}
+	}
+	return nil
+}

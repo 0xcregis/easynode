@@ -11,6 +11,7 @@ import (
 
 	"github.com/0xcregis/easynode/blockchain"
 	"github.com/0xcregis/easynode/blockchain/config"
+	"github.com/0xcregis/easynode/blockchain/service/tron"
 	"github.com/0xcregis/easynode/common/chain"
 	easyKafka "github.com/0xcregis/easynode/common/kafka"
 	"github.com/0xcregis/easynode/common/util"
@@ -26,6 +27,7 @@ type HttpHandler struct {
 	nodeCluster       map[int64][]*config.NodeCluster
 	blockChainClients map[int64]blockchain.API
 	nftClients        map[int64]blockchain.NftApi
+	tronClients       *tron.Tron
 	kafkaClient       *easyKafka.EasyKafka
 	kafkaCfg          *config.Kafka
 	sendCh            chan []*kafka.Message
@@ -52,6 +54,7 @@ func NewHttpHandler(cluster map[int64][]*config.NodeCluster, kafkaCfg *config.Ka
 		sendCh:            sendCh,
 		blockChainClients: NewApis(cluster, xlog),
 		nftClients:        NewNftApis(cluster, xlog),
+		tronClients:       NewTronApi(cluster, xlog),
 	}
 }
 
@@ -310,6 +313,28 @@ func (h *HttpHandler) GetNonce(ctx *gin.Context) {
 	}
 
 	h.Success(ctx, string(b), res, ctx.Request.RequestURI)
+}
+
+// getAccountResource ,for only tron
+func (h *HttpHandler) GetAccountResource(ctx *gin.Context) {
+	b, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
+		return
+	}
+	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
+	addr := gjson.ParseBytes(b).Get("address").String()
+	if h.tronClients == nil {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
+	res, err := h.tronClients.GetAccountResource(blockChainCode, addr)
+	if err != nil {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
+		return
+	}
+
+	h.Success(ctx, string(b), gjson.Parse(res).Value(), ctx.Request.RequestURI)
 }
 
 func (h *HttpHandler) GetLatestBlock(ctx *gin.Context) {

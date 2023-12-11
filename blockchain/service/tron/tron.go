@@ -128,6 +128,33 @@ func NewTron(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) b
 	return t
 }
 
+func NewTron2(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) *Tron {
+	blockChainClient := chain.NewChain(blockchain, xlog)
+	if blockChainClient == nil {
+		return nil
+	}
+	t := &Tron{
+		log:              xlog,
+		nodeCluster:      cluster,
+		blockChainClient: blockChainClient,
+	}
+	return t
+}
+
+func (t *Tron) GetAccountResource(chainCode int64, address string) (string, error) {
+	req := `{
+			  "address": "%v",
+			  "visible": true
+			}`
+	req = fmt.Sprintf(req, address)
+	res, err := t.SendReq(chainCode, req, "wallet/getaccountresource")
+	if err != nil {
+		return "", err
+	}
+
+	return res, nil
+}
+
 func (t *Tron) GetBlockByHash(chainCode int64, hash string, flag bool) (string, error) {
 	start := time.Now()
 	defer func() {

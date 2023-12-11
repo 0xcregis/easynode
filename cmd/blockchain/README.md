@@ -580,4 +580,30 @@ OR
     "message": "ok"
 }
 
+// Query the resource information of an account(bandwidth,energy,etc) for only tron
+curl -X POST \
+  http://127.0.0.1:9002/api/chain/easynode/account/getAccountResource \
+  -H 'Content-Type: application/json' \
+  -H 'Postman-Token: 6c713d4a-e65c-4836-a02c-a431dcf7aa5f' \
+  -H 'cache-control: no-cache' \
+  -d '{
+    "chain": 195,
+    "address":"TZ4UXDV5ZhNW7fb2AMSbgfAEZ7hWsnYS2g"
+}'
+
+response:
+{
+    "code": 0,
+    "data": {
+        "TotalEnergyLimit": 50000000000000,
+        "TotalEnergyWeight": 564212780708,
+        "TotalNetLimit": 43200000000,
+        "TotalNetWeight": 84641073577,
+        "freeNetLimit": 600
+    },
+    "message": "ok"
+}
+
+vist: [https://developers.tron.network/reference/getaccountresource]
+
 ``````

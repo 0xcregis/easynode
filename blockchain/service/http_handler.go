@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/big"
 	"strings"
 	"time"
 
@@ -699,11 +700,34 @@ func (h *HttpHandler) GetTxByHash1(ctx *gin.Context) {
 		m["from"] = from
 		to := root.Get("to").String()
 		m["to"] = to
+
 		status := root.Get("status").String()
 		if status == "0x1" {
 			m["status"] = 1
 		} else {
 			m["status"] = 0
+		}
+
+		gasUsed := root.Get("gasUsed").String()
+
+		txResp, err := h.blockChainClients[blockChainCode].GetTxByHash(blockChainCode, hash)
+		if err == nil && len(txResp) > 1 {
+			gasPrice := gjson.Parse(txResp).Get("result.gasPrice").String()
+			bigPrice, b := new(big.Int).SetString(gasPrice, 0)
+			bigGas, b2 := new(big.Int).SetString(gasUsed, 0)
+			if b && b2 {
+				fee := bigPrice.Mul(bigPrice, bigGas)
+				m["fee"] = fee.String()
+			}
+		}
+
+		blockResp, err := h.blockChainClients[blockChainCode].GetBlockByNumber(blockChainCode, blockNumber, false)
+		if err == nil && len(blockResp) > 1 {
+			timestamp := gjson.Parse(blockResp).Get("result.timestamp").String()
+			blockTime, err := util.HexToInt(timestamp)
+			if err == nil {
+				m["blockTime"] = fmt.Sprintf("%v000", blockTime)
+			}
 		}
 
 	} else if chain.GetChainCode(blockChainCode, "TRON", nil) {
@@ -713,6 +737,13 @@ func (h *HttpHandler) GetTxByHash1(ctx *gin.Context) {
 		m["txHash"] = id
 		blockNumber := root.Get("blockNumber").String()
 		m["blockNumber"] = blockNumber
+
+		t1 := root.Get("blockTimeStamp").String()
+		m["blockTime"] = t1
+
+		fee := root.Get("fee").String()
+		m["fee"] = fee
+
 		status := root.Get("receipt.result").String()
 		if status == "SUCCESS" {
 			m["status"] = 1

@@ -61,13 +61,17 @@ curl -X POST \
    -H 'cache-control: no-cache' \
    -d '{
       "chain":200,
-      "signed_tx":"0xe5cB067E90D5Cd1F8052B83562Ae670bA4A211a8" // tx,which was signed
+      "signed_tx":"0xe5cB067E90D5Cd1F8052B83562Ae670bA4A211a8", // tx,which was signed
+      "from": "0x123",
+      "to": "0x456",
+      "extra": ""
       }'
 
     response:
      {
       "code": 0,//0: success ,1:failure
-      "data": "{origin blockchain data for the method}"
+      "data": "{origin blockchain data for the method}",
+      "message": "ok"      
      }
     
 //Query balance by address
@@ -85,7 +89,8 @@ curl -X POST \
     response:
      {
       "code": 0,//0: success ,1:failure
-      "data": "{origin blockchain data for the method}"
+      "data": "{origin blockchain data for the method}",
+      "message": "ok"      
      }
    
 // Query balance of erc20 
@@ -100,10 +105,11 @@ curl -X POST \
       "contract": "TUtAk64jJqdf1pY3SiHeooVikP2SFWXjZ6" //address of contract
       }'
       
-        response:
+      response:
        {
         "code": 0,//0: success ,1:failure
-        "data": "{origin blockchain data for the method}"
+        "data": "{origin blockchain data for the method}",
+        "message": "ok"        
        }
 
 //The nonce value of the Ether chain
@@ -120,7 +126,8 @@ curl -X POST \
     response:
      {
       "code": 0,//0: success ,1:failure
-      "data": "{origin blockchain data for the method}"
+      "data": "{origin blockchain data for the method}",
+      "message": "ok"      
      }      
 
 //The latest block height of the blockchain
@@ -135,7 +142,8 @@ curl -X POST \
     response:
      {
       "code": 0,//0: success ,1:failure
-      "data": "{origin blockchain data for the method}"
+      "data": "{origin blockchain data for the method}",
+      "message": "ok"        
      }
 
 //common function with http-rpc protocol
@@ -160,7 +168,8 @@ curl -X POST \
     response:
      {
       "code": 0,//0: success ,1:failure
-      "data": "{origin blockchain data for the method}"
+      "data": "{origin blockchain data for the method}",
+      "message": "ok"        
      }
      
 //Query block by blockHash
@@ -177,7 +186,8 @@ curl -X POST \
     response:
      {
       "code": 0,//0: success ,1:failure
-      "data": "{origin blockchain data for the method}"
+      "data": "{origin blockchain data for the method}",
+      "message": "ok"       
      }
      
 //Query blocks by blockHeight
@@ -194,7 +204,8 @@ curl -X POST \
     response:
      {
       "code": 0,//0: success ,1:failure
-      "data": "{origin blockchain data for the method}"
+      "data": "{origin blockchain data for the method}",
+      "message": "ok"       
      }
      
 //Query transaction by txHash
@@ -211,7 +222,8 @@ curl -X POST \
     response:
      {
       "code": 0,//0: success ,1:failure
-      "data": "{origin blockchain data for the method}"
+      "data": "{origin blockchain data for the method}",
+      "message": "ok"        
      }
      
 //Query receipt by txHash
@@ -228,7 +240,8 @@ curl -X POST \
     response:
      {
       "code": 0,//0: success ,1:failure
-      "data": "{origin blockchain data for the method}"
+      "data": "{origin blockchain data for the method}",
+      "message": "ok"        
      }
      
 //query nft.tokenUri 
@@ -247,7 +260,8 @@ curl -X POST \
     response:
      {
       "code": 0,//0: success ,1:failure
-      "data": "{origin blockchain data for the method}"
+      "data": "{origin blockchain data for the method}",
+      "message": "ok"        
      }
      
 //query nft.balanceOf 
@@ -267,7 +281,8 @@ curl -X POST \
     response:
      {
       "code": 0,//0: success ,1:failure
-      "data": "{origin blockchain data for the method}"
+      "data": "{origin blockchain data for the method}",
+      "message": "ok"       
      }
      
 //query nft.owner
@@ -286,7 +301,8 @@ curl -X POST \
     response:
      {
       "code": 0,//0: success ,1:failure
-      "data": "{origin blockchain data for the method}"
+      "data": "{origin blockchain data for the method}",
+      "message": "ok"        
      }
      
 //query nft.totalSupply
@@ -304,7 +320,8 @@ curl -X POST \
     response:
      {
       "code": 0,//0: success ,1:failure
-      "data": "{origin blockchain data for the method}"
+      "data": "{origin blockchain data for the method}",
+      "message": "ok"        
      }
      
 // query GasPrice
@@ -320,7 +337,8 @@ curl -X POST \
     response:
      {
       "code": 0,//0: success ,1:failure
-      "data": "{origin blockchain data for the method}"
+      "data": "{origin blockchain data for the method}",
+      "message": "ok"        
      }
      
 //query EstimateGas
@@ -339,7 +357,8 @@ curl -X POST \
     response:
      {
       "code": 0,//0: success ,1:failure
-      "data": "{origin blockchain data for the method}"
+      "data": "{origin blockchain data for the method}",
+      "message": "ok"        
      }
 
 // there are many method of easynode space that response data is returned uniformly, ignoring chain differences.
@@ -359,8 +378,12 @@ response:
 {
     "code": 0,//0: success ,1: fail
     "data": {
-        "balance": "2" //balance of the address
-    }
+        "address": "TUtAk64jJqdf1pY3SiHeooVikP2SFWXjZ6",
+        "balance": "2", //balance of the address
+        "nonce": "0",
+        "utxo": "" // for btc chain
+    },
+    "message": "ok" // error message when it request failure
 }
 
 //query block by hash  in easynode space
@@ -380,7 +403,8 @@ response:
         "blockHash": "0000000002f2f66e7256eaffa627b521c380f7dcc4d354bf6c7a5ed8e0c4ea72",
         "blockNumber": "49477230",
         "timestamp": "1679043555000"
-    }
+    },
+    "message": "ok" // error message when it request failure
 }
 
 //query tx by hash  in easynode space
@@ -404,7 +428,8 @@ response:
         "status": 1, //1: success ,0:fail
         "to": "0x35cab8e0d48f40fd9a4ddaf252e63e2b8d4755f5",
         "txHash": "0x4553316c698c8c89aa979a5dff71eb531d31284b36132e2e02ba8348114286d7"
-    }
+    },
+    "message": "ok" // error message when it request failure    
 }
 
 //query block by number in easynode space
@@ -425,7 +450,8 @@ response:
         "blockHash": "0xae321a54986dfaccf45032d05270d8a6212c0e8642225c57b133a109f3e06b5a",
         "blockNumber": "18718806",
         "timestamp": "1701763115000"
-    }
+    },
+    "message": "ok" // error message when it request failure    
 }
 
 //query token balance in easynode space
@@ -435,9 +461,9 @@ curl -X POST \
   -H 'Postman-Token: 3fdef499-681a-4c21-8dc3-3ca0e9eb1a11' \
   -H 'cache-control: no-cache' \
   -d '{
-	"chain":200,
-	"address":"0xdac17f958d2ee523a2206206994597c13d831ec7",
-	"contract":"0xdac17f958d2ee523a2206206994597c13d831ec7",
+	"chain":2510,
+	"address":"0x403f9D1EA51D55d0341ce3c2fBF33E09846F2C74",
+	"contract":"0x55d398326f99059fF775485246999027B3197955",
 	"abi":""
 }'
 
@@ -445,8 +471,12 @@ response:
 {
     "code": 0,
     "data": {
-        "balance": "1235900525719" //balance of the address
-    }
+        "address": "0x403f9D1EA51D55d0341ce3c2fBF33E09846F2C74",
+        "balance": "200037018649", //balance of the address
+        "nonce": "0",
+        "utxo": ""  // for btc chain
+    },
+    "message": "ok"
 }
 
 //query nonce in easynode space
@@ -464,7 +494,8 @@ curl -X POST \
 response:
 {
     "code": 0,
-    "data": "49" //nonce of the address
+    "data": "49", //nonce of the address
+    "message": "ok" // error message when it request failure    
 }
 
 // query block in easynode space
@@ -480,7 +511,8 @@ curl -X POST \
 response:
 {
     "code": 0,
-    "data": "18719165" //latest block number
+    "data": "18719165", //latest block number
+    "message": "ok" // error message when it request failure    
 }
 
 //query price to easynode space on current latest block
@@ -496,7 +528,8 @@ curl -X POST \
 response:
 {
     "code": 0,
-    "data": "45133954243" //the value is the smallest unit of different chains
+    "data": "45133954243", //the value is the smallest unit of different chains
+    "message": "ok" // error message when it request failure    
 }
 
 //estimateGas fee in easynode space 
@@ -515,7 +548,56 @@ curl -X POST \
 response:
 {
     "code": 0,
-    "data": "21000" //estimated cost to complete the transaction
+    "data": "21000", //estimated cost to complete the transaction
+    "message": "ok" // error message when it request failure
+}
+
+//sendRawTransaction send tx to chain in easynode space 
+curl -X POST \
+  http://127.0.0.1:9002/api/chain/easynode/tx/sendRawTransaction \
+  -H 'Content-Type: application/json' \
+  -H 'Postman-Token: 9cfb96da-eec5-4354-b71e-93591ffdcc3a' \
+  -H 'cache-control: no-cache' \
+  -d '{
+    "chain": 198,
+    "signed_tx": {
+        "raw_data": {
+            "contract": [
+                {
+                    "parameter": {
+                        "value": {
+                            "amount": 1000,
+                            "owner_address": "41608f8da72479edc7dd921e4c30bb7e7cddbe722e",
+                            "to_address": "41e9d79cc47518930bc322d9bf7cddd260a0260a8d"
+                        },
+                        "type_url": "type.googleapis.com/protocol.TransferContract"
+                    },
+                    "type": "TransferContract"
+                }
+            ],
+            "ref_block_bytes": "5e4b",
+            "ref_block_hash": "47c9dc89341b300d",
+            "expiration": 1591089627000,
+            "timestamp": 1591089567635
+        },
+        "raw_data_hex": "0a025e4b220847c9dc89341b300d40f8fed3a2a72e5a66080112620a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412310a1541608f8da72479edc7dd921e4c30bb7e7cddbe722e121541e9d79cc47518930bc322d9bf7cddd260a0260a8d18e8077093afd0a2a72e"
+    },
+    "from": "0x123",
+    "to": "0x456",
+    "extra": ""
+}'
+
+response:
+{
+    "code": 1,
+    "data": "",
+    "message": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32602,\"message\":\"invalid argument 0: json: cannot unmarshal hex string without 0x prefix into Go value of type hexutil.Bytes\"}}\n"
+}
+OR
+{
+    "code": 0,
+    "data": {\"hash\":\"0x2a7e11bcb80ea248e09975c48da02b7d0c29d42521d6e9e65e112358132134\"},
+    "message": "ok"
 }
 
 ``````

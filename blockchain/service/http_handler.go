@@ -498,6 +498,7 @@ func (h *HttpHandler) SendRawTx1(ctx *gin.Context) {
 	//}
 	if chain.GetChainCode(blockChainCode, "ETH", nil) || chain.GetChainCode(blockChainCode, "BSC", nil) || chain.GetChainCode(blockChainCode, "POLYGON", nil) {
 		hash := gjson.Parse(res).Get("result").String()
+		m["status"] = "SUCCESS"
 		m["hash"] = hash
 	} else if chain.GetChainCode(blockChainCode, "TRON", nil) {
 		//{

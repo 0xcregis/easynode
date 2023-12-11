@@ -690,16 +690,16 @@ func (h *HttpHandler) GetTxByHash1(ctx *gin.Context) {
 	m := make(map[string]any)
 	if chain.GetChainCode(blockChainCode, "ETH", nil) || chain.GetChainCode(blockChainCode, "BSC", nil) || chain.GetChainCode(blockChainCode, "POLYGON", nil) {
 		root := gjson.Parse(res).Get("result")
-		//blockHash := root.Get("blockHash").String()
-		//m["blockHash"] = blockHash
+		blockHash := root.Get("blockHash").String()
+		m["blockHash"] = blockHash
 		blockNumber := root.Get("blockNumber").String()
 		m["blockNumber"], _ = util.HexToInt(blockNumber)
 		transactionHash := root.Get("transactionHash").String()
 		m["txHash"] = transactionHash
-		//from := root.Get("from").String()
-		//m["from"] = from
-		//to := root.Get("to").String()
-		//m["to"] = to
+		from := root.Get("from").String()
+		m["from"] = from
+		to := root.Get("to").String()
+		m["to"] = to
 
 		status := root.Get("status").String()
 		if status == "0x1" {

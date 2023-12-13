@@ -77,10 +77,10 @@ func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool
 		return nil, nil
 	}
 
-	resp = gjson.Parse(resp).Get("result").String()
+	result := gjson.Parse(resp).Get("result").String()
 
 	//解析数据
-	block, txList := GetBlockFromJson(resp)
+	block, txList := GetBlockFromJson(result)
 
 	if len(block.BlockHash) < 1 {
 		eLog.Errorf("GetBlockByHash|BlockChainName=%v,err=%v,blockHash=%v", s.chain.BlockChainName, resp, blockHash)
@@ -172,10 +172,10 @@ func (s *Service) GetBlockByNumber(blockNumber string, eLog *logrus.Entry, flag 
 		return nil, nil
 	}
 
-	resp = gjson.Parse(resp).Get("result").String()
+	result := gjson.Parse(resp).Get("result").String()
 
 	//解析数据
-	block, txList := GetBlockFromJson(resp)
+	block, txList := GetBlockFromJson(result)
 
 	if len(block.BlockHash) < 1 {
 		eLog.Errorf("GetBlockByNumber|BlockChainName=%v,err=%v,blockNumber=%v", s.chain.BlockChainName, resp, blockNumber)
@@ -257,10 +257,10 @@ func (s *Service) GetTx(txHash string, eLog *logrus.Entry) *collect.TxInterface 
 		eLog.Errorf("GetTx|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, "tx is empty", txHash)
 		return nil
 	}
-	resp = gjson.Parse(resp).Get("result").String()
+	result := gjson.Parse(resp).Get("result").String()
 
 	//解析数据
-	tx := GetTxFromJson(resp)
+	tx := GetTxFromJson(result)
 
 	if len(tx.TxHash) < 1 {
 		eLog.Errorf("GetTx|BlockChainName=%v,err=%v,txHash=%v", s.chain.BlockChainName, resp, txHash)

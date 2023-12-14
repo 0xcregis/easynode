@@ -183,7 +183,7 @@ func (ws *WsHandler) Sub(w http.ResponseWriter, r *http.Request, token string) {
 
 	PingCh := make(chan string)
 	c.SetPingHandler(func(message string) error {
-		fmt.Printf("ping message: %v \n", message)
+		log.Printf("【 PING CMD: %v,Token:%v 】\n", message, token)
 		err := c.WriteControl(websocket.PongMessage, []byte(message), time.Now().Add(1*time.Second))
 		if err != nil {
 			cancel()
@@ -196,12 +196,12 @@ func (ws *WsHandler) Sub(w http.ResponseWriter, r *http.Request, token string) {
 
 	//收到ping消息并处理
 	go func(PingCh chan string, ws *WsHandler, token string, cancel context.CancelFunc) {
-		ticker := time.NewTicker(30 * time.Second)
+		ticker := time.NewTicker(5 * time.Minute)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-PingCh: //收到 客户端响应
-				ticker.Reset(30 * time.Second)
+				ticker.Reset(5 * time.Minute)
 				continue
 			case <-ticker.C: //已经超时，仍然未收到客户端的响应
 				cancel()
@@ -225,12 +225,12 @@ func (ws *WsHandler) Sub(w http.ResponseWriter, r *http.Request, token string) {
 			interrupt = false
 			ws.lock.Unlock()
 		default:
-			_, message, err := c.ReadMessage()
+			_, _, err := c.ReadMessage()
 			if err != nil {
-				log.Println("read:", err)
+				log.Printf("【 Read Error:%v,Token:%v, the conn will break】", err.Error(), token)
 				return
 			}
-			log.Println("recv: ", message)
+			//log.Println("recv: ", string(message))
 			//time.Sleep(5 * time.Second)
 		}
 	}

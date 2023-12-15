@@ -337,6 +337,7 @@ func (h *HttpHandler) GetAccountResource(ctx *gin.Context) {
 	h.Success(ctx, string(b), gjson.Parse(res).Value(), ctx.Request.RequestURI)
 }
 
+// EstimateGasForTron ,for only tron
 func (h *HttpHandler) EstimateGasForTron(ctx *gin.Context) {
 	b, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
@@ -509,6 +510,28 @@ func (h *HttpHandler) SendRawTx(ctx *gin.Context) {
 	h.Success(ctx, string(b), res, ctx.Request.RequestURI)
 }
 
+// HandlerReq  有用户自定义请求内容，然后直接发送到节点 ，和eth_call 函数无关
+func (h *HttpHandler) HandlerReq(ctx *gin.Context) {
+	b, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
+		return
+	}
+	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
+	data := gjson.ParseBytes(b).Get("data").String()
+	if _, ok := h.blockChainClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
+	res, err := h.blockChainClients[blockChainCode].SendJsonRpc(blockChainCode, data)
+	if err != nil {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
+		return
+	}
+
+	h.Success(ctx, string(b), res, ctx.Request.RequestURI)
+}
+
 func (h *HttpHandler) SendRawTx1(ctx *gin.Context) {
 	b, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
@@ -603,28 +626,6 @@ func (h *HttpHandler) SendRawTx1(ctx *gin.Context) {
 	}
 
 	h.Success(ctx, string(b), m, ctx.Request.RequestURI)
-}
-
-// HandlerReq  有用户自定义请求内容，然后直接发送到节点 ，和eth_call 函数无关
-func (h *HttpHandler) HandlerReq(ctx *gin.Context) {
-	b, err := io.ReadAll(ctx.Request.Body)
-	if err != nil {
-		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
-		return
-	}
-	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
-	data := gjson.ParseBytes(b).Get("data").String()
-	if _, ok := h.blockChainClients[blockChainCode]; !ok {
-		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
-		return
-	}
-	res, err := h.blockChainClients[blockChainCode].SendJsonRpc(blockChainCode, data)
-	if err != nil {
-		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
-		return
-	}
-
-	h.Success(ctx, string(b), res, ctx.Request.RequestURI)
 }
 
 func (h *HttpHandler) GetBlockByHash1(ctx *gin.Context) {
@@ -1059,6 +1060,15 @@ func (h *HttpHandler) GasPrice1(ctx *gin.Context) {
 	gas, err = util.HexToInt(gas)
 	if err != nil {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
+		return
+	}
+
+	if chain.GetChainCode(blockChainCode, "ETH", nil) || chain.GetChainCode(blockChainCode, "BSC", nil) || chain.GetChainCode(blockChainCode, "POLYGON", nil) {
+		gas = util.Div(gas, 9) //gwei
+	} else if chain.GetChainCode(blockChainCode, "TRON", nil) {
+		//sun
+	} else {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return
 	}
 

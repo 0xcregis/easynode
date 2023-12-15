@@ -394,14 +394,6 @@ func (h *HttpHandler) GetLatestBlock(ctx *gin.Context) {
 
 // GasPrice Returns the current price per gas in wei.
 func (h *HttpHandler) GasPrice(ctx *gin.Context) {
-	req := `
-		{
-		"id": 1,
-		"jsonrpc": "2.0",
-		"method": "eth_gasPrice"
-		}
-		`
-
 	b, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
@@ -409,11 +401,11 @@ func (h *HttpHandler) GasPrice(ctx *gin.Context) {
 	}
 
 	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
-	if _, ok := h.blockChainClients[blockChainCode]; !ok {
+	if _, ok := h.exBlockChainClients[blockChainCode]; !ok {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return
 	}
-	res, err := h.blockChainClients[blockChainCode].SendJsonRpc(blockChainCode, req)
+	res, err := h.exBlockChainClients[blockChainCode].GasPrice(blockChainCode)
 	if err != nil {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
 		return
@@ -424,20 +416,6 @@ func (h *HttpHandler) GasPrice(ctx *gin.Context) {
 
 // EstimateGas Generates and returns an estimate of how much gas is necessary to allow the transaction to complete. The transaction will not be added to the blockchain.
 func (h *HttpHandler) EstimateGas(ctx *gin.Context) {
-	req := `
-	{
-		  "id": 1,
-		  "jsonrpc": "2.0",
-		  "method": "eth_estimateGas",
-		  "params": [
-			{
-			  "from":"%v",
-			  "to": "%v",
-			  "data": "%v"
-			}
-		  ]
-	}`
-
 	b, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
@@ -452,13 +430,12 @@ func (h *HttpHandler) EstimateGas(ctx *gin.Context) {
 		data = "0x"
 	}
 
-	if _, ok := h.blockChainClients[blockChainCode]; !ok {
+	if _, ok := h.exBlockChainClients[blockChainCode]; !ok {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return
 	}
 
-	req = fmt.Sprintf(req, from, to, data)
-	res, err := h.blockChainClients[blockChainCode].SendJsonRpc(blockChainCode, req)
+	res, err := h.exBlockChainClients[blockChainCode].EstimateGas(blockChainCode, from, to, data)
 	if err != nil {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
 		return
@@ -584,31 +561,44 @@ func (h *HttpHandler) SendRawTx1(ctx *gin.Context) {
 		m["status"] = "SUCCESS"
 		m["hash"] = hash
 	} else if chain.GetChainCode(blockChainCode, "TRON", nil) {
-		//res = `{
-		// "result": {
-		//   "code": "SUCCESS",
-		//   "message": "SUCCESS",
-		//   "transaction": {
-		//     "txID": "a6a4c7d5b7f2c3871f4a8271f8b690c324f8c350d0e4b9abaddfe7c2294a1737",
-		//     "raw_data": {
-		//       // 其他原始数据
-		//     },
-		//     "signature": [
-		//       // 签名信息
-		//     ],
-		//     // 其他交易信息
-		//   }
-		// }
-		//}`
+
+		//		res := `
+		//{
+		//  "result": true,
+		//  "code": "SUCCESS",
+		//  "txid": "ce5f03b89a735353bebf7214d24cac222d35f98c92d690ed3d3bc4f81450654b",
+		//  "message": "",
+		//  "transaction": {
+		//    "raw_data": {
+		//      "ref_block_bytes": "7fc6",
+		//      "ref_block_hash": "11d6bde1afbed1f3",
+		//      "expiration": 1702633179923,
+		//      "contract": [
+		//        {
+		//          "type": "TransferContract",
+		//          "parameter": {
+		//            "type_url": "type.googleapis.com/protocol.TransferContract",
+		//            "value": "0a1541cb3725cf4bb8acbe2758bf49da12dfc9b522458f12154184963abb43debc2d129d1905eae92e95a4aa0a531880897a"
+		//          }
+		//        }
+		//      ],
+		//      "timestamp": 1702632879923
+		//    },
+		//    "signature": [
+		//      "91fe34c5142236098167f726da602a269393a8277cfdffa467b5c8ee659f887e0341fb012b1390af2d3e74900d8b07cf25081471cd0669206740d86d06d7d2d300"
+		//    ]
+		//  }
+		//}
+		//`
 
 		//{"code":"SIGERROR","txid":"77ddfa7093cc5f745c0d3a54abb89ef070f983343c05e0f89e5a52f3e5401299","message":"56616c6964617465207369676e6174757265206572726f723a206d69737320736967206f7220636f6e7472616374"}
 
 		root := gjson.Parse(res)
-		if root.Get("result.code").Exists() {
-			status := root.Get("result.code").String()
+		if root.Get("code").Exists() {
+			status := root.Get("code").String()
 			if status == "SUCCESS" {
 				m["status"] = status
-				id := root.Get("result.transaction.txID").String()
+				id := root.Get("txid").String()
 				m["hash"] = id
 			} else {
 				h.Error(ctx, string(b), ctx.Request.RequestURI, res)
@@ -1027,14 +1017,6 @@ func (h *HttpHandler) GetLatestBlock1(ctx *gin.Context) {
 
 // GasPrice1 Returns the current price per gas in wei.
 func (h *HttpHandler) GasPrice1(ctx *gin.Context) {
-	req := `
-		{
-		"id": 1,
-		"jsonrpc": "2.0",
-		"method": "eth_gasPrice"
-		}
-		`
-
 	b, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
@@ -1042,11 +1024,11 @@ func (h *HttpHandler) GasPrice1(ctx *gin.Context) {
 	}
 
 	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
-	if _, ok := h.blockChainClients[blockChainCode]; !ok {
+	if _, ok := h.exBlockChainClients[blockChainCode]; !ok {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return
 	}
-	res, err := h.blockChainClients[blockChainCode].SendJsonRpc(blockChainCode, req)
+	res, err := h.exBlockChainClients[blockChainCode].GasPrice(blockChainCode)
 	if err != nil {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
 		return
@@ -1077,20 +1059,6 @@ func (h *HttpHandler) GasPrice1(ctx *gin.Context) {
 
 // EstimateGas1 Generates and returns an estimate of how much gas is necessary to allow the transaction to complete. The transaction will not be added to the blockchain.
 func (h *HttpHandler) EstimateGas1(ctx *gin.Context) {
-	req := `
-	{
-		  "id": 1,
-		  "jsonrpc": "2.0",
-		  "method": "eth_estimateGas",
-		  "params": [
-			{
-			  "from":"%v",
-			  "to": "%v",
-			  "data": "%v"
-			}
-		  ]
-	}`
-
 	b, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
@@ -1105,13 +1073,12 @@ func (h *HttpHandler) EstimateGas1(ctx *gin.Context) {
 		data = "0x"
 	}
 
-	if _, ok := h.blockChainClients[blockChainCode]; !ok {
+	if _, ok := h.exBlockChainClients[blockChainCode]; !ok {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return
 	}
 
-	req = fmt.Sprintf(req, from, to, data)
-	res, err := h.blockChainClients[blockChainCode].SendJsonRpc(blockChainCode, req)
+	res, err := h.exBlockChainClients[blockChainCode].EstimateGas(blockChainCode, from, to, data)
 	if err != nil {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
 		return
@@ -1123,7 +1090,6 @@ func (h *HttpHandler) EstimateGas1(ctx *gin.Context) {
 	//    "result": "0x5208"
 	//}
 	gas := gjson.Parse(res).Get("result").String()
-
 	gas, err = util.HexToInt(gas)
 	if err != nil {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())

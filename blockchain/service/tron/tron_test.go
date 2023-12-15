@@ -7,6 +7,7 @@ import (
 	"github.com/0xcregis/easynode/blockchain"
 	"github.com/0xcregis/easynode/blockchain/config"
 	"github.com/sunjiangjun/xlog"
+	"github.com/tidwall/gjson"
 )
 
 func Init() blockchain.API {
@@ -14,7 +15,7 @@ func Init() blockchain.API {
 	return NewTron(cfg.Cluster[195], 195, xlog.NewXLogger())
 }
 
-func Init2() *Tron {
+func Init2() blockchain.ExApi {
 	cfg := config.LoadConfig("./../../../cmd/blockchain/config_tron.json")
 	return NewTron2(cfg.Cluster[195], 195, xlog.NewXLogger())
 }
@@ -108,10 +109,44 @@ func TestTron_SendRawTransaction(t *testing.T) {
 
 func TestTron_GetAccountResource(t *testing.T) {
 	c := Init2()
-	resp, err := c.GetAccountResource(195, "TXeZAknJe2gbqSJyZYXbNMVvQgsKQbSoxX")
+	resp, err := c.GetAccountResourceForTron(195, "TXeZAknJe2gbqSJyZYXbNMVvQgsKQbSoxX")
 	if err != nil {
 		t.Error(err)
 	} else {
 		t.Log(resp)
 	}
+}
+
+func TestSendTx(t *testing.T) {
+	res := `
+
+{
+  "result": true,
+  "code": "SUCCESS",
+  "txid": "ce5f03b89a735353bebf7214d24cac222d35f98c92d690ed3d3bc4f81450654b",
+  "message": "",
+  "transaction": {
+    "raw_data": {
+      "ref_block_bytes": "7fc6",
+      "ref_block_hash": "11d6bde1afbed1f3",
+      "expiration": 1702633179923,
+      "contract": [
+        {
+          "type": "TransferContract",
+          "parameter": {
+            "type_url": "type.googleapis.com/protocol.TransferContract",
+            "value": "0a1541cb3725cf4bb8acbe2758bf49da12dfc9b522458f12154184963abb43debc2d129d1905eae92e95a4aa0a531880897a"
+          }
+        }
+      ],
+      "timestamp": 1702632879923
+    },
+    "signature": [
+      "91fe34c5142236098167f726da602a269393a8277cfdffa467b5c8ee659f887e0341fb012b1390af2d3e74900d8b07cf25081471cd0669206740d86d06d7d2d300"
+    ]
+  }
+}
+`
+	root := gjson.Parse(res)
+	t.Log(root.Get("code").String())
 }

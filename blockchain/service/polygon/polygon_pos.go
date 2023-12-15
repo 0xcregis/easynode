@@ -318,6 +318,20 @@ func NewPolygonPos(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.X
 	return e
 }
 
+func NewPolygonPos2(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.ExApi {
+	blockChainClient := chain.NewChain(blockchain, xlog)
+	if blockChainClient == nil {
+		return nil
+	}
+	e := &PolygonPos{
+		log:              xlog,
+		nodeCluster:      cluster,
+		blockChainClient: blockChainClient,
+	}
+	e.StartWDT()
+	return e
+}
+
 func NewNftPolygonPos(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.NftApi {
 	nftClient := chain.NewNFT(blockchain, xlog)
 	if nftClient == nil {
@@ -415,6 +429,53 @@ func (e *PolygonPos) LatestBlock(chainCode int64) (string, error) {
 			}
 			`
 	return e.SendReq(chainCode, req)
+}
+
+func (e *PolygonPos) GetAccountResourceForTron(chainCode int64, address string) (string, error) {
+	return "", nil
+}
+
+func (e *PolygonPos) EstimateGasForTron(chainCode int64, from, to, functionSelector, parameter string) (string, error) {
+	return "", nil
+}
+
+func (e *PolygonPos) EstimateGas(chainCode int64, from, to, data string) (string, error) {
+	req := `
+	{
+		  "id": 1,
+		  "jsonrpc": "2.0",
+		  "method": "eth_estimateGas",
+		  "params": [
+			{
+			  "from":"%v",
+			  "to": "%v",
+			  "data": "%v"
+			}
+		  ]
+	}`
+	req = fmt.Sprintf(req, from, to, data)
+	res, err := e.SendJsonRpc(chainCode, req)
+	if err != nil {
+		return "", err
+	}
+	return res, nil
+}
+
+func (e *PolygonPos) GasPrice(chainCode int64) (string, error) {
+	req := `
+		{
+		"id": 1,
+		"jsonrpc": "2.0",
+		"method": "eth_gasPrice"
+		}
+		`
+
+	//req = fmt.Sprintf(req, from, to, functionSelector, parameter)
+	res, err := e.SendJsonRpc(chainCode, req)
+	if err != nil {
+		return "", err
+	}
+	return res, nil
 }
 
 func (e *PolygonPos) SendRawTransaction(chainCode int64, signedTx string) (string, error) {

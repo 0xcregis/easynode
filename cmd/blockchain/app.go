@@ -73,6 +73,7 @@ func main() {
 	myRoot.POST("/block/latest", srv.GetLatestBlock1)
 	myRoot.POST("/gas/price", srv.GasPrice1)
 	myRoot.POST("/gas/estimateGas", srv.EstimateGas1)
+	myRoot.POST("/gas/estimateGasForTron", srv.EstimateGasForTron)
 	myRoot.POST("/tx/sendRawTransaction", srv.SendRawTx1)
 	myRoot.POST("/account/getAccountResource", srv.GetAccountResource)
 

@@ -606,4 +606,25 @@ response:
 
 vist: [https://developers.tron.network/reference/getaccountresource]
 
+// estimateGasForTron for only tron
+curl -X POST \
+  http://127.0.0.1:9002/api/chain/easynode/gas/estimateGasForTron \
+  -H 'Content-Type: application/json' \
+  -H 'Postman-Token: f29f01a9-e7cd-444b-a574-d728ef0c6ab0' \
+  -H 'cache-control: no-cache' \
+  -d '{
+	"chain":198,
+    "from": "TZ4UXDV5ZhNW7fb2AMSbgfAEZ7hWsnYS2g",
+    "to": "TG3XXyExBkPp9nzdajDZsozEu4BkaSJozs",
+    "functionSelector": "balanceOf(address)",
+    "parameter": "000000000000000000000000a614f803b6fd780986a42c78ec9c7f77e6ded13c"
+}'
+
+response:
+{
+    "code": 0,
+    "data": 1082, //Estimated energy to run the contract
+    "message": "ok"
+}
+
 ``````

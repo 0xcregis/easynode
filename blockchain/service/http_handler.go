@@ -315,7 +315,7 @@ func (h *HttpHandler) GetNonce(ctx *gin.Context) {
 	h.Success(ctx, string(b), res, ctx.Request.RequestURI)
 }
 
-// getAccountResource ,for only tron
+// GetAccountResource ,for only tron
 func (h *HttpHandler) GetAccountResource(ctx *gin.Context) {
 	b, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
@@ -328,13 +328,48 @@ func (h *HttpHandler) GetAccountResource(ctx *gin.Context) {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return
 	}
-	res, err := h.tronClients.GetAccountResource(blockChainCode, addr)
+	res, err := h.tronClients.GetAccountResourceForTron(blockChainCode, addr)
 	if err != nil {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
 		return
 	}
 
 	h.Success(ctx, string(b), gjson.Parse(res).Value(), ctx.Request.RequestURI)
+}
+
+func (h *HttpHandler) EstimateGasForTron(ctx *gin.Context) {
+	b, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
+		return
+	}
+
+	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
+	if h.tronClients == nil {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
+
+	fromAddr := gjson.ParseBytes(b).Get("from").String()
+	toAddr := gjson.ParseBytes(b).Get("to").String()
+	functionSelector := gjson.ParseBytes(b).Get("functionSelector").String()
+	parameter := gjson.ParseBytes(b).Get("parameter").String()
+
+	res, err := h.tronClients.EstimateGasForTron(blockChainCode, fromAddr, toAddr, functionSelector, parameter)
+	if err != nil {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
+		return
+	}
+
+	root := gjson.Parse(res)
+	if !root.Get("result.result").Bool() {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, res)
+		return
+	}
+
+	energy := root.Get("energy_required").Int()
+
+	h.Success(ctx, string(b), energy, ctx.Request.RequestURI)
 }
 
 func (h *HttpHandler) GetLatestBlock(ctx *gin.Context) {
@@ -772,6 +807,9 @@ func (h *HttpHandler) GetTxByHash1(ctx *gin.Context) {
 		m["fee"] = fee
 
 		energyUsageTotal := root.Get("receipt.energy_usage_total").String()
+		if len(energyUsageTotal) < 1 {
+			energyUsageTotal = "0"
+		}
 		m["energyUsageTotal"] = energyUsageTotal
 
 		status := root.Get("receipt.result").String()

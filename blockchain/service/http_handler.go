@@ -551,32 +551,32 @@ func (h *HttpHandler) SendRawTx1(ctx *gin.Context) {
 	backup["response"] = res
 
 	m := make(map[string]any)
-	//{
-	//  "id": 1,
-	//  "jsonrpc": "2.0",
-	//  "result": "0x2a7e11bcb80ea248e09975c48da02b7d0c29d42521d6e9e65e112358132134"
-	//}
 	if chain.GetChainCode(blockChainCode, "ETH", nil) || chain.GetChainCode(blockChainCode, "BSC", nil) || chain.GetChainCode(blockChainCode, "POLYGON", nil) {
+		//res = `{
+		// "id": 1,
+		// "jsonrpc": "2.0",
+		// "result": "0x2a7e11bcb80ea248e09975c48da02b7d0c29d42521d6e9e65e112358132134"
+		//}`
 		hash := gjson.Parse(res).Get("result").String()
 		m["status"] = "SUCCESS"
 		m["hash"] = hash
 	} else if chain.GetChainCode(blockChainCode, "TRON", nil) {
-		//{
-		//  "result": {
-		//    "code": "SUCCESS",
-		//    "message": "SUCCESS",
-		//    "transaction": {
-		//      "txID": "a6a4c7d5b7f2c3871f4a8271f8b690c324f8c350d0e4b9abaddfe7c2294a1737",
-		//      "raw_data": {
-		//        // 其他原始数据
-		//      },
-		//      "signature": [
-		//        // 签名信息
-		//      ],
-		//      // 其他交易信息
-		//    }
-		//  }
-		//}
+		//res = `{
+		// "result": {
+		//   "code": "SUCCESS",
+		//   "message": "SUCCESS",
+		//   "transaction": {
+		//     "txID": "a6a4c7d5b7f2c3871f4a8271f8b690c324f8c350d0e4b9abaddfe7c2294a1737",
+		//     "raw_data": {
+		//       // 其他原始数据
+		//     },
+		//     "signature": [
+		//       // 签名信息
+		//     ],
+		//     // 其他交易信息
+		//   }
+		// }
+		//}`
 
 		//{"code":"SIGERROR","txid":"77ddfa7093cc5f745c0d3a54abb89ef070f983343c05e0f89e5a52f3e5401299","message":"56616c6964617465207369676e6174757265206572726f723a206d69737320736967206f7220636f6e7472616374"}
 
@@ -988,7 +988,7 @@ func (h *HttpHandler) GetLatestBlock1(ctx *gin.Context) {
 		return
 	}
 
-	var number string
+	var number, blockHash string
 	if chain.GetChainCode(blockChainCode, "ETH", nil) {
 		//{"jsonrpc":"2.0","result":"0x11d9e01","id":1}
 		number = gjson.Parse(res).Get("result").String()
@@ -996,7 +996,9 @@ func (h *HttpHandler) GetLatestBlock1(ctx *gin.Context) {
 
 	} else if chain.GetChainCode(blockChainCode, "TRON", nil) {
 		//{"blockId":"00000000036660c483762cf17eb14ddb705228e0f616fb973a3ee3b7a9062910","number":57041092}
-		number = gjson.Parse(res).Get("number").String()
+		root := gjson.Parse(res)
+		number = root.Get("number").String()
+		blockHash = root.Get("blockId").String()
 
 	} else if chain.GetChainCode(blockChainCode, "BSC", nil) {
 		number = gjson.Parse(res).Get("result").String()
@@ -1012,11 +1014,14 @@ func (h *HttpHandler) GetLatestBlock1(ctx *gin.Context) {
 	}
 
 	if err != nil {
-		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
+		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
 		return
 	}
 
-	h.Success(ctx, "", number, ctx.Request.RequestURI)
+	r := make(map[string]any, 0)
+	r["blockNumber"] = number
+	r["blockHash"] = blockHash
+	h.Success(ctx, string(b), r, ctx.Request.RequestURI)
 }
 
 // GasPrice1 Returns the current price per gas in wei.

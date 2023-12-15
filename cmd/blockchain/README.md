@@ -512,9 +512,14 @@ curl -X POST \
 response:
 {
     "code": 0,
-    "data": "18719165", //latest block number
-    "message": "ok" // error message when it request failure    
+    "data": {
+        "blockHash": "00000000025e77ad0c04e5a255ba304f9de6a6eb3423d968b872ba17a3504a11",
+        "blockNumber": "39745453"
+    },
+    "message": "ok"
 }
+
+
 
 //query price to easynode space on current latest block
 curl -X POST \
@@ -576,7 +581,10 @@ response:
 OR
 {
     "code": 0,
-    "data": {\"hash\":\"0x2a7e11bcb80ea248e09975c48da02b7d0c29d42521d6e9e65e112358132134\"},
+    "data": {
+        "hash": "a6a4c7d5b7f2c3871f4a8271f8b690c324f8c350d0e4b9abaddfe7c2294a1737",
+        "status": "SUCCESS"
+    },
     "message": "ok"
 }
 

@@ -127,7 +127,7 @@ func NewTron(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) b
 	return t
 }
 
-func NewTron2(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) *Tron {
+func NewTron2(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.ExApi {
 	blockChainClient := chain.NewChain(blockchain, xlog)
 	if blockChainClient == nil {
 		return nil

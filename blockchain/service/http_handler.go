@@ -11,7 +11,6 @@ import (
 
 	"github.com/0xcregis/easynode/blockchain"
 	"github.com/0xcregis/easynode/blockchain/config"
-	"github.com/0xcregis/easynode/blockchain/service/tron"
 	"github.com/0xcregis/easynode/common/chain"
 	easyKafka "github.com/0xcregis/easynode/common/kafka"
 	"github.com/0xcregis/easynode/common/util"
@@ -23,14 +22,14 @@ import (
 )
 
 type HttpHandler struct {
-	log               *logrus.Entry
-	nodeCluster       map[int64][]*config.NodeCluster
-	blockChainClients map[int64]blockchain.API
-	nftClients        map[int64]blockchain.NftApi
-	tronClients       *tron.Tron
-	kafkaClient       *easyKafka.EasyKafka
-	kafkaCfg          *config.Kafka
-	sendCh            chan []*kafka.Message
+	log                 *logrus.Entry
+	nodeCluster         map[int64][]*config.NodeCluster
+	blockChainClients   map[int64]blockchain.API
+	nftClients          map[int64]blockchain.NftApi
+	exBlockChainClients map[int64]blockchain.ExApi
+	kafkaClient         *easyKafka.EasyKafka
+	kafkaCfg            *config.Kafka
+	sendCh              chan []*kafka.Message
 }
 
 func (h *HttpHandler) StartKafka(ctx context.Context) {
@@ -47,14 +46,14 @@ func NewHttpHandler(cluster map[int64][]*config.NodeCluster, kafkaCfg *config.Ka
 	kafkaClient := easyKafka.NewEasyKafka2(x)
 	sendCh := make(chan []*kafka.Message)
 	return &HttpHandler{
-		log:               x,
-		nodeCluster:       cluster,
-		kafkaCfg:          kafkaCfg,
-		kafkaClient:       kafkaClient,
-		sendCh:            sendCh,
-		blockChainClients: NewApis(cluster, xlog),
-		nftClients:        NewNftApis(cluster, xlog),
-		tronClients:       NewTronApi(cluster, xlog),
+		log:                 x,
+		nodeCluster:         cluster,
+		kafkaCfg:            kafkaCfg,
+		kafkaClient:         kafkaClient,
+		sendCh:              sendCh,
+		blockChainClients:   NewApis(cluster, xlog),
+		nftClients:          NewNftApis(cluster, xlog),
+		exBlockChainClients: NewExApi(cluster, xlog),
 	}
 }
 
@@ -324,11 +323,12 @@ func (h *HttpHandler) GetAccountResource(ctx *gin.Context) {
 	}
 	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
 	addr := gjson.ParseBytes(b).Get("address").String()
-	if h.tronClients == nil {
+
+	if _, ok := h.exBlockChainClients[blockChainCode]; !ok {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return
 	}
-	res, err := h.tronClients.GetAccountResourceForTron(blockChainCode, addr)
+	res, err := h.exBlockChainClients[blockChainCode].GetAccountResourceForTron(blockChainCode, addr)
 	if err != nil {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
 		return
@@ -345,7 +345,7 @@ func (h *HttpHandler) EstimateGasForTron(ctx *gin.Context) {
 	}
 
 	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
-	if h.tronClients == nil {
+	if _, ok := h.exBlockChainClients[blockChainCode]; !ok {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return
 	}
@@ -354,8 +354,7 @@ func (h *HttpHandler) EstimateGasForTron(ctx *gin.Context) {
 	toAddr := gjson.ParseBytes(b).Get("to").String()
 	functionSelector := gjson.ParseBytes(b).Get("functionSelector").String()
 	parameter := gjson.ParseBytes(b).Get("parameter").String()
-
-	res, err := h.tronClients.EstimateGasForTron(blockChainCode, fromAddr, toAddr, functionSelector, parameter)
+	res, err := h.exBlockChainClients[blockChainCode].EstimateGasForTron(blockChainCode, fromAddr, toAddr, functionSelector, parameter)
 	if err != nil {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
 		return

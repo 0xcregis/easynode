@@ -261,7 +261,7 @@ func (ws *WsHandler) sendMessage(SubKafkaConfig *config.KafkaConfig, kafkaConfig
 		group := fmt.Sprintf("gr_push_%v", kafkaConfig.Group)
 		c, cancel := context.WithCancel(ctx)
 		defer cancel()
-		ws.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: kafkaConfig.Topic, Group: group, Partition: kafkaConfig.Partition, StartOffset: kafkaConfig.StartOffset}, receiver, c)
+		ws.kafka.Read(&kafkaClient.Config{Brokers: []string{broker}, Topic: fmt.Sprintf("%v-%v", blockChain, kafkaConfig.Topic), Group: group, Partition: kafkaConfig.Partition, StartOffset: kafkaConfig.StartOffset}, receiver, c)
 	}(ctx)
 
 	//write sub-tx to kafka

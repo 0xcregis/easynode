@@ -12,7 +12,7 @@ import (
 
 func Init() blockchain.API {
 	cfg := config.LoadConfig("./../../../cmd/blockchain/config_tron.json")
-	return NewTron(cfg.Cluster[195], 195, xlog.NewXLogger())
+	return NewTron(cfg.Cluster[198], 198, xlog.NewXLogger())
 }
 
 func Init2() blockchain.ExApi {
@@ -63,7 +63,7 @@ func TestTron_GetLatestBlock(t *testing.T) {
 
 func TestTron_GetTxByHash(t *testing.T) {
 	s := Init()
-	resp, err := s.GetTxByHash(205, "d0ff91487dd11ab6bd2cffa4af97bb472ede4f1713786fa2b15bf32011d0b681")
+	resp, err := s.GetTxByHash(198, "75a357b83f0a58cede458325c5d8f0d2d1e0267003c28aef3c801ca854636c77")
 	if err != nil {
 		t.Error(err)
 	} else {
@@ -73,7 +73,7 @@ func TestTron_GetTxByHash(t *testing.T) {
 
 func TestTron_GetTransactionReceiptByHash(t *testing.T) {
 	s := Init()
-	resp, err := s.GetTransactionReceiptByHash(205, "d0ff91487dd11ab6bd2cffa4af97bb472ede4f1713786fa2b15bf32011d0b681")
+	resp, err := s.GetTransactionReceiptByHash(198, "d0ff91487dd11ab6bd2cffa4af97bb472ede4f1713786fa2b15bf32011d0b681")
 	if err != nil {
 		t.Error(err)
 	} else {
@@ -99,10 +99,12 @@ func TestTron_GetBlockReceiptByBlockNumber(t *testing.T) {
 func TestTron_SendRawTransaction(t *testing.T) {
 	c := Init()
 	tx := `0A8A010A0202DB2208C89D4811359A28004098A4E0A6B52D5A730802126F0A32747970652E676F6F676C65617069732E636F6D2F70726F746F636F6C2E5472616E736665724173736574436F6E747261637412390A07313030303030311215415A523B449890854C8FC460AB602DF9F31FE4293F1A15416B0580DA195542DDABE288FEC436C7D5AF769D24206412418BF3F2E492ED443607910EA9EF0A7EF79728DAAAAC0EE2BA6CB87DA38366DF9AC4ADE54B2912C1DEB0EE6666B86A07A6C7DF68F1F9DA171EEE6A370B3CA9CBBB00`
-	resp, err := c.SendRawTransaction(195, tx)
+	resp, err := c.SendRawTransaction(198, tx)
 	if err != nil {
 		t.Error(err)
 	} else {
+
+		t.Log(gjson.Parse(resp).Get("code").String())
 		t.Log(resp)
 	}
 }
@@ -115,38 +117,4 @@ func TestTron_GetAccountResource(t *testing.T) {
 	} else {
 		t.Log(resp)
 	}
-}
-
-func TestSendTx(t *testing.T) {
-	res := `
-
-{
-  "result": true,
-  "code": "SUCCESS",
-  "txid": "ce5f03b89a735353bebf7214d24cac222d35f98c92d690ed3d3bc4f81450654b",
-  "message": "",
-  "transaction": {
-    "raw_data": {
-      "ref_block_bytes": "7fc6",
-      "ref_block_hash": "11d6bde1afbed1f3",
-      "expiration": 1702633179923,
-      "contract": [
-        {
-          "type": "TransferContract",
-          "parameter": {
-            "type_url": "type.googleapis.com/protocol.TransferContract",
-            "value": "0a1541cb3725cf4bb8acbe2758bf49da12dfc9b522458f12154184963abb43debc2d129d1905eae92e95a4aa0a531880897a"
-          }
-        }
-      ],
-      "timestamp": 1702632879923
-    },
-    "signature": [
-      "91fe34c5142236098167f726da602a269393a8277cfdffa467b5c8ee659f887e0341fb012b1390af2d3e74900d8b07cf25081471cd0669206740d86d06d7d2d300"
-    ]
-  }
-}
-`
-	root := gjson.Parse(res)
-	t.Log(root.Get("code").String())
 }

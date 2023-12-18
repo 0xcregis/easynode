@@ -802,11 +802,17 @@ func (h *HttpHandler) GetTxByHash1(ctx *gin.Context) {
 		}
 		m["energyUsageTotal"] = energyUsageTotal
 
-		status := root.Get("receipt.result").String()
-		if status == "SUCCESS" {
-			m["status"] = 1
+		if len(root.Get("contract_address").String()) > 5 {
+			// contract tx
+			status := root.Get("receipt.result").String()
+			if status == "SUCCESS" {
+				m["status"] = 1
+			} else {
+				m["status"] = 0
+			}
 		} else {
-			m["status"] = 0
+			// normal tx
+			m["status"] = 1
 		}
 
 	} else {

@@ -902,8 +902,8 @@ func (h *HttpHandler) GetTokenBalance1(ctx *gin.Context) {
 
 	//  {"balance":"1233764293093","decimals":6,"name":"Tether USD","symbol":"USDT"}
 	if chain.GetChainCode(blockChainCode, "ETH", nil) || chain.GetChainCode(blockChainCode, "BSC", nil) || chain.GetChainCode(blockChainCode, "POLYGON", nil) {
-		balance := gjson.Parse(res).Get("result").String()
-		balance, _ = util.HexToInt(balance)
+		balance := gjson.Parse(res).Get("balance").String()
+		//balance, _ = util.HexToInt(balance)
 		m["balance"] = balance
 		resNonce, err := h.blockChainClients[blockChainCode].Nonce(blockChainCode, addr, "latest")
 		if err == nil && len(resNonce) > 1 {

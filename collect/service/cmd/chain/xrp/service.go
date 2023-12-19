@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/0xcregis/easynode/blockchain"
@@ -26,6 +27,8 @@ type Service struct {
 	txChainClient      blockchain.API
 	blockChainClient   blockchain.API
 	receiptChainClient blockchain.API
+	monitorAddress     map[string]int64
+	lock               sync.RWMutex
 }
 
 func (s *Service) GetMultiBlockByNumber(blockNumber string, log *logrus.Entry, flag bool) ([]*collect.BlockInterface, []*collect.TxInterface) {
@@ -36,7 +39,7 @@ func (s *Service) GetMultiBlockByNumber(blockNumber string, log *logrus.Entry, f
 func (s *Service) Monitor() {
 	go func() {
 		for {
-			<-time.After(30 * time.Second)
+			<-time.After(60 * time.Second)
 			if s.txChainClient != nil {
 				txCluster := s.txChainClient.MonitorCluster()
 				_ = s.store.StoreClusterNode(int64(s.chain.BlockChainCode), "tx", txCluster)
@@ -51,8 +54,23 @@ func (s *Service) Monitor() {
 				receiptCluster := s.receiptChainClient.MonitorCluster()
 				_ = s.store.StoreClusterNode(int64(s.chain.BlockChainCode), "receipt", receiptCluster)
 			}
+
+			// reload monitor address
+			s.reload()
+
 		}
 	}()
+}
+
+func (s *Service) reload() {
+	addressList, err := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
+	if err != nil {
+		s.log.Warnf("ReloadMonitorAddress BlockChainName=%v,err=%v", s.chain.BlockChainName, err)
+	}
+
+	s.lock.Lock()
+	s.monitorAddress = rebuildAddress(addressList)
+	s.lock.Unlock()
 }
 
 func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool) (*collect.BlockInterface, []*collect.TxInterface) {
@@ -118,12 +136,12 @@ func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool
 		v.Tx = m
 	}
 
-	addressList, _ := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
-	addressMp := rebuildAddress(addressList)
+	//addressList, _ := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
+	//addressMp := rebuildAddress(addressList)
 	resultTxs := make([]*collect.TxInterface, 0, len(txList))
 	for _, tx := range txList {
 		bs, _ := json.Marshal(tx.Tx)
-		if s.CheckAddress(bs, addressMp) {
+		if s.CheckAddress(bs, s.monitorAddress) {
 			//t := &collect.TxInterface{TxHash: tx.TxHash, Tx: tx.Tx}
 			resultTxs = append(resultTxs, tx)
 		}
@@ -195,12 +213,12 @@ func (s *Service) GetBlockByNumber(blockNumber string, eLog *logrus.Entry, flag 
 		v.Tx = m
 	}
 
-	addressList, _ := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
-	addressMp := rebuildAddress(addressList)
+	//addressList, _ := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
+	//addressMp := rebuildAddress(addressList)
 	resultTxs := make([]*collect.TxInterface, 0, len(txList))
 	for _, tx := range txList {
 		bs, _ := json.Marshal(tx.Tx)
-		if s.CheckAddress(bs, addressMp) {
+		if s.CheckAddress(bs, s.monitorAddress) {
 			//t := &collect.TxInterface{TxHash: tx.TxHash, Tx: tx.Tx}
 			resultTxs = append(resultTxs, tx)
 		}
@@ -248,10 +266,10 @@ func (s *Service) GetTx(txHash string, eLog *logrus.Entry) *collect.TxInterface 
 	//}
 	//bs, _ := json.Marshal(m)
 
-	addressList, _ := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
-	addressMp := rebuildAddress(addressList)
+	//addressList, _ := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
+	//addressMp := rebuildAddress(addressList)
 	bs, _ := json.Marshal(m)
-	if s.CheckAddress(bs, addressMp) {
+	if s.CheckAddress(bs, s.monitorAddress) {
 		r := &collect.TxInterface{TxHash: hash, Tx: m}
 		return r
 	}
@@ -368,6 +386,7 @@ func (s *Service) CheckAddress(tx []byte, addrList map[string]int64) bool {
 	//}
 
 	has := false
+	s.lock.RLock()
 	for k := range txAddressList {
 		//monitorAddr := getCoreAddr(v)
 		if _, ok := addrList[k]; ok {
@@ -375,6 +394,7 @@ func (s *Service) CheckAddress(tx []byte, addrList map[string]int64) bool {
 			break
 		}
 	}
+	s.lock.RUnlock()
 	return has
 }
 
@@ -423,7 +443,7 @@ func NewService(c *config.Chain, x *xlog.XLog, store collect.StoreTaskInterface,
 		receiptClient = chainService.NewApi(int64(c.BlockChainCode), list, x)
 	}
 
-	return &Service{
+	s := &Service{
 		log:                x,
 		chain:              c,
 		store:              store,
@@ -432,5 +452,9 @@ func NewService(c *config.Chain, x *xlog.XLog, store collect.StoreTaskInterface,
 		receiptChainClient: receiptClient,
 		nodeId:             nodeId,
 		transferTopic:      transferTopic,
+		lock:               sync.RWMutex{},
 	}
+
+	s.reload()
+	return s
 }

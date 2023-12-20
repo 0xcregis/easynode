@@ -3,7 +3,8 @@ package store
 type DbStoreInterface interface {
 	NewToken(token *NodeToken) error
 	UpdateToken(token string, nodeToken *NodeToken) error
-	GetNodeTokenByEmail(email string) (error, *NodeToken)
+	GetNodeTokenByEmail(email string) (*NodeToken, error)
+	GetNodeTokenByToken(token string) (*NodeToken, error)
 	AddMonitorAddress(blockchain int64, address *MonitorAddress) error
 	GetAddressByToken(blockchain int64, token string) ([]*MonitorAddress, error)
 	GetAddressByToken2(token string) ([]*MonitorAddress, error)

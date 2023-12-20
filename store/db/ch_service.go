@@ -92,6 +92,18 @@ func (m *ClickhouseDb) GetSubFilter(token string, blockChain int64, txCode strin
 	return list, nil
 }
 
+func (m *ClickhouseDb) GetNodeTokenByToken(token string) (*store.NodeToken, error) {
+	var r store.NodeToken
+	err := m.baseDb.Table(m.baseConfig.BaseDb.TokenTable).Where("token=?", token).First(&r).Error
+	if err != nil {
+		return nil, err
+	}
+	if r.Id < 1 {
+		return nil, errors.New("no record")
+	}
+	return &r, nil
+}
+
 func (m *ClickhouseDb) GetAddressByToken2(token string) ([]*store.MonitorAddress, error) {
 	var list []*store.MonitorAddress
 	err := m.baseDb.Table(m.baseConfig.BaseDb.AddressTable).Select("address,block_chain").Where("token=?", token).Group("address,block_chain").Scan(&list).Error
@@ -117,16 +129,16 @@ func (m *ClickhouseDb) UpdateToken(token string, nodeToken *store.NodeToken) err
 	return m.baseDb.Table(m.baseConfig.BaseDb.TokenTable).Where("token=?", token).UpdateColumn("email", nodeToken.Email).Error
 }
 
-func (m *ClickhouseDb) GetNodeTokenByEmail(email string) (error, *store.NodeToken) {
+func (m *ClickhouseDb) GetNodeTokenByEmail(email string) (*store.NodeToken, error) {
 	var r store.NodeToken
 	err := m.baseDb.Table(m.baseConfig.BaseDb.TokenTable).Where("email=?", email).First(&r).Error
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 	if r.Id < 1 {
-		return errors.New("no record"), nil
+		return nil, errors.New("no record")
 	}
-	return nil, &r
+	return &r, nil
 }
 func (m *ClickhouseDb) NewSubTx(blockchain int64, txs []*store.SubTx) error {
 	if _, ok := m.chDb[blockchain]; !ok {

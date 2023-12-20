@@ -236,6 +236,16 @@ func (s *HttpHandler) MonitorAddress(c *gin.Context) {
 		addr = base58Addr.Hex()
 	}
 
+	if blockChain == 0 && !util.Has0xPrefix(addr) {
+		//if chainCode=0 && !0x 这默认认为是tron 地址
+		base58Addr, err := util.Base58ToAddress(addr)
+		if err != nil {
+			s.Error(c, c.Request.URL.Path, err.Error())
+			return
+		}
+		addr = base58Addr.Hex()
+	}
+
 	//address:hex string
 	addressTask := &store.MonitorAddress{BlockChain: blockChain, Address: addr, Token: token, TxType: fmt.Sprintf("%v", 0), Id: time.Now().UnixNano()}
 	err = s.store.AddMonitorAddress(blockChain, addressTask)

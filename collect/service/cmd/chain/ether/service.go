@@ -125,6 +125,7 @@ func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool
 				_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), v.TxHash, task)
 				eLog.Warnf("GetBlockByHash|BlockChainCode=%v,err=%v,blockHash=%v,txHash=%v", s.chain.BlockChainCode, err.Error(), blockHash, v.TxHash)
 			} else {
+				_, _ = s.store.DelErrTxNodeTask(int64(s.chain.BlockChainCode), v.TxHash)
 				m[receipt.TransactionHash] = receipt
 			}
 		}
@@ -220,6 +221,7 @@ func (s *Service) GetBlockByNumber(blockNumber string, eLog *logrus.Entry, flag 
 				_ = s.store.StoreErrTxNodeTask(int64(s.chain.BlockChainCode), v.TxHash, task)
 				eLog.Warnf("GetBlockByNumber|BlockChainCode=%v,err=%v,blockNumber=%v,txHash=%v", s.chain.BlockChainCode, err.Error(), blockNumber, v.TxHash)
 			} else {
+				_, _ = s.store.DelErrTxNodeTask(int64(s.chain.BlockChainCode), v.TxHash)
 				m[receipt.TransactionHash] = receipt
 			}
 		}
@@ -300,6 +302,7 @@ func (s *Service) GetTx(txHash string, eLog *logrus.Entry) *collect.TxInterface 
 		eLog.Warnf("GetTx|BlockChainCode=%v,err=%v,txHash=%v", s.chain.BlockChainCode, err.Error(), tx.TxHash)
 	} else {
 		if receipt != nil {
+			_, _ = s.store.DelErrTxNodeTask(int64(s.chain.BlockChainCode), tx.TxHash)
 			bs, _ := json.Marshal(receipt.Receipt)
 			tx.Receipt = string(bs)
 		}
@@ -351,6 +354,7 @@ func (s *Service) GetReceiptByBlock(blockHash, number string, eLog *logrus.Entry
 		txHash := v.TransactionHash
 		v, err = s.buildContract(v)
 		if err == nil {
+			_, _ = s.store.DelErrTxNodeTask(int64(s.chain.BlockChainCode), txHash)
 			r := &collect.ReceiptInterface{TransactionHash: txHash, Receipt: v}
 			rs = append(rs, r)
 		} else {

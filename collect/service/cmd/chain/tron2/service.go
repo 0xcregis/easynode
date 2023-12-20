@@ -96,6 +96,7 @@ func (s *Service) GetTx(txHash string, eLog *logrus.Entry) *collect.TxInterface 
 		eLog.Warnf("GetTx|BlockChainCode=%v,err=%v,txHash=%v", s.chain.BlockChainCode, err.Error(), txHash)
 	} else {
 		if receipt != nil {
+			_, _ = s.store.DelErrTxNodeTask(int64(s.chain.BlockChainCode), hash)
 			fullTx["receipt"] = receipt.Receipt
 		}
 	}
@@ -189,6 +190,7 @@ func (s *Service) GetReceiptByBlock(blockHash, number string, eLog *logrus.Entry
 
 		if err == nil {
 			bs, _ := json.Marshal(p)
+			_, _ = s.store.DelErrTxNodeTask(int64(s.chain.BlockChainCode), hash)
 			r := &collect.ReceiptInterface{TransactionHash: hash, Receipt: string(bs)}
 			receiptList = append(receiptList, r)
 		} else {

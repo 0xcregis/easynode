@@ -109,7 +109,7 @@ func (s *Service) CheckNodeTask() {
 		for {
 
 			var l int64
-			if s.cfg.Retry.NodeTask == 0 {
+			if s.cfg.Retry == nil || s.cfg.Retry.NodeTask == 0 {
 				l = 120
 			} else {
 				l = s.cfg.Retry.NodeTask
@@ -134,10 +134,10 @@ func (s *Service) CheckNodeTask() {
 					}
 
 					//清理 已经重试成功的交易
-					if count < 5 && time.Since(task.LogTime) >= 24*time.Hour {
-						_, _, _ = store.DelNodeTask(blockchain, hash)
-						continue
-					}
+					//if count < 5 && time.Since(task.LogTime) >= 24*time.Hour {
+					//	_, _, _ = store.DelNodeTask(blockchain, hash)
+					//	continue
+					//}
 
 					task.CreateTime = time.Now()
 					task.LogTime = time.Now()
@@ -148,6 +148,7 @@ func (s *Service) CheckNodeTask() {
 					task.TaskStatus = 0
 					task.NodeId = s.nodeId
 					bs, _ := json.Marshal(task)
+					s.log.Printf("NodeTask|task:%+v", task)
 					msg := &kafka.Message{Topic: fmt.Sprintf("task_%v", blockchain), Partition: 0, Key: []byte(task.NodeId), Value: bs}
 					tempList = append(tempList, msg)
 
@@ -169,15 +170,15 @@ func (s *Service) CheckContract() {
 	go func() {
 
 		for {
-			var l int64
-			if s.cfg.Retry.Contract == 0 {
-				l = 120
-			} else {
-				l = s.cfg.Retry.Contract
-			}
-			l = l * int64(time.Second)
+			//var l int64
+			//if s.cfg.Retry == nil || s.cfg.Retry.Contract == 0 {
+			//	l = 120
+			//} else {
+			//	l = s.cfg.Retry.Contract
+			//}
+			//l = l * int64(time.Second)
 
-			<-time.After(time.Duration(l))
+			<-time.After(30 * time.Minute)
 
 			for blockchain, store := range s.taskStore {
 
@@ -208,7 +209,7 @@ func (s *Service) CheckErrTx() {
 
 		for {
 			var l int64
-			if s.cfg.Retry.ErrTx == 0 {
+			if s.cfg.Retry == nil || s.cfg.Retry.ErrTx == 0 {
 				l = 120
 			} else {
 				l = s.cfg.Retry.ErrTx
@@ -237,10 +238,10 @@ func (s *Service) CheckErrTx() {
 					_ = json.Unmarshal([]byte(data), &v)
 
 					//清理 已经重试成功的交易
-					if count < 5 && time.Since(v.LogTime) >= 24*time.Hour {
-						_, _ = store.DelErrTxNodeTask(blockchain, hash)
-						continue
-					}
+					//if count < 5 && time.Since(v.LogTime) >= 24*time.Hour {
+					//	_, _ = store.DelErrTxNodeTask(blockchain, hash)
+					//	continue
+					//}
 
 					v.CreateTime = time.Now()
 					v.LogTime = time.Now()
@@ -251,6 +252,7 @@ func (s *Service) CheckErrTx() {
 					v.Id = time.Now().UnixNano()
 					v.TaskStatus = 0
 					bs, _ := json.Marshal(v)
+					s.log.Printf("ErrTx|task:%+v", v)
 					msg := &kafka.Message{Topic: fmt.Sprintf("task_%v", v.BlockChain), Partition: 0, Key: []byte(v.NodeId), Value: bs}
 					tempList = append(tempList, msg)
 

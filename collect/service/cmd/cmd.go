@@ -236,7 +236,7 @@ func (c *Cmd) HandlerKafkaRespMessage(msList []*kafka.Message) {
 		//log.Printf("topic=%v,msg.offset=%v", topic, msg.Offset)
 
 		//交易
-		if c.chain.TxTask != nil && topic == c.chain.TxTask.Kafka.Topic {
+		if c.chain.TxTask != nil && topic == fmt.Sprintf("%v-%v", c.chain.BlockChainCode, c.chain.TxTask.Kafka.Topic) {
 			txHash := chain.GetTxHashFromKafka(c.chain.BlockChainCode, msg.Value)
 			if len(txHash) > 0 {
 				ids = append(ids, fmt.Sprintf(KeyTxById, c.chain.BlockChainCode, txHash))
@@ -244,7 +244,7 @@ func (c *Cmd) HandlerKafkaRespMessage(msList []*kafka.Message) {
 		}
 
 		//收据
-		if c.chain.ReceiptTask != nil && topic == c.chain.ReceiptTask.Kafka.Topic {
+		if c.chain.ReceiptTask != nil && topic == fmt.Sprintf("%v-%v", c.chain.BlockChainCode, c.chain.ReceiptTask.Kafka.Topic) {
 			txHash := chain.GetReceiptHashFromKafka(c.chain.BlockChainCode, msg.Value)
 			if len(txHash) > 0 {
 				ids = append(ids, fmt.Sprintf(KeyReceiptById, c.chain.BlockChainCode, txHash))
@@ -252,7 +252,7 @@ func (c *Cmd) HandlerKafkaRespMessage(msList []*kafka.Message) {
 		}
 
 		//区块
-		if c.chain.BlockTask != nil && topic == c.chain.BlockTask.Kafka.Topic {
+		if c.chain.BlockTask != nil && topic == fmt.Sprintf("%v-%v", c.chain.BlockChainCode, c.chain.BlockTask.Kafka.Topic) {
 			blockHash := chain.GetBlockHashFromKafka(c.chain.BlockChainCode, msg.Value)
 			if len(blockHash) > 0 {
 				ids = append(ids, fmt.Sprintf(KeyBlockById, c.chain.BlockChainCode, blockHash))
@@ -262,6 +262,7 @@ func (c *Cmd) HandlerKafkaRespMessage(msList []*kafka.Message) {
 	}
 
 	if len(ids) > 0 {
+		log.Errorf("UpdateNodeTaskStatus|ids=%v", ids)
 		err := c.taskStore.UpdateNodeTaskStatusWithBatch(ids, 1)
 		if err != nil {
 			log.Errorf("UpdateNodeTaskStatusWithBatch|err=%v", err)

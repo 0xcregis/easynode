@@ -26,7 +26,6 @@ go.work
 .idea/*
 /clickhouse_data/
 /redis_data/
-/build/config/
 
 /kafka_data/
 /zookeeper_data/

@@ -4,10 +4,15 @@
     "Delay": 2
   },
   "KeyPath": "./data/temp/1",
+  "Retry": {
+    "ErrTx": 100,
+    "NodeTask": 100,
+    "Contract": 100
+  },
   "Chains": [
     {
       "BlockChainName": "bnb",
-      "BlockChainCode": 202,
+      "BlockChainCode": 2510,
       "PullReceipt": 0,
       "PullTx": 1,
       "TaskKafka": {

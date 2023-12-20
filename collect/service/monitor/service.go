@@ -107,7 +107,16 @@ func (s *Service) rebuildCluster(t collect.StoreTaskInterface, blockChain int64,
 func (s *Service) CheckNodeTask() {
 	go func() {
 		for {
-			<-time.After(2 * time.Hour)
+
+			var l int64
+			if s.cfg.Retry.NodeTask == 0 {
+				l = 120
+			} else {
+				l = s.cfg.Retry.NodeTask
+			}
+			l = l * int64(time.Second)
+
+			<-time.After(time.Duration(l))
 
 			for blockchain, store := range s.taskStore {
 
@@ -160,7 +169,15 @@ func (s *Service) CheckContract() {
 	go func() {
 
 		for {
-			<-time.After(1 * time.Hour)
+			var l int64
+			if s.cfg.Retry.Contract == 0 {
+				l = 120
+			} else {
+				l = s.cfg.Retry.Contract
+			}
+			l = l * int64(time.Second)
+
+			<-time.After(time.Duration(l))
 
 			for blockchain, store := range s.taskStore {
 
@@ -190,7 +207,15 @@ func (s *Service) CheckErrTx() {
 	go func() {
 
 		for {
-			<-time.After(3 * time.Hour)
+			var l int64
+			if s.cfg.Retry.ErrTx == 0 {
+				l = 120
+			} else {
+				l = s.cfg.Retry.ErrTx
+			}
+			l = l * int64(time.Second)
+
+			<-time.After(time.Duration(l))
 
 			for blockchain, store := range s.taskStore {
 

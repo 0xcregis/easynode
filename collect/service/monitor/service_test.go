@@ -117,5 +117,15 @@ func TestService_CheckNodeTask(t *testing.T) {
 }
 
 func TestService_CheckContract(t *testing.T) {
+	s := Init()
 
+	var l int64
+	if s.cfg.Retry.ErrTx == 0 {
+		l = 120
+	} else {
+		l = s.cfg.Retry.ErrTx
+	}
+	l = l * int64(time.Second)
+
+	<-time.After(time.Duration(l))
 }

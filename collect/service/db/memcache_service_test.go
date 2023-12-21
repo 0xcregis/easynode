@@ -11,7 +11,7 @@ import (
 )
 
 func Init() collect.StoreTaskInterface {
-	cfg := config.LoadConfig("./../../../cmd/collect/config.json")
+	cfg := config.LoadConfig("./../../../cmd/collect/collect_config_bnb_test.json")
 	x := xlog.NewXLogger().BuildOutType(xlog.FILE).BuildFormatter(xlog.FORMAT_JSON).BuildFile("./log/collect/task", 24*time.Hour)
 	return NewTaskCacheService(cfg.Chains[0], x)
 }
@@ -54,7 +54,7 @@ func TestService_ResetNodeTask(t *testing.T) {
 
 func TestService_UpdateNodeTaskStatus(t *testing.T) {
 	s := Init()
-	s.UpdateNodeTaskStatus("205_blockId_00000000020b63ef30ebe0507220f0d256cf09b3b76aa1db7d70bf73c7c1251e", 1)
+	s.UpdateNodeTaskStatus("2610_tx_36140539", 1)
 }
 
 func TestService_StoreLatestBlock(t *testing.T) {

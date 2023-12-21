@@ -228,14 +228,14 @@ func (s *Service) CheckErrTx() {
 				tempList := make([]*kafka.Message, 0, 10)
 
 				for _, hash := range list {
-					count, data, err := store.GetErrTxNodeTask(chainCode, hash)
+					count, task, err := store.GetErrTxNodeTask(chainCode, hash)
 					if err != nil || count >= 5 {
 						continue
 					}
 
 					//重发交易任务
-					var v collect.NodeTask
-					_ = json.Unmarshal([]byte(data), &v)
+					//var v collect.NodeTask
+					//_ = json.Unmarshal([]byte(data), &v)
 
 					//清理 已经重试成功的交易
 					//if count < 5 && time.Since(v.LogTime) >= 24*time.Hour {
@@ -243,18 +243,18 @@ func (s *Service) CheckErrTx() {
 					//	continue
 					//}
 
-					v.CreateTime = time.Now()
-					v.LogTime = time.Now()
-					v.NodeId = s.nodeId
-					if v.BlockChain < 1 {
-						v.BlockChain = int(chainCode)
+					task.CreateTime = time.Now()
+					task.LogTime = time.Now()
+					task.NodeId = s.nodeId
+					if task.BlockChain < 1 {
+						task.BlockChain = int(chainCode)
 					}
-					v.Id = time.Now().UnixNano()
-					v.TaskStatus = 0
-					s.log.Printf("ErrTx|task:%+v", v)
+					task.Id = time.Now().UnixNano()
+					task.TaskStatus = 0
+					s.log.Printf("ErrTx|task:%+v", task)
 
-					bs, _ := json.Marshal(v)
-					msg := &kafka.Message{Topic: fmt.Sprintf(NodeTaskTopic, chainCode), Partition: 0, Key: []byte(v.NodeId), Value: bs}
+					bs, _ := json.Marshal(task)
+					msg := &kafka.Message{Topic: fmt.Sprintf(NodeTaskTopic, chainCode), Partition: 0, Key: []byte(task.NodeId), Value: bs}
 					tempList = append(tempList, msg)
 
 					if len(tempList) > 10 {

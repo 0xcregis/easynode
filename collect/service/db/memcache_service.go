@@ -166,15 +166,15 @@ func (s *Service) DelNodeTask(blockchain int64, key string) (int64, *collect.Nod
 	return c, task, nil
 }
 
-func (s *Service) DelErrTxNodeTask(blockchain int64, key string) (string, error) {
+func (s *Service) DelErrTxNodeTask(blockchain int64, key string) (*collect.NodeTask, error) {
 	_, task, err := s.GetErrTxNodeTask(blockchain, key)
-	if err != nil || task == "" {
-		return "", errors.New("no record")
+	if err != nil || task == nil {
+		return nil, errors.New("no record")
 	}
 
 	err = s.cacheClient.HDel(context.Background(), fmt.Sprintf(ErrTxKey, blockchain), key).Err()
 	if err != nil {
-		return "", errors.New("no record")
+		return nil, errors.New("no record")
 	}
 
 	return task, nil
@@ -226,15 +226,13 @@ func (s *Service) GetAllKeyForErrTx(blockchain int64) ([]string, error) {
 }
 
 func (s *Service) StoreErrTxNodeTask(blockchain int64, key string, data any) error {
-	c, d, _ := s.GetErrTxNodeTask(blockchain, key)
+	c, task, _ := s.GetErrTxNodeTask(blockchain, key)
 	//已存在且错误超过5次 忽略
 	if c > 5 {
 		return nil
 	}
 
-	if c > 0 && len(d) > 10 {
-		var task collect.NodeTask
-		_ = json.Unmarshal([]byte(d), &task)
+	if c > 0 && task != nil {
 		task.LogTime = time.Now()
 		data = task
 	}
@@ -252,26 +250,28 @@ func (s *Service) StoreErrTxNodeTask(blockchain int64, key string, data any) err
 	return nil
 }
 
-func (s *Service) GetErrTxNodeTask(blockchain int64, key string) (int64, string, error) {
+func (s *Service) GetErrTxNodeTask(blockchain int64, key string) (int64, *collect.NodeTask, error) {
 	has, err := s.cacheClient.HExists(context.Background(), fmt.Sprintf(ErrTxKey, blockchain), key).Result()
 	if err != nil {
-		return 0, "", err
+		return 0, nil, err
 	}
 
 	if !has {
-		return 0, "", errors.New("no record")
+		return 0, nil, errors.New("no record")
 	}
 
 	task, err := s.cacheClient.HGet(context.Background(), fmt.Sprintf(ErrTxKey, blockchain), key).Result()
 	if err != nil || task == "" {
-		return 0, "", errors.New("no record")
+		return 0, nil, errors.New("no record")
 	}
 	r := gjson.Parse(task)
 
 	count := r.Get("count").Int()
 	data := r.Get("data").String()
+	var nodeTask collect.NodeTask
+	_ = json.Unmarshal([]byte(data), &nodeTask)
 
-	return count, data, nil
+	return count, &nodeTask, nil
 }
 
 func (s *Service) StoreContract(blockchain int64, contract string, data string) error {
@@ -339,17 +339,17 @@ func (s *Service) GetNodeTask(blockchain int64, key string) (int64, *collect.Nod
 
 // StoreNodeTask StoreExecTask key which tx:tx_txHash,receipt:receipt_txHash, block: block_number_blockHash
 func (s *Service) StoreNodeTask(key string, task *collect.NodeTask, append bool) {
-	c, d, _ := s.GetNodeTask(int64(task.BlockChain), key)
+	c, data, _ := s.GetNodeTask(int64(task.BlockChain), key)
 	//已存在且错误超过5次 忽略
 	if c > 5 {
 		return
 	}
 
-	if d != nil {
-		d.LogTime = task.LogTime
-		d.TaskStatus = task.TaskStatus
+	if data != nil {
+		data.LogTime = task.LogTime
+		data.TaskStatus = task.TaskStatus
 	} else {
-		d = task
+		data = task
 	}
 
 	mp := make(map[string]any, 2)
@@ -358,7 +358,7 @@ func (s *Service) StoreNodeTask(key string, task *collect.NodeTask, append bool)
 	} else {
 		mp["count"] = c
 	}
-	mp["data"] = d
+	mp["data"] = data
 
 	bs, _ := json.Marshal(mp)
 	err := s.cacheClient.HSet(context.Background(), fmt.Sprintf(NodeTaskKey, task.BlockChain), key, string(bs)).Err()
@@ -372,8 +372,8 @@ func (s *Service) ResetNodeTask(blockchain int64, oldKey, key string) error {
 	if err != nil {
 		return err
 	}
-	_ = s.cacheClient.HDel(context.Background(), fmt.Sprintf(NodeTaskKey, task.BlockChain), oldKey)
-	s.StoreNodeTask(key, task, false)
+	_ = s.cacheClient.HDel(context.Background(), fmt.Sprintf(NodeTaskKey, blockchain), oldKey)
+	s.StoreNodeTask(key, task, true)
 	return nil
 }
 
@@ -396,11 +396,20 @@ func (s *Service) UpdateNodeTaskStatus(key string, status int) error {
 		}
 	} else {
 
-		_, task, err := s.GetNodeTask(blockchain, key)
+		c, task, err := s.GetNodeTask(blockchain, key)
 		if err == nil && task != nil {
 			task.TaskStatus = status
 			task.LogTime = time.Now()
-			s.StoreNodeTask(key, task, false)
+			//s.StoreNodeTask(key, task, false)
+			mp := make(map[string]any, 2)
+			mp["count"] = c
+			mp["data"] = task
+
+			bs, _ := json.Marshal(mp)
+			err := s.cacheClient.HSet(context.Background(), fmt.Sprintf(NodeTaskKey, task.BlockChain), key, string(bs)).Err()
+			if err != nil {
+				s.log.Errorf("StoreNodeTask|err=%v", err.Error())
+			}
 		}
 	}
 

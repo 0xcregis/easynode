@@ -14,8 +14,9 @@ import (
 )
 
 var (
-	NodeKey    = "nodeKey_%v"
-	BlockChain = "blockChain"
+	NodeKey       = "nodeKey_%v"
+	BlockChain    = "blockChain"
+	NodeTaskTopic = "task_%v"
 )
 
 type TaskCreateFile struct {
@@ -67,7 +68,7 @@ func (t *TaskCreateFile) ToKafkaMessage(list []*task.NodeTask) ([]*kafka.Message
 	resultList := make([]*kafka.Message, 0, 5)
 	for _, v := range list {
 		bs, _ := json.Marshal(v)
-		msg := &kafka.Message{Topic: fmt.Sprintf("task_%v", v.BlockChain), Partition: 0, Key: []byte(v.NodeId), Value: bs}
+		msg := &kafka.Message{Topic: fmt.Sprintf(NodeTaskTopic, v.BlockChain), Partition: 0, Key: []byte(v.NodeId), Value: bs}
 		resultList = append(resultList, msg)
 	}
 	//t.sendCh <- resultList

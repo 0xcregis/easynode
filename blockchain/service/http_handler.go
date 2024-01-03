@@ -334,7 +334,15 @@ func (h *HttpHandler) GetAccountResource(ctx *gin.Context) {
 		return
 	}
 
-	h.Success(ctx, string(b), gjson.Parse(res).Value(), ctx.Request.RequestURI)
+	r := make(map[string]any, 4)
+	gjson.Parse(res).ForEach(func(key, value gjson.Result) bool {
+		k := key.String()
+		k = strings.ToLower(k[:1]) + k[1:]
+		r[k] = value.Value()
+		return true
+	})
+
+	h.Success(ctx, string(b), r, ctx.Request.RequestURI)
 }
 
 // EstimateGasForTron ,for only tron

@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/0xcregis/easynode/collect"
 	"github.com/0xcregis/easynode/collect/config"
 	"github.com/0xcregis/easynode/common/util"
 	"github.com/segmentio/kafka-go"
@@ -36,15 +35,12 @@ func TestService_CheckErrTx(t *testing.T) {
 		tempList := make([]*kafka.Message, 0, 10)
 
 		for _, hash := range list {
-			count, data, err := store.GetErrTxNodeTask(blockchain, hash)
+			count, v, err := store.GetErrTxNodeTask(blockchain, hash)
 			if err != nil || count >= 5 {
 				continue
 			}
 
 			//todo 重发交易任务
-			var v collect.NodeTask
-			_ = json.Unmarshal([]byte(data), &v)
-
 			//清理 已经重试成功的交易
 			if count < 5 && time.Since(v.LogTime) >= 24*time.Hour {
 				_, _ = store.DelErrTxNodeTask(blockchain, hash)
@@ -117,5 +113,15 @@ func TestService_CheckNodeTask(t *testing.T) {
 }
 
 func TestService_CheckContract(t *testing.T) {
+	s := Init()
 
+	var l int64
+	if s.cfg.Retry.ErrTx == 0 {
+		l = 120
+	} else {
+		l = s.cfg.Retry.ErrTx
+	}
+	l = l * int64(time.Second)
+
+	<-time.After(time.Duration(l))
 }

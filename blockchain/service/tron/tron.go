@@ -23,8 +23,7 @@ type Tron struct {
 }
 
 func (t *Tron) Token(chainCode int64, contractAddr string, abi string, eip string) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	return "", nil
 }
 
 func (t *Tron) StartWDT() {
@@ -126,6 +125,89 @@ func NewTron(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) b
 	}
 	t.StartWDT()
 	return t
+}
+
+func NewTron2(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.ExApi {
+	blockChainClient := chain.NewChain(blockchain, xlog)
+	if blockChainClient == nil {
+		return nil
+	}
+	t := &Tron{
+		log:              xlog,
+		nodeCluster:      cluster,
+		blockChainClient: blockChainClient,
+	}
+	return t
+}
+
+func (t *Tron) GetAccountResourceForTron(chainCode int64, address string) (string, error) {
+	req := `{
+			  "address": "%v",
+			  "visible": true
+			}`
+	req = fmt.Sprintf(req, address)
+	res, err := t.SendReq(chainCode, req, "wallet/getaccountresource")
+	if err != nil {
+		return "", err
+	}
+
+	return res, nil
+}
+
+func (t *Tron) EstimateGasForTron(chainCode int64, from, to, functionSelector, parameter string) (string, error) {
+	req := `{
+			"owner_address": "%v",
+			"contract_address": "%v",
+			"function_selector": "%v",
+			"parameter": "%v",
+			"visible": true
+			}`
+	req = fmt.Sprintf(req, from, to, functionSelector, parameter)
+	res, err := t.SendReq(chainCode, req, "wallet/estimateenergy")
+	if err != nil {
+		return "", err
+	}
+
+	return res, nil
+}
+
+func (t *Tron) EstimateGas(chainCode int64, from, to, data string) (string, error) {
+	req := `
+	{
+		  "id": 1,
+		  "jsonrpc": "2.0",
+		  "method": "eth_estimateGas",
+		  "params": [
+			{
+			  "from":"%v",
+			  "to": "%v",
+			  "data": "%v"
+			}
+		  ]
+	}`
+	req = fmt.Sprintf(req, from, to, data)
+	res, err := t.SendJsonRpc(chainCode, req)
+	if err != nil {
+		return "", err
+	}
+	return res, nil
+}
+
+func (t *Tron) GasPrice(chainCode int64) (string, error) {
+	req := `
+		{
+		"id": 1,
+		"jsonrpc": "2.0",
+		"method": "eth_gasPrice"
+		}
+		`
+
+	//req = fmt.Sprintf(req, from, to, functionSelector, parameter)
+	res, err := t.SendJsonRpc(chainCode, req)
+	if err != nil {
+		return "", err
+	}
+	return res, nil
 }
 
 func (t *Tron) GetBlockByHash(chainCode int64, hash string, flag bool) (string, error) {
@@ -265,7 +347,11 @@ func (t *Tron) LatestBlock(chainCode int64) (string, error) {
 }
 
 func (t *Tron) SendRawTransaction(chainCode int64, signedTx string) (string, error) {
-	return t.SendReq(chainCode, signedTx, "wallet/broadcasttransaction")
+	req := `{
+			  "transaction": "%v"
+			}`
+	req = fmt.Sprintf(req, signedTx)
+	return t.SendReq(chainCode, req, "wallet/broadcasthex")
 }
 
 func (t *Tron) SendReq(blockChain int64, reqBody string, url string) (resp string, err error) {

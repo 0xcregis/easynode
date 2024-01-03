@@ -26,8 +26,8 @@ type StoreTaskInterface interface {
 	GetAllKeyForContract(blockchain int64) ([]string, error)
 
 	StoreErrTxNodeTask(blockchain int64, key string, data any) error
-	GetErrTxNodeTask(blockchain int64, key string) (int64, string, error)
-	DelErrTxNodeTask(blockchain int64, key string) (string, error)
+	GetErrTxNodeTask(blockchain int64, key string) (int64, *NodeTask, error)
+	DelErrTxNodeTask(blockchain int64, key string) (*NodeTask, error)
 	GetAllKeyForErrTx(blockchain int64) ([]string, error)
 
 	GetMonitorAddress(blockChain int64) ([]string, error)

@@ -59,3 +59,26 @@ func NewNftApis(clusters map[int64][]*config.NodeCluster, xlog *xlog.XLog) map[i
 	}
 	return blockChainClients
 }
+
+func NewExApi(clusters map[int64][]*config.NodeCluster, xlog *xlog.XLog) map[int64]blockchain.ExApi {
+	blockChainClients := make(map[int64]blockchain.ExApi, 0)
+	for chainCode, cluster := range clusters {
+		if chain.GetChainCode(chainCode, "TRON", xlog) {
+			blockChainClients[chainCode] = tron.NewTron2(cluster, chainCode, xlog)
+		}
+
+		if chain.GetChainCode(chainCode, "ETH", xlog) {
+			blockChainClients[chainCode] = ether.NewEth2(cluster, chainCode, xlog)
+		}
+
+		if chain.GetChainCode(chainCode, "POLYGON", xlog) {
+			blockChainClients[chainCode] = polygon.NewPolygonPos2(cluster, chainCode, xlog)
+		}
+
+		if chain.GetChainCode(chainCode, "BSC", xlog) {
+			blockChainClients[chainCode] = bnb.NewBnb2(cluster, chainCode, xlog)
+		}
+
+	}
+	return blockChainClients
+}

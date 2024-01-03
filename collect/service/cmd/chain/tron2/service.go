@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/0xcregis/easynode/blockchain"
@@ -30,6 +31,8 @@ type Service struct {
 	txChainClient      blockchain.API
 	blockChainClient   blockchain.API
 	receiptChainClient blockchain.API
+	monitorAddress     map[string]int64
+	lock               sync.RWMutex
 }
 
 func (s *Service) GetMultiBlockByNumber(blockNumber string, log *logrus.Entry, flag bool) ([]*collect.BlockInterface, []*collect.TxInterface) {
@@ -39,7 +42,7 @@ func (s *Service) GetMultiBlockByNumber(blockNumber string, log *logrus.Entry, f
 func (s *Service) Monitor() {
 	go func() {
 		for {
-			<-time.After(30 * time.Second)
+			<-time.After(60 * time.Second)
 			if s.txChainClient != nil {
 				txCluster := s.txChainClient.MonitorCluster()
 				_ = s.store.StoreClusterNode(int64(s.chain.BlockChainCode), "tx", txCluster)
@@ -54,6 +57,9 @@ func (s *Service) Monitor() {
 				receiptCluster := s.receiptChainClient.MonitorCluster()
 				_ = s.store.StoreClusterNode(int64(s.chain.BlockChainCode), "receipt", receiptCluster)
 			}
+
+			// reload monitor address
+			s.reload()
 		}
 	}()
 }
@@ -90,6 +96,7 @@ func (s *Service) GetTx(txHash string, eLog *logrus.Entry) *collect.TxInterface 
 		eLog.Warnf("GetTx|BlockChainCode=%v,err=%v,txHash=%v", s.chain.BlockChainCode, err.Error(), txHash)
 	} else {
 		if receipt != nil {
+			_, _ = s.store.DelErrTxNodeTask(int64(s.chain.BlockChainCode), hash)
 			fullTx["receipt"] = receipt.Receipt
 		}
 	}
@@ -183,6 +190,7 @@ func (s *Service) GetReceiptByBlock(blockHash, number string, eLog *logrus.Entry
 
 		if err == nil {
 			bs, _ := json.Marshal(p)
+			_, _ = s.store.DelErrTxNodeTask(int64(s.chain.BlockChainCode), hash)
 			r := &collect.ReceiptInterface{TransactionHash: hash, Receipt: string(bs)}
 			receiptList = append(receiptList, r)
 		} else {
@@ -241,11 +249,11 @@ func (s *Service) GetBlockByNumber(blockNumber string, eLog *logrus.Entry, flag 
 	}
 
 	txs := make([]*collect.TxInterface, 0, len(list))
-	addressList, err := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
-	if err != nil {
-		eLog.Errorf("GetBlockByNumber|BlockChainName=%v,err=%v,blockNumber=%v", s.chain.BlockChainName, err, blockNumber)
-	}
-	addressMp := rebuildAddr(addressList)
+	//addressList, err := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
+	//if err != nil {
+	//	eLog.Errorf("GetBlockByNumber|BlockChainName=%v,err=%v,blockNumber=%v", s.chain.BlockChainName, err, blockNumber)
+	//}
+	//addressMp := rebuildAddr(addressList)
 	for _, tx := range list {
 		// 补充字段
 		hash := tx.Get("txID").String()
@@ -257,7 +265,7 @@ func (s *Service) GetBlockByNumber(blockNumber string, eLog *logrus.Entry, flag 
 		}
 
 		bs, _ := json.Marshal(fullTx)
-		if s.CheckAddress(bs, addressMp) {
+		if s.CheckAddress(bs, s.monitorAddress) {
 			t := &collect.TxInterface{TxHash: hash, Tx: fullTx}
 			txs = append(txs, t)
 		}
@@ -306,11 +314,11 @@ func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool
 	}
 
 	list := gjson.Parse(resp).Get("transactions").Array()
-	addressList, err := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
-	if err != nil {
-		eLog.Errorf("GetBlockByHash|BlockChainName=%v,err=%v,blockHash=%v", s.chain.BlockChainName, err, blockHash)
-	}
-	addressMp := rebuildAddr(addressList)
+	//addressList, err := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
+	//if err != nil {
+	//	eLog.Errorf("GetBlockByHash|BlockChainName=%v,err=%v,blockHash=%v", s.chain.BlockChainName, err, blockHash)
+	//}
+	//addressMp := rebuildAddr(addressList)
 	txs := make([]*collect.TxInterface, 0, len(list))
 	for _, tx := range list {
 		// 补充字段
@@ -323,7 +331,7 @@ func (s *Service) GetBlockByHash(blockHash string, eLog *logrus.Entry, flag bool
 		}
 
 		bs, _ := json.Marshal(fullTx)
-		if s.CheckAddress(bs, addressMp) {
+		if s.CheckAddress(bs, s.monitorAddress) {
 			t := &collect.TxInterface{TxHash: hash, Tx: fullTx}
 			txs = append(txs, t)
 		}
@@ -423,8 +431,19 @@ func rebuildAddr(addrList []string) map[string]int64 {
 	return mp
 }
 
-func (s *Service) CheckAddress(txValue []byte, addrList map[string]int64) bool {
-	if len(addrList) < 1 || len(txValue) < 1 {
+func (s *Service) reload() {
+	addressList, err := s.store.GetMonitorAddress(int64(s.chain.BlockChainCode))
+	if err != nil {
+		s.log.Warnf("ReloadMonitorAddress BlockChainName=%v,err=%v", s.chain.BlockChainName, err)
+	}
+
+	s.lock.Lock()
+	s.monitorAddress = rebuildAddr(addressList)
+	s.lock.Unlock()
+}
+
+func (s *Service) CheckAddress(txValue []byte, monitorAddress map[string]int64) bool {
+	if len(monitorAddress) < 1 || len(txValue) < 1 {
 		return false
 	}
 	txAddressList := make(map[string]int64, 10)
@@ -513,13 +532,14 @@ func (s *Service) CheckAddress(txValue []byte, addrList map[string]int64) bool {
 	//}
 
 	has := false
+	s.lock.RLock()
 	for k := range txAddressList {
-		//monitorAddr := getCoreAddr(v)
-		if _, ok := addrList[k]; ok {
+		if _, ok := monitorAddress[k]; ok {
 			has = true
 			break
 		}
 	}
+	s.lock.RUnlock()
 	return has
 }
 
@@ -567,7 +587,7 @@ func NewService(c *config.Chain, x *xlog.XLog, store collect.StoreTaskInterface,
 		receiptClient = chainService.NewApi(int64(c.BlockChainCode), list, x)
 	}
 
-	return &Service{
+	s := &Service{
 		log:                x,
 		chain:              c,
 		store:              store,
@@ -576,5 +596,9 @@ func NewService(c *config.Chain, x *xlog.XLog, store collect.StoreTaskInterface,
 		receiptChainClient: receiptClient,
 		nodeId:             nodeId,
 		transferTopic:      transferTopic,
+		lock:               sync.RWMutex{},
 	}
+
+	s.reload()
+	return s
 }

@@ -10,8 +10,8 @@ import (
 )
 
 func Init() blockchain.API {
-	cfg := config.LoadConfig("./../../../cmd/blockchain/config_bnb.json")
-	return NewBnb(cfg.Cluster[202], 202, xlog.NewXLogger())
+	cfg := config.LoadConfig("./../../../cmd/blockchain/blockchain_config.json")
+	return NewBnb(cfg.Cluster[2610], 2610, xlog.NewXLogger())
 }
 
 func TestBnb_Token(t *testing.T) {
@@ -26,7 +26,7 @@ func TestBnb_Token(t *testing.T) {
 
 func TestBnb_TokenBalance(t *testing.T) {
 	s := Init()
-	resp, err := s.TokenBalance(202, "0x403f9D1EA51D55d0341ce3c2fBF33E09846F2C74", "0x55d398326f99059fF775485246999027B3197955", "")
+	resp, err := s.TokenBalance(2610, "0xf0e4939183a76746e602a12c389ab183be4290b1", "0x337610d27c682e347c9cd60bd4b3b107c9d34ddd", "")
 
 	if err != nil {
 		t.Error(err)

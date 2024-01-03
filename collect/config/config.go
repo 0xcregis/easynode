@@ -68,8 +68,23 @@ type LogConfig struct {
 	LogLevel int    `json:"LogLevel"`
 }
 
+/**
+   {
+    "ErrTx": 100,
+    "NodeTask": 100,
+    "Contract": 100
+  }
+*/
+
+type Retry struct {
+	ErrTx    int64 `json:"ErrTx" gorm:"column:ErrTx"`
+	NodeTask int64 `json:"NodeTask" gorm:"column:NodeTask"`
+	Contract int64 `json:"Contract" gorm:"column:Contract"`
+}
+
 type Config struct {
 	Chains    []*Chain   `json:"Chains"`
 	LogConfig *LogConfig `json:"Log"`
+	Retry     *Retry     `json:"Retry"`
 	KeyPath   string     `json:"KeyPath"`
 }

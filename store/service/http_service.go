@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	chainCode "github.com/0xcregis/easynode/common/chain"
 	"github.com/0xcregis/easynode/common/util"
 	"github.com/0xcregis/easynode/store"
 	"github.com/0xcregis/easynode/store/config"
@@ -59,6 +60,14 @@ func (s *HttpHandler) AddSubFilter(c *gin.Context) {
 		return
 	}
 
+	for _, v := range list {
+		_, err = s.store.GetNodeTokenByToken(v.Token)
+		if err != nil {
+			s.Error(c, c.Request.URL.Path, "the token is not exist")
+			return
+		}
+	}
+
 	s.Success(c, nil, c.Request.URL.Path)
 }
 
@@ -99,10 +108,10 @@ func (s *HttpHandler) QuerySubFilter(c *gin.Context) {
 
 	root := gjson.ParseBytes(bs)
 
-	chainCode := root.Get("blockChain").Int()
+	blockChain := root.Get("blockChain").Int()
 	token := root.Get("token").String()
 	txCode := root.Get("txCode").String()
-	list, err := s.store.GetSubFilter(token, chainCode, txCode)
+	list, err := s.store.GetSubFilter(token, blockChain, txCode)
 	if err != nil {
 		s.Error(c, c.Request.URL.Path, err.Error())
 		return
@@ -127,7 +136,7 @@ func (s *HttpHandler) NewToken(c *gin.Context) {
 		return
 	}
 
-	err, _ = s.store.GetNodeTokenByEmail(email)
+	_, err = s.store.GetNodeTokenByEmail(email)
 
 	if err == nil {
 		//已存在
@@ -196,7 +205,7 @@ func (s *HttpHandler) MonitorAddress(c *gin.Context) {
 	var blockChain int64
 	if r.Get("blockChain").Exists() {
 		blockChain = r.Get("blockChain").Int()
-		if _, ok := s.chains[blockChain]; !ok {
+		if _, ok := s.chains[blockChain]; !ok && blockChain != 0 {
 			s.Error(c, c.Request.URL.Path, errors.New("blockchain is wrong").Error())
 			return
 		}
@@ -208,10 +217,27 @@ func (s *HttpHandler) MonitorAddress(c *gin.Context) {
 
 	if len(addr) < 1 || len(token) < 1 {
 		s.Error(c, c.Request.URL.Path, "params is not null")
+		return
+	}
+
+	_, err = s.store.GetNodeTokenByToken(token)
+	if err != nil {
+		s.Error(c, c.Request.URL.Path, "the token is not exist")
+		return
 	}
 
 	//tron base58进制的地址处理
-	if blockChain == 205 && !strings.HasPrefix(addr, "0x") && !strings.HasPrefix(addr, "41") && !strings.HasPrefix(addr, "0x41") {
+	if chainCode.GetChainCode(blockChain, "TRON", nil) && !strings.HasPrefix(addr, "0x") && !strings.HasPrefix(addr, "41") && !strings.HasPrefix(addr, "0x41") {
+		base58Addr, err := util.Base58ToAddress(addr)
+		if err != nil {
+			s.Error(c, c.Request.URL.Path, err.Error())
+			return
+		}
+		addr = base58Addr.Hex()
+	}
+
+	if blockChain == 0 && !util.Has0xPrefix(addr) {
+		//if chainCode=0 && !0x 这默认认为是tron 地址
 		base58Addr, err := util.Base58ToAddress(addr)
 		if err != nil {
 			s.Error(c, c.Request.URL.Path, err.Error())

@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	DateFormat = "20060102"
+	DateFormat    = "20060102"
+	NodeTaskTopic = "task_%v"
 )
 
 type Service struct {
@@ -82,12 +83,12 @@ func (s *Service) CheckClusterHealth() {
 	go func() {
 		for {
 			<-time.After(1 * time.Minute)
-			for blockchain, t := range s.taskStore {
-				mp := make(map[string]int64, 2)
-				s.rebuildCluster(t, blockchain, "tx", mp)
-				s.rebuildCluster(t, blockchain, "block", mp)
-				s.rebuildCluster(t, blockchain, "receipt", mp)
-				_ = t.StoreClusterHealthStatus(blockchain, mp)
+			for chainCode, t := range s.taskStore {
+				mp := make(map[string]int64, 3)
+				s.rebuildCluster(t, chainCode, "tx", mp)
+				s.rebuildCluster(t, chainCode, "block", mp)
+				s.rebuildCluster(t, chainCode, "receipt", mp)
+				_ = t.StoreClusterHealthStatus(chainCode, mp)
 			}
 		}
 	}()
@@ -107,11 +108,20 @@ func (s *Service) rebuildCluster(t collect.StoreTaskInterface, blockChain int64,
 func (s *Service) CheckNodeTask() {
 	go func() {
 		for {
-			<-time.After(2 * time.Hour)
 
-			for blockchain, store := range s.taskStore {
+			var l int64
+			if s.cfg.Retry == nil || s.cfg.Retry.NodeTask == 0 {
+				l = 120
+			} else {
+				l = s.cfg.Retry.NodeTask
+			}
+			l = l * int64(time.Second)
 
-				list, err := store.GetAllKeyForNodeTask(blockchain)
+			<-time.After(time.Duration(l))
+
+			for chainCode, store := range s.taskStore {
+
+				list, err := store.GetAllKeyForNodeTask(chainCode)
 				if err != nil {
 					continue
 				}
@@ -119,36 +129,38 @@ func (s *Service) CheckNodeTask() {
 				tempList := make([]*kafka.Message, 0, 10)
 
 				for _, hash := range list {
-					count, task, err := store.GetNodeTask(blockchain, hash)
+					count, task, err := store.GetNodeTask(chainCode, hash)
 					if err != nil || count >= 5 || task == nil {
 						continue
 					}
 
 					//清理 已经重试成功的交易
-					if count < 5 && time.Since(task.LogTime) >= 24*time.Hour {
-						_, _, _ = store.DelNodeTask(blockchain, hash)
-						continue
-					}
+					//if count < 5 && time.Since(task.LogTime) >= 24*time.Hour {
+					//	_, _, _ = store.DelNodeTask(blockchain, hash)
+					//	continue
+					//}
 
 					task.CreateTime = time.Now()
 					task.LogTime = time.Now()
 					if task.BlockChain < 1 {
-						task.BlockChain = int(blockchain)
+						task.BlockChain = int(chainCode)
 					}
 					task.Id = time.Now().UnixNano()
 					task.TaskStatus = 0
 					task.NodeId = s.nodeId
+					s.log.Printf("NodeTask|task:%+v", task)
+
 					bs, _ := json.Marshal(task)
-					msg := &kafka.Message{Topic: fmt.Sprintf("task_%v", blockchain), Partition: 0, Key: []byte(task.NodeId), Value: bs}
+					msg := &kafka.Message{Topic: fmt.Sprintf(NodeTaskTopic, chainCode), Partition: 0, Key: []byte(task.NodeId), Value: bs}
 					tempList = append(tempList, msg)
 
 					if len(tempList) > 10 {
-						s.kafkaSender[blockchain] <- tempList
+						s.kafkaSender[chainCode] <- tempList
 						tempList = tempList[len(tempList):]
 					}
 				}
 
-				s.kafkaSender[blockchain] <- tempList
+				s.kafkaSender[chainCode] <- tempList
 			}
 
 		}
@@ -160,26 +172,32 @@ func (s *Service) CheckContract() {
 	go func() {
 
 		for {
-			<-time.After(1 * time.Hour)
+			//var l int64
+			//if s.cfg.Retry == nil || s.cfg.Retry.Contract == 0 {
+			//	l = 120
+			//} else {
+			//	l = s.cfg.Retry.Contract
+			//}
+			//l = l * int64(time.Second)
 
-			for blockchain, store := range s.taskStore {
+			<-time.After(30 * time.Minute)
+			for chainCode, store := range s.taskStore {
 
-				list, err := store.GetAllKeyForContract(blockchain)
+				list, err := store.GetAllKeyForContract(chainCode)
 				if err != nil {
 					continue
 				}
 
 				for _, contract := range list {
-					data, _ := store.GetContract(blockchain, contract)
+					data, _ := store.GetContract(chainCode, contract)
 					if len(data) < 1 {
 						//todo 合约无效，需要刷新
-						s.getToken(blockchain, contract, contract)
+						s.getToken(chainCode, contract, contract)
 					}
 
 				}
 
 			}
-
 		}
 
 	}()
@@ -190,11 +208,19 @@ func (s *Service) CheckErrTx() {
 	go func() {
 
 		for {
-			<-time.After(3 * time.Hour)
+			var l int64
+			if s.cfg.Retry == nil || s.cfg.Retry.ErrTx == 0 {
+				l = 120
+			} else {
+				l = s.cfg.Retry.ErrTx
+			}
+			l = l * int64(time.Second)
 
-			for blockchain, store := range s.taskStore {
+			<-time.After(time.Duration(l))
 
-				list, err := store.GetAllKeyForErrTx(blockchain)
+			for chainCode, store := range s.taskStore {
+
+				list, err := store.GetAllKeyForErrTx(chainCode)
 				if err != nil {
 					continue
 				}
@@ -202,40 +228,42 @@ func (s *Service) CheckErrTx() {
 				tempList := make([]*kafka.Message, 0, 10)
 
 				for _, hash := range list {
-					count, data, err := store.GetErrTxNodeTask(blockchain, hash)
+					count, task, err := store.GetErrTxNodeTask(chainCode, hash)
 					if err != nil || count >= 5 {
 						continue
 					}
 
-					//todo 重发交易任务
-					var v collect.NodeTask
-					_ = json.Unmarshal([]byte(data), &v)
+					//重发交易任务
+					//var v collect.NodeTask
+					//_ = json.Unmarshal([]byte(data), &v)
 
 					//清理 已经重试成功的交易
-					if count < 5 && time.Since(v.LogTime) >= 24*time.Hour {
-						_, _ = store.DelErrTxNodeTask(blockchain, hash)
-						continue
-					}
+					//if count < 5 && time.Since(v.LogTime) >= 24*time.Hour {
+					//	_, _ = store.DelErrTxNodeTask(blockchain, hash)
+					//	continue
+					//}
 
-					v.CreateTime = time.Now()
-					v.LogTime = time.Now()
-					v.NodeId = s.nodeId
-					if v.BlockChain < 1 {
-						v.BlockChain = int(blockchain)
+					task.CreateTime = time.Now()
+					task.LogTime = time.Now()
+					task.NodeId = s.nodeId
+					if task.BlockChain < 1 {
+						task.BlockChain = int(chainCode)
 					}
-					v.Id = time.Now().UnixNano()
-					v.TaskStatus = 0
-					bs, _ := json.Marshal(v)
-					msg := &kafka.Message{Topic: fmt.Sprintf("task_%v", v.BlockChain), Partition: 0, Key: []byte(v.NodeId), Value: bs}
+					task.Id = time.Now().UnixNano()
+					task.TaskStatus = 0
+					s.log.Printf("ErrTx|task:%+v", task)
+
+					bs, _ := json.Marshal(task)
+					msg := &kafka.Message{Topic: fmt.Sprintf(NodeTaskTopic, chainCode), Partition: 0, Key: []byte(task.NodeId), Value: bs}
 					tempList = append(tempList, msg)
 
 					if len(tempList) > 10 {
-						s.kafkaSender[blockchain] <- tempList
+						s.kafkaSender[chainCode] <- tempList
 						tempList = tempList[len(tempList):]
 					}
 				}
 
-				s.kafkaSender[blockchain] <- tempList
+				s.kafkaSender[chainCode] <- tempList
 			}
 
 		}

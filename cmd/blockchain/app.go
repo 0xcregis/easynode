@@ -15,7 +15,7 @@ import (
 
 func main() {
 	var configPath string
-	flag.StringVar(&configPath, "blockchain", "./cmd/blockchain/config.json", "The system file of config")
+	flag.StringVar(&configPath, "blockchain", "./cmd/blockchain/blockchain_config.json", "The system file of config")
 	flag.Parse()
 	if len(configPath) < 1 {
 		panic("can not find config file")
@@ -73,6 +73,9 @@ func main() {
 	myRoot.POST("/block/latest", srv.GetLatestBlock1)
 	myRoot.POST("/gas/price", srv.GasPrice1)
 	myRoot.POST("/gas/estimateGas", srv.EstimateGas1)
+	myRoot.POST("/gas/estimateGasForTron", srv.EstimateGasForTron)
+	myRoot.POST("/tx/sendRawTransaction", srv.SendRawTx1)
+	myRoot.POST("/account/getAccountResource", srv.GetAccountResource)
 
 	err := e.Run(fmt.Sprintf(":%v", cfg.Port))
 	if err != nil {

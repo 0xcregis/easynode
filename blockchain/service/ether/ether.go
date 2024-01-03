@@ -335,6 +335,20 @@ func NewEth(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) bl
 	return e
 }
 
+func NewEth2(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.ExApi {
+	blockChainClient := chain.NewChain(blockchain, xlog)
+	if blockChainClient == nil {
+		return nil
+	}
+	e := &Ether{
+		log:              xlog,
+		nodeCluster:      cluster,
+		blockChainClient: blockChainClient,
+	}
+	e.StartWDT()
+	return e
+}
+
 func (e *Ether) StartWDT() {
 	go func() {
 		t := time.NewTicker(10 * time.Minute)
@@ -429,6 +443,53 @@ func (e *Ether) SendRawTransaction(chainCode int64, signedTx string) (string, er
 				}`
 	req = fmt.Sprintf(req, signedTx)
 	return e.SendReq(chainCode, req)
+}
+
+func (e *Ether) GetAccountResourceForTron(chainCode int64, address string) (string, error) {
+	return "", nil
+}
+
+func (e *Ether) EstimateGasForTron(chainCode int64, from, to, functionSelector, parameter string) (string, error) {
+	return "", nil
+}
+
+func (e *Ether) EstimateGas(chainCode int64, from, to, data string) (string, error) {
+	req := `
+	{
+		  "id": 1,
+		  "jsonrpc": "2.0",
+		  "method": "eth_estimateGas",
+		  "params": [
+			{
+			  "from":"%v",
+			  "to": "%v",
+			  "data": "%v"
+			}
+		  ]
+	}`
+	req = fmt.Sprintf(req, from, to, data)
+	res, err := e.SendJsonRpc(chainCode, req)
+	if err != nil {
+		return "", err
+	}
+	return res, nil
+}
+
+func (e *Ether) GasPrice(chainCode int64) (string, error) {
+	req := `
+		{
+		"id": 1,
+		"jsonrpc": "2.0",
+		"method": "eth_gasPrice"
+		}
+		`
+
+	//req = fmt.Sprintf(req, from, to, functionSelector, parameter)
+	res, err := e.SendJsonRpc(chainCode, req)
+	if err != nil {
+		return "", err
+	}
+	return res, nil
 }
 
 func (e *Ether) SendReqByWs(blockChain int64, receiverCh chan string, sendCh chan string) (string, error) {

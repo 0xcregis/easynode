@@ -19,6 +19,11 @@ func Init2() blockchain.NftApi {
 	return NewNftEth(cfg.Cluster[200], 200, xlog.NewXLogger())
 }
 
+func Init3() blockchain.ExApi {
+	cfg := config.LoadConfig("./../../../cmd/blockchain/config_ether.json")
+	return NewEth2(cfg.Cluster[200], 200, xlog.NewXLogger())
+}
+
 func TestEther_Token(t *testing.T) {
 	s := Init()
 	resp, err := s.Token(200, "0x4577fcfB0642afD21b5f2502753ED6D497B830E9", "", "721")
@@ -138,4 +143,15 @@ func TestEther_GetTransactionReceiptByHash(t *testing.T) {
 	} else {
 		t.Log(resp)
 	}
+}
+
+func TestEther_TraceTransaction(t *testing.T) {
+	ex := Init3()
+	resp, err := ex.TraceTransaction(200, "0x999cabe1fcca80148290827a8c655734531615cb22d30faa222ec7a67928587b")
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log(resp)
+	}
+
 }

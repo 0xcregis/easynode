@@ -26,5 +26,5 @@ type ChainNet interface {
 }
 
 type ChainCluster interface {
-	BalanceCluster() *config.NodeCluster
+	BalanceCluster(trace bool) *config.NodeCluster
 }

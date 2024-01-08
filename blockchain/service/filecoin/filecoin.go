@@ -378,7 +378,7 @@ func (e *FileCoin) TokenBalance(chainCode int64, address string, contractAddr st
 	defer func() {
 		e.log.Printf("TokenBalance,Duration=%v", time.Since(start))
 	}()
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -392,7 +392,7 @@ func (e *FileCoin) TokenBalance(chainCode int64, address string, contractAddr st
 }
 
 func (e *FileCoin) SendReqByWs(blockChain int64, receiverCh chan string, sendCh chan string) (string, error) {
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -412,7 +412,7 @@ func (e *FileCoin) SendReq(blockChain int64, reqBody string) (resp string, err e
 			e.log.Printf("method:%v,blockChain:%v,req:%v,resp:%v", "SendReq", blockChain, reqBody, "ok")
 		}
 	}()
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -428,7 +428,7 @@ func (e *FileCoin) SendReq(blockChain int64, reqBody string) (resp string, err e
 	//return "", errors.New("blockChainCode is error")
 }
 
-func (e *FileCoin) BalanceCluster() *config.NodeCluster {
+func (e *FileCoin) BalanceCluster(trace bool) *config.NodeCluster {
 	var resultCluster *config.NodeCluster
 	l := len(e.nodeCluster)
 

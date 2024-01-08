@@ -213,7 +213,7 @@ func (e *Btc) SendReq(blockChain int64, reqBody string) (resp string, err error)
 		}
 	}()
 
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -228,7 +228,7 @@ func (e *Btc) SendReq(blockChain int64, reqBody string) (resp string, err error)
 	return resp, err
 }
 
-func (e *Btc) BalanceCluster() *config.NodeCluster {
+func (e *Btc) BalanceCluster(trace bool) *config.NodeCluster {
 	var resultCluster *config.NodeCluster
 	l := len(e.nodeCluster)
 

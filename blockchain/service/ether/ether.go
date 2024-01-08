@@ -27,7 +27,7 @@ type Ether struct {
 }
 
 func (e *Ether) TokenURI(chainCode int64, contractAddress string, tokenId string, eip int64) (string, error) {
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -41,7 +41,7 @@ func (e *Ether) TokenURI(chainCode int64, contractAddress string, tokenId string
 }
 
 func (e *Ether) BalanceOf(chainCode int64, contractAddress string, address string, tokenId string, eip int64) (string, error) {
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -55,7 +55,7 @@ func (e *Ether) BalanceOf(chainCode int64, contractAddress string, address strin
 }
 
 func (e *Ether) OwnerOf(chainCode int64, contractAddress string, tokenId string, eip int64) (string, error) {
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -69,7 +69,7 @@ func (e *Ether) OwnerOf(chainCode int64, contractAddress string, tokenId string,
 }
 
 func (e *Ether) TotalSupply(chainCode int64, contractAddress string, eip int64) (string, error) {
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -83,7 +83,7 @@ func (e *Ether) TotalSupply(chainCode int64, contractAddress string, eip int64) 
 }
 
 func (e *Ether) Token(chainCode int64, contractAddr string, abi string, eip string) (string, error) {
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -392,7 +392,7 @@ func (e *Ether) TokenBalance(chainCode int64, address string, contractAddr strin
 	defer func() {
 		e.log.Printf("TokenBalance,Duration=%v", time.Since(start))
 	}()
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -492,8 +492,22 @@ func (e *Ether) GasPrice(chainCode int64) (string, error) {
 	return res, nil
 }
 
+func (e *Ether) TraceTransaction(chainCode int64, address string) (string, error) {
+	req := `{
+					 "id": 1,
+					 "jsonrpc": "2.0",
+					 "params": [
+						  "%v"
+					 ],
+					 "method": "trace_transaction"
+				}`
+	req = fmt.Sprintf(req, address)
+
+	return e.SendReq2(chainCode, req)
+}
+
 func (e *Ether) SendReqByWs(blockChain int64, receiverCh chan string, sendCh chan string) (string, error) {
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -608,7 +622,7 @@ func (e *Ether) SendReq(blockChain int64, reqBody string) (resp string, err erro
 			e.log.Printf("method:%v,blockChain:%v,req:%v,resp:%v", "SendReq", blockChain, reqBody, "ok")
 		}
 	}()
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -623,14 +637,39 @@ func (e *Ether) SendReq(blockChain int64, reqBody string) (resp string, err erro
 	return resp, err
 }
 
-func (e *Ether) BalanceCluster() *config.NodeCluster {
+func (e *Ether) SendReq2(blockChain int64, reqBody string) (resp string, err error) {
+	reqBody = strings.Replace(reqBody, "\t", "", -1)
+	reqBody = strings.Replace(reqBody, "\n", "", -1)
+	var uri string
+	defer func() {
+		if err != nil {
+			e.log.Errorf("method:%v,blockChain:%v,req:%v,err:%v,uri:%v", "SendReq", blockChain, reqBody, err, uri)
+		} else {
+			e.log.Printf("method:%v,blockChain:%v,req:%v,resp:%v", "SendReq", blockChain, reqBody, "ok")
+		}
+	}()
+	cluster := e.BalanceCluster(true)
+	if cluster == nil {
+		//不存在节点
+		return "", errors.New("blockchain node has not found")
+	}
+	uri = fmt.Sprintf("%v/%v", cluster.NodeUrl, cluster.NodeToken)
+
+	resp, err = e.blockChainClient.SendRequestToChain(cluster.NodeUrl, cluster.NodeToken, reqBody)
+	if err != nil {
+		cluster.ErrorCount += 1
+	}
+	return resp, err
+}
+
+func (e *Ether) BalanceCluster(trace bool) *config.NodeCluster {
 	var resultCluster *config.NodeCluster
 	l := len(e.nodeCluster)
 
 	if l > 1 {
 		//如果有多个节点，则根据权重计算
 		mp := make(map[string][]int64, 0)
-		originCluster := make(map[string]*config.NodeCluster, 0)
+		originCluster := make(map[string]*config.NodeCluster, 1)
 
 		var sum int64
 		for _, v := range e.nodeCluster {
@@ -638,10 +677,12 @@ func (e *Ether) BalanceCluster() *config.NodeCluster {
 				//如果没有设置weight,则默认设定5
 				v.Weight = 5
 			}
-			sum += v.Weight
-			key := fmt.Sprintf("%v/%v", v.NodeUrl, v.NodeToken)
-			mp[key] = []int64{v.Weight, sum}
-			originCluster[key] = v
+			if !trace || trace && v.Trace {
+				sum += v.Weight
+				key := fmt.Sprintf("%v/%v", v.NodeUrl, v.NodeToken)
+				mp[key] = []int64{v.Weight, sum}
+				originCluster[key] = v
+			}
 		}
 
 		f := math.Mod(float64(time.Now().Unix()), float64(sum))
@@ -657,6 +698,9 @@ func (e *Ether) BalanceCluster() *config.NodeCluster {
 	} else if l == 1 {
 		//如果 仅有一个节点，则只能使用该节点
 		resultCluster = e.nodeCluster[0]
+		if trace && !resultCluster.Trace {
+			return nil
+		}
 	} else {
 		return nil
 	}

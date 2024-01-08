@@ -10,8 +10,9 @@
   "Nodes": [
     {
       "BlockChain": 200,
-      "NodeUrl": "https://ethereum.publicnode.com",
-      "NodeToken": ""
+      "NodeUrl": "https://docs-demo.quiknode.pro",
+      "NodeToken": "",
+      "Trace": true
     }
   ]
 }

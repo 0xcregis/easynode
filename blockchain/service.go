@@ -40,7 +40,7 @@ type API interface {
 
 type ExApi interface {
 	GasPrice(chainCode int64) (string, error)
-	TraceTransaction(chainCode int64, address string) (string, error)
+	TraceTransaction(chainCode int64, hash string) (string, error)
 	EstimateGas(chainCode int64, from, to, data string) (string, error)
 	EstimateGasForTron(chainCode int64, from, to, functionSelector, parameter string) (string, error)
 	GetAccountResourceForTron(chainCode int64, address string) (string, error)

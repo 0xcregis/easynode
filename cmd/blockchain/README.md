@@ -226,6 +226,51 @@ curl -X POST \
       "message": "ok"        
      }
      
+     
+//Query trace transaction by txHash for only evm chain
+curl -X POST \
+   http://127.0.0.1:9002/api/chain/origin/tx/trace \
+   -H 'Content-Type: application/json' \
+   -H 'Postman-Token: 72b4bc45-c235-4361-b88b-2ccffd42a384' \
+   -H 'cache-control: no-cache' \
+   -d '{
+      "chain":200,
+      "hash":"0x999cabe1fcca80148290827a8c655734531615cb22d30faa222ec7a67928587b"
+      }'
+
+    response:
+    {
+        "code": 0,
+        "data": [
+            {
+                "blockHash": "0x6b3f8639a57d744dcbbbe0d84bca25d7ea776282d6f53f329db3cc9408416115",
+                "blockNumber": 18938364,
+                "action": {
+                    "gas": "281806",
+                    "from": "0xae185e9cd79631c5fc19f0fd0454adca8a94976f",
+                    "to": "0x3fc91a3afd70395cd496c647d5a6cc9d4b2b7fad",
+                    "value": "0.309648405815618",
+                    "callType": "call"
+                },
+                "transactionHash": "0x999cabe1fcca80148290827a8c655734531615cb22d30faa222ec7a67928587b"
+            },
+            {
+                "blockHash": "0x6b3f8639a57d744dcbbbe0d84bca25d7ea776282d6f53f329db3cc9408416115",
+                "blockNumber": 18938364,
+                "action": {
+                    "gas": "261730",
+                    "from": "0x3fc91a3afd70395cd496c647d5a6cc9d4b2b7fad",
+                    "to": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+                    "value": "0.309648405815618",
+                    "callType": "call"
+                },
+                "transactionHash": "0x999cabe1fcca80148290827a8c655734531615cb22d30faa222ec7a67928587b"
+            }
+        ],
+        "message": "ok"
+    }
+          
+     
 //Query receipt by txHash
 curl -X POST \
    http://127.0.0.1:9002/api/chain/origin/receipts/hash \

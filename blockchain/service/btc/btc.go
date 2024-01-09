@@ -75,7 +75,7 @@ func (e *Btc) GetBlockByHash(chainCode int64, hash string, flag bool) (string, e
 	}
 
 	req = fmt.Sprintf(req, hash, hasTx)
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *Btc) GetBlockByNumber(chainCode int64, number string, flag bool) (string, error) {
@@ -88,7 +88,7 @@ func (e *Btc) GetBlockByNumber(chainCode int64, number string, flag bool) (strin
 			}
 			`
 	req = fmt.Sprintf(req, number)
-	resp, err := e.SendReq(chainCode, req)
+	resp, err := e.SendReq(chainCode, req, false)
 
 	if err != nil {
 		return resp, err
@@ -118,11 +118,11 @@ func (e *Btc) GetTxByHash(chainCode int64, hash string) (string, error) {
 			}
 		`
 	req = fmt.Sprintf(req, hash)
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *Btc) SendJsonRpc(chainCode int64, req string) (string, error) {
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func NewBtc(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.API {
@@ -183,7 +183,7 @@ func (e *Btc) LatestBlock(chainCode int64) (string, error) {
 				"method": "getblockcount"
 			}
 			`
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *Btc) SendRawTransaction(chainCode int64, signedTx string) (string, error) {
@@ -194,14 +194,14 @@ func (e *Btc) SendRawTransaction(chainCode int64, signedTx string) (string, erro
 				]
 			}`
 	req = fmt.Sprintf(req, signedTx)
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *Btc) SendReqByWs(blockChain int64, receiverCh chan string, sendCh chan string) (string, error) {
 	return "", nil
 }
 
-func (e *Btc) SendReq(blockChain int64, reqBody string) (resp string, err error) {
+func (e *Btc) SendReq(blockChain int64, reqBody string, trace bool) (resp string, err error) {
 	reqBody = strings.Replace(reqBody, "\t", "", -1)
 	reqBody = strings.Replace(reqBody, "\n", "", -1)
 	var uri string
@@ -213,7 +213,7 @@ func (e *Btc) SendReq(blockChain int64, reqBody string) (resp string, err error)
 		}
 	}()
 
-	cluster := e.BalanceCluster(false)
+	cluster := e.BalanceCluster(trace)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")

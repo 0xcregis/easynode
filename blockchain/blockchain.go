@@ -21,7 +21,7 @@ type NFT interface {
 }
 
 type ChainNet interface {
-	SendReq(blockChain int64, reqBody string) (string, error)
+	SendReq(blockChain int64, reqBody string, trace bool) (string, error)
 	SendReqByWs(blockChain int64, receiverCh chan string, sendCh chan string) (string, error)
 }
 

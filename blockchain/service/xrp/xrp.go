@@ -62,7 +62,7 @@ func (e *XRP) GetBlockReceiptByBlockNumber(chainCode int64, number string) (stri
 					]
 				}`
 	req = fmt.Sprintf(req, number, true)
-	resp, err := e.SendReq(chainCode, req)
+	resp, err := e.SendReq(chainCode, req, false)
 	if err != nil {
 		return "", err
 	}
@@ -110,7 +110,7 @@ func (e *XRP) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string, 
 					]
 				}`
 	req = fmt.Sprintf(req, hash, true)
-	resp, err := e.SendReq(chainCode, req)
+	resp, err := e.SendReq(chainCode, req, false)
 	if err != nil {
 		return "", err
 	}
@@ -156,7 +156,7 @@ func (e *XRP) GetTransactionReceiptByHash(chainCode int64, hash string) (string,
 			]
 		}`
 	req = fmt.Sprintf(req, hash)
-	resp, err := e.SendReq(chainCode, req)
+	resp, err := e.SendReq(chainCode, req, false)
 	if err != nil {
 		return "", err
 	}
@@ -198,7 +198,7 @@ func (e *XRP) GetBlockByHash(chainCode int64, hash string, flag bool) (string, e
 					]
 				}`
 	req = fmt.Sprintf(req, hash, flag)
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 // GetBlockByNumber number: ledger version or shortcut string
@@ -217,7 +217,7 @@ func (e *XRP) GetBlockByNumber(chainCode int64, number string, flag bool) (strin
 					]
 				}`
 	req = fmt.Sprintf(req, number, flag)
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *XRP) GetTxByHash(chainCode int64, hash string) (string, error) {
@@ -234,11 +234,11 @@ func (e *XRP) GetTxByHash(chainCode int64, hash string) (string, error) {
 			]
 		}`
 	req = fmt.Sprintf(req, hash)
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *XRP) SendJsonRpc(chainCode int64, req string) (string, error) {
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func NewXRP(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.API {
@@ -292,7 +292,7 @@ func (e *XRP) Balance(chainCode int64, address string, tag string) (string, erro
 		}`
 
 	req = fmt.Sprintf(req, address, tag)
-	resp, err := e.SendReq(chainCode, req)
+	resp, err := e.SendReq(chainCode, req, false)
 	if err != nil {
 		return "", err
 	}
@@ -305,7 +305,7 @@ func (e *XRP) TokenBalance(chainCode int64, address string, contractAddr string,
 	defer func() {
 		e.log.Printf("TokenBalance,Duration=%v", time.Since(start))
 	}()
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -329,7 +329,7 @@ func (e *XRP) LatestBlock(chainCode int64) (string, error) {
 					{}
 				]
 			}`
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *XRP) SendRawTransaction(chainCode int64, signedTx string) (string, error) {
@@ -342,14 +342,14 @@ func (e *XRP) SendRawTransaction(chainCode int64, signedTx string) (string, erro
 					  ]
 			}`
 	req = fmt.Sprintf(req, signedTx)
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *XRP) SendReqByWs(blockChain int64, receiverCh chan string, sendCh chan string) (string, error) {
 	return "", fmt.Errorf("blockchain:%v not implement the method", blockChain)
 }
 
-func (e *XRP) SendReq(blockChain int64, reqBody string) (resp string, err error) {
+func (e *XRP) SendReq(blockChain int64, reqBody string, trace bool) (resp string, err error) {
 	reqBody = strings.Replace(reqBody, "\t", "", -1)
 	reqBody = strings.Replace(reqBody, "\n", "", -1)
 	var uri string
@@ -360,7 +360,7 @@ func (e *XRP) SendReq(blockChain int64, reqBody string) (resp string, err error)
 			e.log.Printf("method:%v,blockChain:%v,req:%v,resp:%v", "SendReq", blockChain, reqBody, "ok")
 		}
 	}()
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(trace)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -375,7 +375,7 @@ func (e *XRP) SendReq(blockChain int64, reqBody string) (resp string, err error)
 	return resp, err
 }
 
-func (e *XRP) BalanceCluster() *config.NodeCluster {
+func (e *XRP) BalanceCluster(trace bool) *config.NodeCluster {
 	var resultCluster *config.NodeCluster
 	l := len(e.nodeCluster)
 

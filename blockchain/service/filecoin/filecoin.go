@@ -54,7 +54,7 @@ func (e *FileCoin) GetCode(chainCode int64, address string) (string, error) {
 				]
 			}`
 	query = fmt.Sprintf(query, address)
-	return e.SendReq(chainCode, query)
+	return e.SendReq(chainCode, query, false)
 }
 
 func (e *FileCoin) GetAddressType(chainCode int64, address string) (string, error) {
@@ -72,7 +72,7 @@ func (e *FileCoin) GetAddressType(chainCode int64, address string) (string, erro
 				]
 			}`
 	query = fmt.Sprintf(query, address)
-	resp, err := e.SendReq(chainCode, query)
+	resp, err := e.SendReq(chainCode, query, false)
 	if err != nil {
 		return "", err
 	}
@@ -119,7 +119,7 @@ func (e *FileCoin) UnSubscribe(chainCode int64, subId string) (string, error) {
 	query := `{"id": 1, "method": "eth_unsubscribe", "params": ["%v"]}`
 
 	query = fmt.Sprintf(query, subId)
-	resp, err := e.SendReq(chainCode, query)
+	resp, err := e.SendReq(chainCode, query, false)
 	if err != nil {
 		return "", err
 	}
@@ -166,7 +166,7 @@ func (e *FileCoin) GetTransactionReceiptByHash(chainCode int64, hash string) (st
 				]
 			}`
 	query = fmt.Sprintf(query, eth.String())
-	return e.SendReq(chainCode, query)
+	return e.SendReq(chainCode, query, false)
 }
 
 func (e *FileCoin) GetBlockByHash(chainCode int64, hash string, flag bool) (string, error) {
@@ -183,7 +183,7 @@ func (e *FileCoin) GetBlockByHash(chainCode int64, hash string, flag bool) (stri
 		}`
 
 	req = fmt.Sprintf(req, hash)
-	resp, err := e.SendReq(chainCode, req)
+	resp, err := e.SendReq(chainCode, req, false)
 	if err != nil {
 		return "", err
 	}
@@ -219,7 +219,7 @@ func (e *FileCoin) GetBlockByNumber(chainCode int64, number string, flag bool) (
 			}
 			`
 	req = fmt.Sprintf(req, number)
-	resp, err := e.SendReq(chainCode, req)
+	resp, err := e.SendReq(chainCode, req, false)
 	if err != nil {
 		return "", err
 	}
@@ -269,7 +269,7 @@ func (e *FileCoin) GetTxsByHash(chainCode int64, hash string) (string, error) {
 		}
 		`
 	req = fmt.Sprintf(req, hash)
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *FileCoin) GetTxByHash(chainCode int64, hash string) (string, error) {
@@ -290,7 +290,7 @@ func (e *FileCoin) GetTxByHash(chainCode int64, hash string) (string, error) {
 		}
 		`
 	req = fmt.Sprintf(req, hash)
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *FileCoin) Nonce(chainCode int64, address string, tag string) (string, error) {
@@ -305,7 +305,7 @@ func (e *FileCoin) Nonce(chainCode int64, address string, tag string) (string, e
 			}
 			`
 	req = fmt.Sprintf(req, address)
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *FileCoin) LatestBlock(chainCode int64) (string, error) {
@@ -316,7 +316,7 @@ func (e *FileCoin) LatestBlock(chainCode int64) (string, error) {
 				 "method": "eth_blockNumber"
 			}
 			`
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *FileCoin) SendRawTransaction(chainCode int64, signedTx string) (string, error) {
@@ -329,11 +329,11 @@ func (e *FileCoin) SendRawTransaction(chainCode int64, signedTx string) (string,
 					 "method": "Filecoin.MpoolPush"
 				}`
 	req = fmt.Sprintf(req, signedTx)
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *FileCoin) SendJsonRpc(chainCode int64, req string) (string, error) {
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *FileCoin) StartWDT() {
@@ -370,7 +370,7 @@ func (e *FileCoin) Balance(chainCode int64, address string, tag string) (string,
 			}`
 
 	req = fmt.Sprintf(req, address)
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *FileCoin) TokenBalance(chainCode int64, address string, contractAddr string, abi string) (string, error) {
@@ -378,7 +378,7 @@ func (e *FileCoin) TokenBalance(chainCode int64, address string, contractAddr st
 	defer func() {
 		e.log.Printf("TokenBalance,Duration=%v", time.Since(start))
 	}()
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -392,7 +392,7 @@ func (e *FileCoin) TokenBalance(chainCode int64, address string, contractAddr st
 }
 
 func (e *FileCoin) SendReqByWs(blockChain int64, receiverCh chan string, sendCh chan string) (string, error) {
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -401,7 +401,7 @@ func (e *FileCoin) SendReqByWs(blockChain int64, receiverCh chan string, sendCh 
 	return "", errors.New("blockChainCode is error")
 }
 
-func (e *FileCoin) SendReq(blockChain int64, reqBody string) (resp string, err error) {
+func (e *FileCoin) SendReq(blockChain int64, reqBody string, trace bool) (resp string, err error) {
 	reqBody = strings.Replace(reqBody, "\t", "", -1)
 	reqBody = strings.Replace(reqBody, "\n", "", -1)
 	var uri string
@@ -412,7 +412,7 @@ func (e *FileCoin) SendReq(blockChain int64, reqBody string) (resp string, err e
 			e.log.Printf("method:%v,blockChain:%v,req:%v,resp:%v", "SendReq", blockChain, reqBody, "ok")
 		}
 	}()
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(trace)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -428,7 +428,7 @@ func (e *FileCoin) SendReq(blockChain int64, reqBody string) (resp string, err e
 	//return "", errors.New("blockChainCode is error")
 }
 
-func (e *FileCoin) BalanceCluster() *config.NodeCluster {
+func (e *FileCoin) BalanceCluster(trace bool) *config.NodeCluster {
 	var resultCluster *config.NodeCluster
 	l := len(e.nodeCluster)
 

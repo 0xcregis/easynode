@@ -24,7 +24,7 @@ type Bnb struct {
 }
 
 func (e *Bnb) TokenURI(chainCode int64, contractAddress string, tokenId string, eip int64) (string, error) {
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -38,7 +38,7 @@ func (e *Bnb) TokenURI(chainCode int64, contractAddress string, tokenId string, 
 }
 
 func (e *Bnb) BalanceOf(chainCode int64, contractAddress string, address string, tokenId string, eip int64) (string, error) {
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -52,7 +52,7 @@ func (e *Bnb) BalanceOf(chainCode int64, contractAddress string, address string,
 }
 
 func (e *Bnb) OwnerOf(chainCode int64, contractAddress string, tokenId string, eip int64) (string, error) {
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -66,7 +66,7 @@ func (e *Bnb) OwnerOf(chainCode int64, contractAddress string, tokenId string, e
 }
 
 func (e *Bnb) TotalSupply(chainCode int64, contractAddress string, eip int64) (string, error) {
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -80,7 +80,7 @@ func (e *Bnb) TotalSupply(chainCode int64, contractAddress string, eip int64) (s
 }
 
 func (e *Bnb) Token(chainCode int64, contractAddr string, abi string, eip string) (string, error) {
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -117,7 +117,7 @@ func (e *Bnb) GetCode(chainCode int64, address string) (string, error) {
 				]
  			}`
 	query = fmt.Sprintf(query, address)
-	return e.SendReq(chainCode, query)
+	return e.SendReq(chainCode, query, false)
 }
 
 func (e *Bnb) GetAddressType(chainCode int64, address string) (string, error) {
@@ -135,7 +135,7 @@ func (e *Bnb) GetAddressType(chainCode int64, address string) (string, error) {
 				]
 			}`
 	query = fmt.Sprintf(query, address)
-	resp, err := e.SendReq(chainCode, query)
+	resp, err := e.SendReq(chainCode, query, false)
 	if err != nil {
 		return "", err
 	}
@@ -166,7 +166,7 @@ func (e *Bnb) UnSubscribe(chainCode int64, subId string) (string, error) {
 	query := `{"id": 1, "method": "eth_unsubscribe", "params": ["%v"]}`
 
 	query = fmt.Sprintf(query, subId)
-	resp, err := e.SendReq(chainCode, query)
+	resp, err := e.SendReq(chainCode, query, false)
 	if err != nil {
 		return "", err
 	}
@@ -195,7 +195,7 @@ func (e *Bnb) GetBlockReceiptByBlockNumber(chainCode int64, number string) (stri
 				]
 			}`
 	query = fmt.Sprintf(query, number)
-	return e.SendReq(chainCode, query)
+	return e.SendReq(chainCode, query, false)
 }
 
 func (e *Bnb) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string, error) {
@@ -209,7 +209,7 @@ func (e *Bnb) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string, 
 			}`
 
 	query = fmt.Sprintf(query, hash)
-	return e.SendReq(chainCode, query)
+	return e.SendReq(chainCode, query, false)
 }
 
 func (e *Bnb) GetTransactionReceiptByHash(chainCode int64, hash string) (string, error) {
@@ -226,7 +226,7 @@ func (e *Bnb) GetTransactionReceiptByHash(chainCode int64, hash string) (string,
 				]
 			}`
 	query = fmt.Sprintf(query, hash)
-	return e.SendReq(chainCode, query)
+	return e.SendReq(chainCode, query, false)
 }
 
 func (e *Bnb) GetBlockByHash(chainCode int64, hash string, flag bool) (string, error) {
@@ -242,7 +242,7 @@ func (e *Bnb) GetBlockByHash(chainCode int64, hash string, flag bool) (string, e
 		}`
 
 	req = fmt.Sprintf(req, hash, flag)
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *Bnb) GetBlockByNumber(chainCode int64, number string, flag bool) (string, error) {
@@ -259,7 +259,7 @@ func (e *Bnb) GetBlockByNumber(chainCode int64, number string, flag bool) (strin
 			`
 	number, _ = util.Int2Hex(number)
 	req = fmt.Sprintf(req, number, flag)
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *Bnb) GetTxByHash(chainCode int64, hash string) (string, error) {
@@ -278,11 +278,11 @@ func (e *Bnb) GetTxByHash(chainCode int64, hash string) (string, error) {
 		}
 		`
 	req = fmt.Sprintf(req, hash)
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *Bnb) SendJsonRpc(chainCode int64, req string) (string, error) {
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func NewNftBnb(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.NftApi {
@@ -345,6 +345,20 @@ func (e *Bnb) MonitorCluster() any {
 	return e.nodeCluster
 }
 
+func (e *Bnb) TraceTransaction(chainCode int64, address string) (string, error) {
+	req := `{
+					 "id": 1,
+					 "jsonrpc": "2.0",
+					 "params": [
+						  "%v"
+					 ],
+					 "method": "trace_transaction"
+				}`
+	req = fmt.Sprintf(req, address)
+
+	return e.SendReq(chainCode, req, true)
+}
+
 func (e *Bnb) Balance(chainCode int64, address string, tag string) (string, error) {
 	start := time.Now()
 	defer func() {
@@ -364,7 +378,7 @@ func (e *Bnb) Balance(chainCode int64, address string, tag string) (string, erro
 			}`
 
 	req = fmt.Sprintf(req, address, tag)
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *Bnb) TokenBalance(chainCode int64, address string, contractAddr string, abi string) (string, error) {
@@ -372,7 +386,7 @@ func (e *Bnb) TokenBalance(chainCode int64, address string, contractAddr string,
 	defer func() {
 		e.log.Printf("TokenBalance,Duration=%v", time.Since(start))
 	}()
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -398,7 +412,7 @@ func (e *Bnb) Nonce(chainCode int64, address string, tag string) (string, error)
 			}
 			`
 	req = fmt.Sprintf(req, address, tag)
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *Bnb) LatestBlock(chainCode int64) (string, error) {
@@ -409,7 +423,7 @@ func (e *Bnb) LatestBlock(chainCode int64) (string, error) {
 				 "method": "eth_blockNumber"
 			}
 			`
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *Bnb) GetAccountResourceForTron(chainCode int64, address string) (string, error) {
@@ -469,14 +483,14 @@ func (e *Bnb) SendRawTransaction(chainCode int64, signedTx string) (string, erro
 					 "method": "eth_sendRawTransaction"
 				}`
 	req = fmt.Sprintf(req, signedTx)
-	return e.SendReq(chainCode, req)
+	return e.SendReq(chainCode, req, false)
 }
 
 func (e *Bnb) SendReqByWs(blockChain int64, receiverCh chan string, sendCh chan string) (string, error) {
 	return "", nil
 }
 
-func (e *Bnb) SendReq(blockChain int64, reqBody string) (resp string, err error) {
+func (e *Bnb) SendReq(blockChain int64, reqBody string, trace bool) (resp string, err error) {
 	reqBody = strings.Replace(reqBody, "\t", "", -1)
 	reqBody = strings.Replace(reqBody, "\n", "", -1)
 	var uri string
@@ -487,7 +501,7 @@ func (e *Bnb) SendReq(blockChain int64, reqBody string) (resp string, err error)
 			e.log.Printf("method:%v,blockChain:%v,req:%v,resp:%v", "SendReq", blockChain, reqBody, "ok")
 		}
 	}()
-	cluster := e.BalanceCluster()
+	cluster := e.BalanceCluster(trace)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -502,14 +516,14 @@ func (e *Bnb) SendReq(blockChain int64, reqBody string) (resp string, err error)
 	return resp, err
 }
 
-func (e *Bnb) BalanceCluster() *config.NodeCluster {
+func (e *Bnb) BalanceCluster(trace bool) *config.NodeCluster {
 	var resultCluster *config.NodeCluster
 	l := len(e.nodeCluster)
 
 	if l > 1 {
 		//如果有多个节点，则根据权重计算
 		mp := make(map[string][]int64, 0)
-		originCluster := make(map[string]*config.NodeCluster, 0)
+		originCluster := make(map[string]*config.NodeCluster, 1)
 
 		var sum int64
 		for _, v := range e.nodeCluster {
@@ -517,10 +531,12 @@ func (e *Bnb) BalanceCluster() *config.NodeCluster {
 				//如果没有设置weight,则默认设定5
 				v.Weight = 5
 			}
-			sum += v.Weight
-			key := fmt.Sprintf("%v/%v", v.NodeUrl, v.NodeToken)
-			mp[key] = []int64{v.Weight, sum}
-			originCluster[key] = v
+			if !trace || trace && v.Trace {
+				sum += v.Weight
+				key := fmt.Sprintf("%v/%v", v.NodeUrl, v.NodeToken)
+				mp[key] = []int64{v.Weight, sum}
+				originCluster[key] = v
+			}
 		}
 
 		f := math.Mod(float64(time.Now().Unix()), float64(sum))
@@ -536,6 +552,9 @@ func (e *Bnb) BalanceCluster() *config.NodeCluster {
 	} else if l == 1 {
 		//如果 仅有一个节点，则只能使用该节点
 		resultCluster = e.nodeCluster[0]
+		if trace && !resultCluster.Trace {
+			return nil
+		}
 	} else {
 		return nil
 	}

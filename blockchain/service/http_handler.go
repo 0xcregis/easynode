@@ -198,6 +198,45 @@ func (h *HttpHandler) GetBlockByNumber(ctx *gin.Context) {
 	h.Success(ctx, string(b), res, ctx.Request.RequestURI)
 }
 
+func (h *HttpHandler) GetTraceTransaction(ctx *gin.Context) {
+	b, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
+		return
+	}
+	blockChainCode := gjson.ParseBytes(b).Get("chain").Int()
+	hash := gjson.ParseBytes(b).Get("hash").String()
+	if _, ok := h.exBlockChainClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
+	res, err := h.exBlockChainClients[blockChainCode].TraceTransaction(blockChainCode, hash)
+
+	if err != nil {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, err.Error())
+		return
+	}
+
+	r := make([]*blockchain.InterTx, 0, 10)
+	if chain.GetChainCode(blockChainCode, "ETH", nil) || chain.GetChainCode(blockChainCode, "BSC", nil) || chain.GetChainCode(blockChainCode, "POLYGON", nil) {
+		list := gjson.Parse(res).Get("result").Array()
+		for _, v := range list {
+			value := v.Get("action.value").String()
+			if value != "0x0" {
+				var t blockchain.InterTx
+				_ = json.Unmarshal([]byte(v.String()), &t)
+				hexValue, _ := util.HexToInt(t.Action.Value)
+				t.Action.Value = util.Div(hexValue, 18)
+				t.Action.Gas, _ = util.HexToInt(t.Action.Gas)
+				r = append(r, &t)
+			}
+		}
+
+	}
+
+	h.Success(ctx, string(b), r, ctx.Request.RequestURI)
+}
+
 func (h *HttpHandler) GetTxByHash(ctx *gin.Context) {
 	b, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {

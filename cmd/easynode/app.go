@@ -190,6 +190,7 @@ func startBlockchain(configPath string, ctx context.Context) {
 	origin.POST("/block/hash", srv.GetBlockByHash)
 	origin.POST("/block/number", srv.GetBlockByNumber)
 	origin.POST("/tx/hash", srv.GetTxByHash)
+	origin.POST("/tx/trace", srv.GetTraceTransaction)
 	origin.POST("/receipts/hash", srv.GetTxReceiptByHash)
 	origin.POST("/account/balance", srv.GetBalance)
 	origin.POST("/account/tokenBalance", srv.GetTokenBalance)

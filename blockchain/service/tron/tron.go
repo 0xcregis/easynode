@@ -274,7 +274,7 @@ func (t *Tron) GetTxByHash(chainCode int64, hash string) (string, error) {
 }
 
 func (t *Tron) SendJsonRpc(chainCode int64, req string) (string, error) {
-	cluster := t.BalanceCluster()
+	cluster := t.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -311,7 +311,7 @@ func (t *Tron) TokenBalance(chainCode int64, address string, contractAddr string
 	defer func() {
 		t.log.Printf("TokenBalance,Duration=%v", time.Since(start))
 	}()
-	cluster := t.BalanceCluster()
+	cluster := t.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -354,6 +354,10 @@ func (t *Tron) SendRawTransaction(chainCode int64, signedTx string) (string, err
 	return t.SendReq(chainCode, req, "wallet/broadcasthex")
 }
 
+func (e *Tron) TraceTransaction(chainCode int64, address string) (string, error) {
+	return "", nil
+}
+
 func (t *Tron) SendReq(blockChain int64, reqBody string, url string) (resp string, err error) {
 	reqBody = strings.Replace(reqBody, "\t", "", -1)
 	reqBody = strings.Replace(reqBody, "\n", "", -1)
@@ -364,7 +368,7 @@ func (t *Tron) SendReq(blockChain int64, reqBody string, url string) (resp strin
 			t.log.Printf("method:%v,blockChain:%v,req:%v,resp:%v", "SendReq", blockChain, reqBody, "ok")
 		}
 	}()
-	cluster := t.BalanceCluster()
+	cluster := t.BalanceCluster(false)
 	if cluster == nil {
 		//不存在节点
 		return "", errors.New("blockchain node has not found")
@@ -378,7 +382,7 @@ func (t *Tron) SendReq(blockChain int64, reqBody string, url string) (resp strin
 	return resp, err
 }
 
-func (t *Tron) BalanceCluster() *config.NodeCluster {
+func (t *Tron) BalanceCluster(trace bool) *config.NodeCluster {
 
 	var resultCluster *config.NodeCluster
 	l := len(t.nodeCluster)

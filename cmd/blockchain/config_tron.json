@@ -9,8 +9,8 @@
   },
   "Nodes": [
     {
-      "BlockChain": 205,
-      "NodeUrl": "http://3.225.171.164:8090",
+      "BlockChain": 198,
+      "NodeUrl": "https://api.shasta.trongrid.io",
       "NodeToken": ""
     }
   ]

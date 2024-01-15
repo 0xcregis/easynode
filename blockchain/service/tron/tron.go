@@ -163,7 +163,7 @@ func (t *Tron) EstimateGasForTron(chainCode int64, from, to, functionSelector, p
 			"visible": true
 			}`
 	req = fmt.Sprintf(req, from, to, functionSelector, parameter)
-	res, err := t.SendReq(chainCode, req, "wallet/estimateenergy")
+	res, err := t.SendReq(chainCode, req, "wallet/triggerconstantcontract")
 	if err != nil {
 		return "", err
 	}

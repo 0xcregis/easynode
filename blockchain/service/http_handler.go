@@ -414,7 +414,7 @@ func (h *HttpHandler) EstimateGasForTron(ctx *gin.Context) {
 		return
 	}
 
-	energy := root.Get("energy_required").Int()
+	energy := root.Get("energy_used").Int()
 
 	h.Success(ctx, string(b), energy, ctx.Request.RequestURI)
 }

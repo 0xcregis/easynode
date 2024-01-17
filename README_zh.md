@@ -75,8 +75,8 @@
 
 ### 3. 初始化配置文件和数据库脚本
 
-- ./scripts :数据库初始化脚本,主要修改数据库名称即可（database）默认:ether2
-- ./config :系统启动需要的配置文件,以下文件和字段常需要修改
+- ./build/scripts :数据库初始化脚本,主要修改数据库名称即可（database）默认:ether2
+- ./build/config :系统启动需要的配置文件,以下文件和字段常需要修改
     - blockchain_config.json,collect_config.json :主要修改各个公链的节点地址
     - store_config.json ： DbName 字段
     - task_config.json ：BlockMin、BlockMax等字段

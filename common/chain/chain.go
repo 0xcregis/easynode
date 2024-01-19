@@ -19,10 +19,18 @@ import (
 //	"XRP":     {310: 1},
 //}
 
+/**
+
+  arb:63
+  op:64
+  aval:65
+  base:66
+*/
+
 // main
 var defaultChainCode = map[string]map[int64]int8{
 	"ETH":     {60: 1, 6001: 1},
-	"POLYGON": {62: 1, 6201: 1},
+	"POLYGON": {62: 1, 6201: 1, 63: 1, 64: 1, 65: 1, 66: 1},
 	"BSC":     {2510: 1, 2610: 1},
 	"TRON":    {195: 1, 198: 1},
 	"BTC":     {0: 1, 1: 1},

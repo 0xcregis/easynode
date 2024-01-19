@@ -2,16 +2,18 @@ package db
 
 import (
 	"log"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/0xcregis/easynode/common/util"
 	"github.com/0xcregis/easynode/store"
 	"github.com/0xcregis/easynode/store/config"
 	"github.com/sunjiangjun/xlog"
 )
 
 func Init() store.DbStoreInterface {
-	cfg := config.LoadConfig("./../../cmd/store/config.json")
+	cfg := config.LoadConfig("./../../cmd/store/config_tron.json")
 	return NewChService(&cfg, xlog.NewXLogger())
 }
 
@@ -51,7 +53,48 @@ func TestClickhouseDb_GetNodeTokenByEmail(t *testing.T) {
 
 func TestClickhouseDb_GetAddressByToken2(t *testing.T) {
 	s := Init()
-	log.Println(s.GetAddressByToken2("36ee0ad5-f4bc-4bca-a1dc-c51db006e249"))
+	//log.Println(s.GetAddressByToken2("36ee0ad5-f4bc-4bca-a1dc-c51db006e249"))
+
+	list, err := s.GetAddressByToken4("90c232ef-ecea-4956-9132-325ebec46e86")
+	if err != nil {
+		t.Error(err)
+	} else {
+		for _, v := range list {
+			if !strings.HasPrefix(v.Address, "0x") {
+				base58Addr, err := util.Base58ToAddress(v.Address)
+				if err != nil {
+					t.Error(err)
+					continue
+				}
+				v.Address = base58Addr.Hex()
+				err = s.UpdateMonitorAddress(v.Id, v)
+				if err != nil {
+					t.Error(err)
+				} else {
+					t.Log("ok")
+				}
+			}
+
+		}
+	}
+
+}
+
+func TestClickhouseDb_UpdateMonitorAddress(t *testing.T) {
+	s := Init()
+	addr := &store.MonitorAddress{
+		Address:    "0x4193465903d04f7890bb9b0b856ab31fc2929ab653",
+		Id:         1702881171946676000,
+		Token:      "73e89458-17ce-48c5-ad5a-58b9bab121c9",
+		TxType:     "0",
+		BlockChain: 198,
+	}
+	err := s.UpdateMonitorAddress(1702881171946676000, addr)
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log("ok")
+	}
 }
 
 func TestClickhouseDb_DelMonitorAddress(t *testing.T) {

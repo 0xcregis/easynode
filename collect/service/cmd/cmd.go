@@ -262,7 +262,7 @@ func (c *Cmd) HandlerKafkaRespMessage(msList []*kafka.Message) {
 	}
 
 	if len(ids) > 0 {
-		log.Errorf("UpdateNodeTaskStatus|ids=%v", ids)
+		log.Printf("UpdateNodeTaskStatus|ids=%v", ids)
 		err := c.taskStore.UpdateNodeTaskStatusWithBatch(ids, 1)
 		if err != nil {
 			log.Errorf("UpdateNodeTaskStatusWithBatch|err=%v", err)

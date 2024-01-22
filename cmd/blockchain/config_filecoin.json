@@ -9,7 +9,7 @@
   },
   "Nodes": [
     {
-      "BlockChain": 301,
+      "BlockChain": 2307,
       "NodeUrl": "https://api.node.glif.io/rpc/v0",
       "NodeToken": ""
     }

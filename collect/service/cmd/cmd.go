@@ -145,7 +145,7 @@ func (c *Cmd) ReadNodeTaskFromKafka(nodeId string, blockChain int, blockCh chan 
 			continue
 		}
 		msg := <-receiver
-		log := c.log.WithFields(logrus.Fields{"model": "Dispatch", "id": time.Now().UnixMilli()})
+		log := c.log.WithFields(logrus.Fields{"model": "Dispatch", "id": time.Now().UnixNano()})
 		task := collect.NodeTask{}
 		err := json.Unmarshal(msg.Value, &task)
 		if err != nil {
@@ -226,7 +226,7 @@ func (c *Cmd) HandlerKafkaRespMessage(msList []*kafka.Message) {
 	//msList := <-kafkaRespCh
 	ids := make([]string, 0, 20)
 	log := c.log.WithFields(logrus.Fields{
-		"id":    time.Now().UnixMilli(),
+		"id":    time.Now().UnixNano(),
 		"model": "HandlerKafkaRespMessage",
 	})
 
@@ -279,7 +279,7 @@ func (c *Cmd) ExecReceiptTask(receiptChan chan *collect.NodeTask, kf chan []*kaf
 		//执行任务
 		receiptTask := <-receiptChan
 		log := c.log.WithFields(logrus.Fields{
-			"id":    time.Now().UnixMilli(),
+			"id":    time.Now().UnixNano(),
 			"model": "ExecReceiptTask",
 		})
 		//log.Printf("receiptTask=%+v", receiptTask)
@@ -389,7 +389,7 @@ func (c *Cmd) ExecTxTask(txCh chan *collect.NodeTask, kf chan []*kafka.Message) 
 		//执行任务
 		txTask := <-txCh
 		log := c.log.WithFields(logrus.Fields{
-			"id":    time.Now().UnixMilli(),
+			"id":    time.Now().UnixNano(),
 			"model": "ExecTxTask",
 		})
 
@@ -576,7 +576,7 @@ func (c *Cmd) ExecBlockTask(blockCh chan *collect.NodeTask, kf chan []*kafka.Mes
 		//执行任务
 		blockTask := <-blockCh
 		log := c.log.WithFields(logrus.Fields{
-			"id":    time.Now().UnixMilli(),
+			"id":    time.Now().UnixNano(),
 			"model": "ExecBlockTask",
 		})
 		//log.Printf("taskBlock=%+v", blockTask)

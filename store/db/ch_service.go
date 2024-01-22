@@ -113,6 +113,15 @@ func (m *ClickhouseDb) GetAddressByToken2(token string) ([]*store.MonitorAddress
 	return list, nil
 }
 
+func (m *ClickhouseDb) GetAddressByToken4(token string) ([]*store.MonitorAddress, error) {
+	var list []*store.MonitorAddress
+	err := m.baseDb.Table(m.baseConfig.BaseDb.AddressTable).Select("*").Where("token=?", token).Scan(&list).Error
+	if err != nil || len(list) < 1 {
+		return nil, errors.New("no record")
+	}
+	return list, nil
+}
+
 func (m *ClickhouseDb) DelMonitorAddress(blockchain int64, token string, address string) error {
 	err := m.baseDb.Table(m.baseConfig.BaseDb.AddressTable).Where("token=? and address=? and block_chain=?", token, address, blockchain).Delete(store.MonitorAddress{}).Error
 	if err != nil {
@@ -241,6 +250,10 @@ func NewChService(cfg *config.Config, log *xlog.XLog) store.DbStoreInterface {
 
 func (m *ClickhouseDb) AddMonitorAddress(blockchain int64, address *store.MonitorAddress) error {
 	return m.baseDb.Table(m.baseConfig.BaseDb.AddressTable).Create(address).Error
+}
+
+func (m *ClickhouseDb) UpdateMonitorAddress(id int64, address *store.MonitorAddress) error {
+	return m.baseDb.Table(m.baseConfig.BaseDb.AddressTable).Where("id=?", id).UpdateColumns(address).Error
 }
 
 func (m *ClickhouseDb) GetAddressByToken(blockchain int64, token string) ([]*store.MonitorAddress, error) {

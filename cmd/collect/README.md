@@ -39,6 +39,12 @@ collect是easynode系统的基础和核心服务，是其他服务的运行的�
     "Path": "./log/collect", //日志路径
     "Delay": 2 //日志保存时长（单位：天）
   },
+  "KeyPath": "./data/temp/1", //nodeId的存放路径
+  "Retry": { //重试时间间隔
+    "ErrTx": 100,
+    "NodeTask": 100,
+    "Contract": 100
+  },  
   "Chains": [ //支持公链配置
     {
       "TaskKafka": { //任务kafka
@@ -58,8 +64,8 @@ collect是easynode系统的基础和核心服务，是其他服务的运行的�
       },
       "BlockChainName": "eth", //公链昵称
       "BlockChainCode": 200, //公链代码
-      "PullReceipt": false, //是否自动产生收据任务
-      "PullTx": true, //是否自动产生交易任务
+      "PullReceipt": 0, //0:没有收据任务，1:批量收据任务，2:单笔收据任务
+      "PullTx": 1, //0:没有交易任务，1:批量交易任务，2:单笔交易任务
       "BlockTask": { //区块任务配置，非必须，如果未配置，不执行该类的任务
         "FromCluster": [ //区块任务公链节点配置集合
           {

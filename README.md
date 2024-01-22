@@ -77,8 +77,8 @@ Allow all developers to use on-chain services without deploying nodes or knowing
 
 ### 3. Init Config & Database
 
-- ./scripts : Database initialization script, mainly modify the database name (database) default: ether2
-- ./config : The configuration file required for system startup, the following files and fields often need to be modified
+- ./build/scripts : Database initialization script, mainly modify the database name (database) default: ether2
+- ./build/config : The configuration file required for system startup, the following files and fields often need to be modified
   - blockchain_config.json, collect_config.json: mainly modify the node address of each public chain
   - store_config.json : DbName field
   - task_config.json : BlockMin, BlockMax and other fields

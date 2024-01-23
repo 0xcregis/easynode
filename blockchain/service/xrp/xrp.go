@@ -166,12 +166,16 @@ func (e *XRP) GetTransactionReceiptByHash(chainCode int64, hash string) (string,
 	r := make(map[string]any, 5)
 	account := root.Get("Account").String()
 	r["account"] = account
+	destination := root.Get("Destination").String()
+	r["destination"] = destination
 	hash = root.Get("hash").String()
 	r["hash"] = hash
 	ledgerIndex := root.Get("ledger_index").Int()
 	r["ledgerIndex"] = ledgerIndex
 	date := root.Get("date").Int()
 	r["date"] = date
+	fee := root.Get("Fee").Int()
+	r["fee"] = fee
 	transactionIndex := root.Get("meta.TransactionIndex").Int()
 	r["transactionIndex"] = transactionIndex
 	transactionResult := root.Get("meta.TransactionResult").String()
@@ -277,6 +281,7 @@ func (e *XRP) Balance(chainCode int64, address string, tag string) (string, erro
 	defer func() {
 		e.log.Printf("Balance,Duration=%v", time.Since(start))
 	}()
+	//tag may be current,validated,etc.
 	if len(tag) < 1 {
 		tag = "validated"
 	}

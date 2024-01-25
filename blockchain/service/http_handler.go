@@ -1259,7 +1259,7 @@ func (h *HttpHandler) GetNonce1(ctx *gin.Context) {
 		nonce = gjson.Parse(res).Get("result").String()
 		nonce, _ = util.HexToInt(nonce)
 	} else if chain.GetChainCode(blockChainCode, "XRP", nil) {
-
+		nonce = "0"
 	} else {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return

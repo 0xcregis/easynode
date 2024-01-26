@@ -331,6 +331,32 @@ func (h *HttpHandler) GetTokenBalance(ctx *gin.Context) {
 	h.Success(ctx, r.String(), res, ctx.Request.RequestURI)
 }
 
+// GetToken get token info
+func (h *HttpHandler) GetToken(ctx *gin.Context) {
+	b, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
+		return
+	}
+	r := gjson.ParseBytes(b)
+	blockChainCode := r.Get("chain").Int()
+	codeHash := r.Get("contract").String()
+	abi := r.Get("abi").String()
+	eip := r.Get("eip").String()
+
+	if _, ok := h.blockChainClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
+	res, err := h.blockChainClients[blockChainCode].Token(blockChainCode, codeHash, abi, eip)
+	if err != nil {
+		h.Error(ctx, r.String(), ctx.Request.RequestURI, err.Error())
+		return
+	}
+
+	h.Success(ctx, r.String(), res, ctx.Request.RequestURI)
+}
+
 // GetNonce todo 仅适用于 ether,tron 暂不支持
 func (h *HttpHandler) GetNonce(ctx *gin.Context) {
 	b, err := io.ReadAll(ctx.Request.Body)
@@ -1160,6 +1186,31 @@ func (h *HttpHandler) GetBalance1(ctx *gin.Context) {
 	r["nonce"] = nonce
 
 	h.Success(ctx, string(b), r, ctx.Request.RequestURI)
+}
+
+// GetToken1 get token info
+func (h *HttpHandler) GetToken1(ctx *gin.Context) {
+	b, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
+		return
+	}
+	r := gjson.ParseBytes(b)
+	blockChainCode := r.Get("chain").Int()
+	codeHash := r.Get("contract").String()
+	abi := r.Get("abi").String()
+	eip := r.Get("eip").String()
+
+	if _, ok := h.blockChainClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
+	res, err := h.blockChainClients[blockChainCode].Token(blockChainCode, codeHash, abi, eip)
+	if err != nil {
+		h.Error(ctx, r.String(), ctx.Request.RequestURI, err.Error())
+		return
+	}
+	h.Success(ctx, r.String(), gjson.Parse(res).Value(), ctx.Request.RequestURI)
 }
 
 // GetTokenBalance1  ERC20协议代币余额，后期补充

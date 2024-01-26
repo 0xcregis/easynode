@@ -323,6 +323,19 @@ func ParseTx(body []byte, transferTopic string, blockchain int64) (*store.SubTx,
 
 	return &r, nil
 }
+
+func FormatAddr(addr string) string {
+	if !strings.HasPrefix(addr, "0x") && !strings.HasPrefix(addr, "41") && !strings.HasPrefix(addr, "0x41") {
+		base58Addr, err := util.Base58ToAddress(addr)
+		if err != nil {
+			return addr
+		}
+		return base58Addr.Hex()
+	} else {
+		return addr
+	}
+}
+
 func GetCoreAddr(addr string) string {
 	if strings.HasPrefix(addr, "0x41") {
 		return strings.Replace(addr, "0x41", "", 1) //去丢41

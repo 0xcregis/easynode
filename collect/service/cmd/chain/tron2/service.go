@@ -14,6 +14,7 @@ import (
 	chainService "github.com/0xcregis/easynode/blockchain/service"
 	"github.com/0xcregis/easynode/collect"
 	"github.com/0xcregis/easynode/collect/config"
+	chainCode "github.com/0xcregis/easynode/common/chain"
 	"github.com/0xcregis/easynode/common/util"
 	"github.com/sirupsen/logrus"
 	"github.com/sunjiangjun/xlog"
@@ -437,8 +438,24 @@ func (s *Service) reload() {
 		s.log.Warnf("ReloadMonitorAddress BlockChainName=%v,err=%v", s.chain.BlockChainName, err)
 	}
 
+	//format address
+	code := int64(s.chain.BlockChainCode)
+	finalAddressList := make([]string, 0, len(addressList))
+	for _, addr := range addressList {
+		if chainCode.GetChainCode(code, "TRON", nil) && !strings.HasPrefix(addr, "0x") && !strings.HasPrefix(addr, "41") && !strings.HasPrefix(addr, "0x41") {
+			base58Addr, err := util.Base58ToAddress(addr)
+			if err != nil {
+				continue
+			}
+			addr2 := base58Addr.Hex()
+			finalAddressList = append(finalAddressList, addr2)
+		} else {
+			finalAddressList = append(finalAddressList, addr)
+		}
+	}
+
 	s.lock.Lock()
-	s.monitorAddress = rebuildAddr(addressList)
+	s.monitorAddress = rebuildAddr(finalAddressList)
 	s.lock.Unlock()
 }
 

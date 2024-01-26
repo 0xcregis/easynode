@@ -9,7 +9,7 @@
   },
   "Nodes": [
     {
-      "BlockChain": 200,
+      "BlockChain": 60,
       "NodeUrl": "https://docs-demo.quiknode.pro",
       "NodeToken": "",
       "Trace": true

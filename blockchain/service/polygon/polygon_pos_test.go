@@ -91,6 +91,17 @@ func TestPolygonPos_GetTransactionReceiptByHash(t *testing.T) {
 	}
 }
 
+func TestPolygonPos_SendRawTransaction(t *testing.T) {
+
+	s := Init()
+	resp, err := s.SendRawTransaction(64, "0xf86980834528bf82520894545f731e3ce6ab51c7a30ca08bf0f1a953e3082687038d7ea4c680008037a0b1ee34af3c3aede573f17de1789e39f2ce96dca389e1b1faeaee2595c6cb9b56a03210dd0db1cebce7e85ca5630f8ec92b16abea94ddd20f600fac0400ea0e891d")
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log(resp)
+	}
+}
+
 func TestPolygonPos_GasPrice(t *testing.T) {
 	s := Init2()
 	resp, err := s.GasPrice(64)

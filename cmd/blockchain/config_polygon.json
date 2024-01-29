@@ -9,24 +9,9 @@
   },
   "Nodes": [
     {
-      "BlockChain": 66,
-      "NodeUrl": "https://rpc.ankr.com/base",
-      "NodeToken": "053a22d65617d79be4ba5f1a7a181a24b3ab258a3c506bd6f02a338713e03457"
-    },
-    {
-      "BlockChain": 63,
-      "NodeUrl": "https://arb1.arbitrum.io/rpc",
+      "BlockChain": 201,
+      "NodeUrl": "https://polygon-bor.publicnode.com",
       "NodeToken": ""
-    },
-    {
-      "BlockChain": 65,
-      "NodeUrl": "https://rpc.ankr.com/avalanche",
-      "NodeToken": "1f1f091ef4d9eefb93f6c0f77821cf6ab377d3d2d334d9151303e28c1ddae902"
-    },
-    {
-      "BlockChain": 64,
-      "NodeUrl": "https://rpc.ankr.com/optimism",
-      "NodeToken": "1f1f091ef4d9eefb93f6c0f77821cf6ab377d3d2d334d9151303e28c1ddae902"
     }
   ]
 }

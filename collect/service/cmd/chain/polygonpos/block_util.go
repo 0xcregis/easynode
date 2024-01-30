@@ -218,6 +218,10 @@ func GetTxFromJson(json string) *collect.Tx {
         "cumulativeGasUsed": "0xc2ec5d",
         "from": "0xf4e07370db628044ee8556d1dedb0417bd518970",
         "gasUsed": "0xb5d7",
+		"l1Fee":"0x2b7056aa4da2",
+        "l1FeeScalar":"0.684",
+        "l1GasPrice":"0x8855737e0",
+        "l1GasUsed":"0x774",
         "logsBloom": "0x00000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000002000000000100000400000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000002090000000000000200000000000000000000000000000000000000000000000",
         "status": "0x1",
         "to": "0x95ad61b0a150d79219dcf64e1e6cc01f0b64c4ce",
@@ -249,6 +253,10 @@ func GetReceiptFromJson(js string) *collect.Receipt {
 	receipt.CumulativeGasUsed = r.Get("cumulativeGasUsed").String()
 	receipt.From = r.Get("from").String()
 	receipt.GasUsed = r.Get("gasUsed").String()
+	receipt.L1Fee = r.Get("l1Fee").String()
+	receipt.L1GasPrice = r.Get("l1GasPrice").String()
+	receipt.L1FeeScalar = r.Get("l1FeeScalar").String()
+	receipt.L1GasUsed = r.Get("l1GasUsed").String()
 	receipt.LogsBloom = r.Get("logsBloom").String()
 	receipt.Status = r.Get("status").String()
 	receipt.To = r.Get("to").String()

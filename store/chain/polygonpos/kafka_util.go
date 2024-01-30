@@ -107,11 +107,21 @@ func ParseTx(body []byte, transferTopic, nftTransferSingleTopic string, blocchai
 	gasUsed := receiptRoot.Get("gasUsed").String()
 	//gas, _ := util.HexToInt2(gasUsed)
 
+	l1Fee := receiptRoot.Get("l1Fee").String()
+	bigL1Fee, _ := new(big.Int).SetString(l1Fee, 0)
+	if bigL1Fee != nil {
+		r.L1Fee = bigL1Fee.String()
+	}
+
 	bigPrice, b := new(big.Int).SetString(gasPrice, 0)
 	bigGas, b2 := new(big.Int).SetString(gasUsed, 0)
 
 	if b && b2 {
 		fee := bigPrice.Mul(bigPrice, bigGas)
+		r.L2Fee = fee.String()
+		if bigL1Fee != nil {
+			fee = fee.Add(fee, bigL1Fee)
+		}
 		r.Fee = util.Div(fmt.Sprintf("%v", fee), 18)
 		r.FeeDetail = map[string]string{"gasPrice": fmt.Sprintf("%v", bigPrice.String()), "gasUsed": fmt.Sprintf("%v", bigGas.String())}
 	} else {

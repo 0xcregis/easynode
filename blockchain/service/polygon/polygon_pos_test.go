@@ -6,12 +6,19 @@ import (
 
 	"github.com/0xcregis/easynode/blockchain"
 	"github.com/0xcregis/easynode/blockchain/config"
+	"github.com/0xcregis/easynode/common/util"
 	"github.com/sunjiangjun/xlog"
+	"github.com/tidwall/gjson"
 )
 
 func Init() blockchain.API {
 	cfg := config.LoadConfig("./../../../cmd/blockchain/config_polygon.json")
-	return NewPolygonPos(cfg.Cluster[201], 201, xlog.NewXLogger())
+	return NewPolygonPos(cfg.Cluster[66], 66, xlog.NewXLogger())
+}
+
+func Init2() blockchain.ExApi {
+	cfg := config.LoadConfig("./../../../cmd/blockchain/config_polygon.json")
+	return NewPolygonPos2(cfg.Cluster[64], 64, xlog.NewXLogger())
 }
 
 func TestPolygonPos_GetLatestBlock(t *testing.T) {
@@ -76,10 +83,22 @@ func TestPolygonPos_GetBlockReceiptByBlockNumber(t *testing.T) {
 
 func TestPolygonPos_GetTransactionReceiptByHash(t *testing.T) {
 	s := Init()
-	resp, err := s.GetTransactionReceiptByHash(201, "0x9f656ad21cad7853f58aa05191ec4c11bd0459f40bec1a259f089fce4c80232f")
+	resp, err := s.GetTransactionReceiptByHash(66, "0x9a022bff505dec115478d2f368092918c4bbbf82c63f541e576ab0407485885a")
 	if err != nil {
 		t.Error(err)
 	} else {
 		t.Log(resp)
+	}
+}
+
+func TestPolygonPos_GasPrice(t *testing.T) {
+	s := Init2()
+	resp, err := s.GasPrice(64)
+	if err != nil {
+		t.Error(err)
+	} else {
+		gas := gjson.Parse(resp).Get("result").String()
+		gas, _ = util.HexToInt(gas)
+		t.Log(gas)
 	}
 }

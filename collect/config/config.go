@@ -29,16 +29,19 @@ type Kafka struct {
 type BlockTask struct {
 	FromCluster []*FromCluster `json:"FromCluster"`
 	Kafka       *Kafka         `json:"Kafka"`
+	WorkerCount int64          `json:"WorkerCount"`
 }
 
 type TxTask struct {
 	FromCluster []*FromCluster `json:"FromCluster"`
 	Kafka       *Kafka         `json:"Kafka"`
+	WorkerCount int64          `json:"WorkerCount"`
 }
 
 type ReceiptTask struct {
 	FromCluster []*FromCluster `json:"FromCluster"`
 	Kafka       *Kafka         `json:"Kafka"`
+	WorkerCount int64          `json:"WorkerCount"`
 }
 
 type Chain struct {

@@ -205,6 +205,10 @@ func (e *PolygonPos) UnSubscribe(chainCode int64, subId string) (string, error) 
 }
 
 func (e *PolygonPos) GetBlockReceiptByBlockNumber(chainCode int64, number string) (string, error) {
+	start := time.Now()
+	defer func() {
+		e.log.Printf("GetBlockReceiptByBlockNumber,Duration=%v", time.Since(start))
+	}()
 	query := `{
 				"id": 1,
 				"jsonrpc": "2.0",
@@ -218,6 +222,10 @@ func (e *PolygonPos) GetBlockReceiptByBlockNumber(chainCode int64, number string
 }
 
 func (e *PolygonPos) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string, error) {
+	start := time.Now()
+	defer func() {
+		e.log.Printf("GetBlockReceiptByBlockHash,Duration=%v", time.Since(start))
+	}()
 	query := `{
 				"id": 1,
 				"jsonrpc": "2.0",
@@ -249,6 +257,10 @@ func (e *PolygonPos) GetTransactionReceiptByHash(chainCode int64, hash string) (
 }
 
 func (e *PolygonPos) GetBlockByHash(chainCode int64, hash string, flag bool) (string, error) {
+	start := time.Now()
+	defer func() {
+		e.log.Printf("GetBlockByHash,Duration=%v", time.Since(start))
+	}()
 	req := `
 		{
 		  "id": 1,
@@ -265,6 +277,10 @@ func (e *PolygonPos) GetBlockByHash(chainCode int64, hash string, flag bool) (st
 }
 
 func (e *PolygonPos) GetBlockByNumber(chainCode int64, number string, flag bool) (string, error) {
+	start := time.Now()
+	defer func() {
+		e.log.Printf("GetBlockByNumber,Duration=%v", time.Since(start))
+	}()
 	req := `
 			{
 			  "id": 1,

@@ -68,6 +68,9 @@ func NewService(cfg *config.Chain, logConfig *config.LogConfig, nodeId string) *
 
 func getBlockChainApi(c *config.Chain, logConfig *config.LogConfig, store collect.StoreTaskInterface, nodeId string) collect.BlockChainInterface {
 	srv := chain.GetBlockchain(c.BlockChainCode, c, store, logConfig, nodeId)
+	if srv == nil {
+		panic("init blockchain srv is error")
+	}
 	//第三方节点监控
 	srv.Monitor()
 	return srv
@@ -272,7 +275,11 @@ func (c *Cmd) HandlerKafkaRespMessage(msList []*kafka.Message) {
 }
 
 func (c *Cmd) ExecReceiptTask(receiptChan chan *collect.NodeTask, kf chan []*kafka.Message) {
-	buffCh := make(chan struct{}, 10)
+	var WorkerCount int64 = 10
+	if c.chain.BlockTask.WorkerCount > 1 {
+		WorkerCount = c.chain.BlockTask.WorkerCount
+	}
+	buffCh := make(chan struct{}, WorkerCount)
 	for {
 		//控制协程数量
 		buffCh <- struct{}{}
@@ -382,7 +389,11 @@ func (c *Cmd) execSingleReceipt(taskReceipt *collect.NodeTask, log *logrus.Entry
 }
 
 func (c *Cmd) ExecTxTask(txCh chan *collect.NodeTask, kf chan []*kafka.Message) {
-	buffCh := make(chan struct{}, 20)
+	var WorkerCount int64 = 20
+	if c.chain.BlockTask.WorkerCount > 1 {
+		WorkerCount = c.chain.BlockTask.WorkerCount
+	}
+	buffCh := make(chan struct{}, WorkerCount)
 	for {
 		//控制协程数量
 		buffCh <- struct{}{}
@@ -568,7 +579,11 @@ func (c *Cmd) execSingleTx(taskTx *collect.NodeTask, log *logrus.Entry) []*kafka
 }
 
 func (c *Cmd) ExecBlockTask(blockCh chan *collect.NodeTask, kf chan []*kafka.Message) {
-	buffCh := make(chan struct{}, 10)
+	var WorkerCount int64 = 10
+	if c.chain.BlockTask.WorkerCount > 1 {
+		WorkerCount = c.chain.BlockTask.WorkerCount
+	}
+	buffCh := make(chan struct{}, WorkerCount)
 	for {
 		//控制协程数量
 		buffCh <- struct{}{}

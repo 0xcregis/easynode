@@ -147,6 +147,10 @@ type Receipt struct {
 	Type              string `json:"type" gorm:"column:tx_type"`
 	TransactionHash   string `json:"transactionHash" gorm:"column:transaction_hash"`
 	GasUsed           string `json:"gasUsed" gorm:"column:gas_used"`
+	L1Fee             string `json:"l1Fee" gorm:"-"`
+	L1FeeScalar       string `json:"l1FeeScalar" gorm:"-"`
+	L1GasPrice        string `json:"l1GasPrice" gorm:"-"`
+	L1GasUsed         string `json:"l1GasUsed" gorm:"-"`
 	BlockNumber       string `json:"blockNumber" gorm:"column:block_number"`
 	CumulativeGasUsed string `json:"cumulativeGasUsed" gorm:"column:cumulative_gas_used"`
 	From              string `json:"from" gorm:"column:from_addr"`
@@ -273,6 +277,8 @@ type SubTx struct {
 	ContractTx  []*ContractTx `json:"txs" gorm:"-"`
 	ContractTxs string        `json:"-" gorm:"column:contract_tx"`
 	Fee         string        `json:"fee" gorm:"column:fee"`
+	L1Fee       string        `json:"l1fee" gorm:"-"`
+	L2Fee       string        `json:"l2fee" gorm:"-"`
 	FeeDetail   interface{}   `json:"-" gorm:"-"`
 	FeeDetails  string        `json:"-" gorm:"column:fee_detail"`
 	From        string        `json:"from" gorm:"column:from_addr"`

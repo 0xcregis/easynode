@@ -22,40 +22,40 @@ type Btc struct {
 }
 
 func (e *Btc) Token(chainCode int64, contractAddr string, abi string, eip string) (string, error) {
-	return "", nil
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (e *Btc) GetCode(chainCode int64, address string) (string, error) {
-	return "", nil
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (e *Btc) GetAddressType(chainCode int64, address string) (string, error) {
-	return "", nil
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (e *Btc) SubscribePendingTx(chainCode int64, receiverCh chan string, sendCh chan string) (string, error) {
-	return "", nil
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 // SubscribeLogs {"jsonrpc":"2.0","id": 1, "method": "eth_subscribe", "params": ["logs", {"address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", "topics": ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]}]}
 func (e *Btc) SubscribeLogs(chainCode int64, address string, topics []string, receiverCh chan string, sendCh chan string) (string, error) {
-	return "", nil
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (e *Btc) UnSubscribe(chainCode int64, subId string) (string, error) {
-	return "", nil
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (e *Btc) GetBlockReceiptByBlockNumber(chainCode int64, number string) (string, error) {
-	return "", nil
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (e *Btc) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string, error) {
-	return "", nil
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (e *Btc) GetTransactionReceiptByHash(chainCode int64, hash string) (string, error) {
-	return "", nil
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (e *Btc) GetBlockByHash(chainCode int64, hash string, flag bool) (string, error) {
@@ -171,11 +171,11 @@ func (e *Btc) Balance(chainCode int64, address string, tag string) (string, erro
 }
 
 func (e *Btc) TokenBalance(chainCode int64, address string, contractAddr string, abi string) (string, error) {
-	return "", nil
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (e *Btc) Nonce(chainCode int64, address string, tag string) (string, error) {
-	return "", nil
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (e *Btc) LatestBlock(chainCode int64) (string, error) {

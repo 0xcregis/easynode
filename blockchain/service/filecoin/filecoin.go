@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"strings"
 	"time"
@@ -25,8 +24,7 @@ type FileCoin struct {
 }
 
 func (e *FileCoin) Token(chainCode int64, contractAddr string, abi string, eip string) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func NewFileCoin(cluster []*config.NodeCluster, blockchain int64, xlog *xlog.XLog) blockchain.API {
@@ -139,11 +137,11 @@ func (e *FileCoin) UnSubscribe(chainCode int64, subId string) (string, error) {
 }
 
 func (e *FileCoin) GetBlockReceiptByBlockNumber(chainCode int64, number string) (string, error) {
-	return "", errors.New("does not support the method")
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (e *FileCoin) GetBlockReceiptByBlockHash(chainCode int64, hash string) (string, error) {
-	return "", errors.New("does not support the method")
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (e *FileCoin) GetTransactionReceiptByHash(chainCode int64, hash string) (string, error) {
@@ -154,7 +152,7 @@ func (e *FileCoin) GetTransactionReceiptByHash(chainCode int64, hash string) (st
 
 	eth, err := ethtypes.EthHashFromCid(cid.MustParse(hash))
 	if err != nil {
-		log.Panicln(err)
+		e.log.Error(err)
 	}
 
 	query := `{

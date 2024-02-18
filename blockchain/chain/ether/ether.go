@@ -274,13 +274,11 @@ func NewNFTClient() blockchain.NFT {
 }
 
 func (e *Ether) SendRequestToChainByHttp(host string, token string, query string) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	return "", fmt.Errorf("not implement the method")
 }
 
 func (e *Ether) GetToken20ByHttp(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
-	//TODO implement me
-	panic("implement me")
+	return nil, fmt.Errorf("not implement the method")
 }
 
 func (e *Ether) SendRequestToChain(host string, token string, query string) (string, error) {

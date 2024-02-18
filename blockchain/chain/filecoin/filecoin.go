@@ -15,13 +15,11 @@ type Filecoin struct {
 }
 
 func (e *Filecoin) GetToken721(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
-	//TODO implement me
-	panic("implement me")
+	return nil, fmt.Errorf("not implement the method")
 }
 
 func (e *Filecoin) GetToken1155(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
-	//TODO implement me
-	panic("implement me")
+	return nil, fmt.Errorf("not implement the method")
 }
 
 func (e *Filecoin) Subscribe(host string, token string) (string, error) {
@@ -39,8 +37,7 @@ func (e *Filecoin) Subscribe(host string, token string) (string, error) {
 }
 
 func (e *Filecoin) UnSubscribe(host string, token string) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	return "", fmt.Errorf("not implement the method")
 }
 
 func NewChainClient() blockchain.ChainConn {
@@ -48,13 +45,11 @@ func NewChainClient() blockchain.ChainConn {
 }
 
 func (e *Filecoin) SendRequestToChainByHttp(host string, token string, query string) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	return "", fmt.Errorf("not implement the method")
 }
 
 func (e *Filecoin) GetToken20ByHttp(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
-	//TODO implement me
-	panic("implement me")
+	return nil, fmt.Errorf("not implement the method")
 }
 
 func (e *Filecoin) SendRequestToChain(host string, token string, query string) (string, error) {
@@ -91,5 +86,5 @@ func (e *Filecoin) SendRequestToChain(host string, token string, query string) (
 }
 
 func (e *Filecoin) GetToken20(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {
-	return nil, nil
+	return nil, fmt.Errorf("not implement the method")
 }

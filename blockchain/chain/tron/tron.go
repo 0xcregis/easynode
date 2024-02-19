@@ -107,6 +107,7 @@ func (t *Tron) SendRequestToChainByHttp(host string, token string, query string)
 }
 
 func (t *Tron) GetToken20ByHttp(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+	//https://api.trongrid.io/wallet/triggerconstantcontract
 	mp := make(map[string]interface{}, 2)
 
 	if !strings.HasPrefix(userAddress, "0x41") && !strings.HasPrefix(userAddress, "41") {
@@ -141,15 +142,15 @@ func (t *Tron) GetToken20ByHttp(host string, token string, contractAddress strin
 		return nil, errors.New("contract is error")
 	}
 
-	//name, err := t.GetTokenNameByHttp(host, token, contractAddress, userAddress)
-	//if err == nil {
-	//	mp["name"] = name
-	//}
-	//
-	//symbol, err := t.GetTokenSymbolByHttp(host, token, contractAddress, userAddress)
-	//if err == nil {
-	//	mp["symbol"] = symbol
-	//}
+	name, err := t.GetTokenNameByHttp(host, token, contractAddress, userAddress)
+	if err == nil {
+		mp["name"] = name
+	}
+
+	symbol, err := t.GetTokenSymbolByHttp(host, token, contractAddress, userAddress)
+	if err == nil {
+		mp["symbol"] = symbol
+	}
 
 	return mp, nil
 }
@@ -206,8 +207,13 @@ func (t *Tron) GetTokenBalanceByHttp2(host string, token string, contractAddress
 	//log.Println(resp)
 	r := gjson.Parse(resp).Get("constant_result")
 	if r.Exists() {
-		balance, _ := strconv.ParseInt(r.Array()[0].String(), 16, 64)
-		return fmt.Sprintf("%v", balance), nil
+		balance := r.Array()[0].String()
+		b, err := util.ParseTRC20NumericProperty(balance)
+		if err != nil {
+			return "", err
+		}
+		//balance, _ := strconv.ParseInt(r.Array()[0].String(), 16, 64)
+		return fmt.Sprintf("%v", b.Int64()), nil
 	}
 
 	return "", errors.New("no data")
@@ -231,7 +237,7 @@ func (t *Tron) GetTokenNameByHttp(host string, token string, contractAddress str
 	r := gjson.Parse(resp).Get("constant_result")
 	if r.Exists() {
 		name := r.Array()[0].String()
-		return fmt.Sprintf("%v", name), nil
+		return util.ParseTRC20StringProperty(name)
 	}
 
 	return "", errors.New("no data")
@@ -255,7 +261,7 @@ func (t *Tron) GetTokenSymbolByHttp(host string, token string, contractAddress s
 	r := gjson.Parse(resp).Get("constant_result")
 	if r.Exists() {
 		symbol := r.Array()[0].String()
-		return fmt.Sprintf("%v", symbol), nil
+		return util.ParseTRC20StringProperty(symbol)
 	}
 
 	return "", errors.New("no data")

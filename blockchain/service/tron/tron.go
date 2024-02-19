@@ -23,7 +23,33 @@ type Tron struct {
 }
 
 func (t *Tron) Token(chainCode int64, contractAddr string, abi string, eip string) (string, error) {
-	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
+
+	cluster := t.BalanceCluster(false)
+	if cluster == nil {
+		//不存在节点
+		return "", errors.New("blockchain node has not found")
+	}
+
+	var resp map[string]any
+	var err error
+	if eip == "721" {
+		url := fmt.Sprintf("%v/%v", cluster.NodeUrl, "wallet/triggerconstantcontract")
+		resp, err = t.blockChainClient.GetToken721(url, cluster.NodeToken, contractAddr, contractAddr)
+	} else if eip == "1155" {
+		resp, err = t.blockChainClient.GetToken1155(cluster.NodeUrl, cluster.NodeToken, contractAddr, contractAddr)
+	} else if eip == "20" {
+		url := fmt.Sprintf("%v/%v", cluster.NodeUrl, "wallet/triggerconstantcontract")
+		resp, err = t.blockChainClient.GetToken20ByHttp(url, cluster.NodeToken, contractAddr, contractAddr)
+	} else {
+		return "", fmt.Errorf("unknow the eip:%v", eip)
+	}
+
+	if err != nil {
+		cluster.ErrorCount += 1
+	}
+
+	bs, _ := json.Marshal(resp)
+	return string(bs), err
 }
 
 func (t *Tron) StartWDT() {

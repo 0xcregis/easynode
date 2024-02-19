@@ -451,8 +451,9 @@ func (s *Service) reload() {
 		}
 	}
 
+	activeAddress := rebuildAddr(finalAddressList)
 	s.lock.Lock()
-	s.monitorAddress = rebuildAddr(finalAddressList)
+	s.monitorAddress = activeAddress
 	s.lock.Unlock()
 }
 

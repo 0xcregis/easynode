@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"testing"
 	"time"
 
@@ -73,4 +74,11 @@ func TestConn(t *testing.T) {
 			return
 		}
 	}
+}
+
+func Test1(t *testing.T) {
+
+	t.Log(strings.ToLower("0xA16F524a804BEaED0d791De0aa0b5836295A2a84"))
+
+	t.Log(strings.ToLower("0xc03fe617F10286AE63568B5c567C81ce8DF84D38"))
 }

@@ -94,7 +94,7 @@ func (ws *WsHandler) pushMessage(kafkaCtx context.Context) {
 	}(kafkaCtx, ws.writer)
 }
 
-// updateMonitorAddress update monitor address to use for collect server
+// updateMonitorAddress update monitor address to collect server
 func (ws *WsHandler) updateMonitorAddress() {
 	go func() {
 		for {

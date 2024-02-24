@@ -129,6 +129,8 @@ func GetCoreAddress(blockChain int64, address string) string {
 	if chainCode.GetChainCode(blockChain, "ETH", nil) {
 		return ether.GetCoreAddr(address)
 	} else if chainCode.GetChainCode(blockChain, "TRON", nil) {
+		//转换地址格式
+		address = tron.FormatAddr(address)
 		return tron.GetCoreAddr(address)
 	} else if chainCode.GetChainCode(blockChain, "POLYGON", nil) {
 		return polygonpos.GetCoreAddr(address)

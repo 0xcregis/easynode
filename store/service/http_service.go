@@ -5,11 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
-	chainCode "github.com/0xcregis/easynode/common/chain"
-	"github.com/0xcregis/easynode/common/util"
 	"github.com/0xcregis/easynode/store"
 	"github.com/0xcregis/easynode/store/config"
 	"github.com/0xcregis/easynode/store/db"
@@ -226,25 +223,25 @@ func (s *HttpHandler) MonitorAddress(c *gin.Context) {
 		return
 	}
 
-	//tron base58进制的地址处理
-	if chainCode.GetChainCode(blockChain, "TRON", nil) && !strings.HasPrefix(addr, "0x") && !strings.HasPrefix(addr, "41") && !strings.HasPrefix(addr, "0x41") {
-		base58Addr, err := util.Base58ToAddress(addr)
-		if err != nil {
-			s.Error(c, c.Request.URL.Path, err.Error())
-			return
-		}
-		addr = base58Addr.Hex()
-	}
-
-	if blockChain == 0 && !util.Has0xPrefix(addr) {
-		//if chainCode=0 && !0x 这默认认为是tron 地址
-		base58Addr, err := util.Base58ToAddress(addr)
-		if err != nil {
-			s.Error(c, c.Request.URL.Path, err.Error())
-			return
-		}
-		addr = base58Addr.Hex()
-	}
+	////tron base58进制的地址处理
+	//if chainCode.GetChainCode(blockChain, "TRON", nil) && !strings.HasPrefix(addr, "0x") && !strings.HasPrefix(addr, "41") && !strings.HasPrefix(addr, "0x41") {
+	//	base58Addr, err := util.Base58ToAddress(addr)
+	//	if err != nil {
+	//		s.Error(c, c.Request.URL.Path, err.Error())
+	//		return
+	//	}
+	//	addr = base58Addr.Hex()
+	//}
+	//
+	//if blockChain == 0 && !util.Has0xPrefix(addr) {
+	//	//if chainCode=0 && !0x 这默认认为是tron 地址
+	//	base58Addr, err := util.Base58ToAddress(addr)
+	//	if err != nil {
+	//		s.Error(c, c.Request.URL.Path, err.Error())
+	//		return
+	//	}
+	//	addr = base58Addr.Hex()
+	//}
 
 	//address:hex string
 	addressTask := &store.MonitorAddress{BlockChain: blockChain, Address: addr, Token: token, TxType: fmt.Sprintf("%v", 0), Id: time.Now().UnixNano()}

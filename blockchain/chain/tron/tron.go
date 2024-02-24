@@ -17,23 +17,19 @@ type Tron struct {
 }
 
 func (t *Tron) GetToken721(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
-	//TODO implement me
-	panic("implement me")
+	return nil, fmt.Errorf("not implement the method")
 }
 
 func (t *Tron) GetToken1155(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
-	//TODO implement me
-	panic("implement me")
+	return nil, fmt.Errorf("not implement the method")
 }
 
 func (t *Tron) Subscribe(host string, token string) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	return "", fmt.Errorf("not implement the method")
 }
 
 func (t *Tron) UnSubscribe(host string, token string) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	return "", fmt.Errorf("not implement the method")
 }
 
 func NewChainClient() blockchain.ChainConn {
@@ -111,6 +107,7 @@ func (t *Tron) SendRequestToChainByHttp(host string, token string, query string)
 }
 
 func (t *Tron) GetToken20ByHttp(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
+	//https://api.trongrid.io/wallet/triggerconstantcontract
 	mp := make(map[string]interface{}, 2)
 
 	if !strings.HasPrefix(userAddress, "0x41") && !strings.HasPrefix(userAddress, "41") {
@@ -143,6 +140,16 @@ func (t *Tron) GetToken20ByHttp(host string, token string, contractAddress strin
 
 	if (len(balance) == 0 || balance == "0") && (len(decimal) == 0 || decimal == "0") {
 		return nil, errors.New("contract is error")
+	}
+
+	name, err := t.GetTokenNameByHttp(host, token, contractAddress, userAddress)
+	if err == nil {
+		mp["name"] = name
+	}
+
+	symbol, err := t.GetTokenSymbolByHttp(host, token, contractAddress, userAddress)
+	if err == nil {
+		mp["symbol"] = symbol
 	}
 
 	return mp, nil
@@ -200,13 +207,66 @@ func (t *Tron) GetTokenBalanceByHttp2(host string, token string, contractAddress
 	//log.Println(resp)
 	r := gjson.Parse(resp).Get("constant_result")
 	if r.Exists() {
-		balance, _ := strconv.ParseInt(r.Array()[0].String(), 16, 64)
-		return fmt.Sprintf("%v", balance), nil
+		balance := r.Array()[0].String()
+		b, err := util.ParseTRC20NumericProperty(balance)
+		if err != nil {
+			return "", err
+		}
+		//balance, _ := strconv.ParseInt(r.Array()[0].String(), 16, 64)
+		return fmt.Sprintf("%v", b.Int64()), nil
+	}
+
+	return "", errors.New("no data")
+}
+
+func (t *Tron) GetTokenNameByHttp(host string, token string, contractAddress string, userAddress string) (string, error) {
+	//var query string
+	query := `
+			{
+			  "owner_address": "%v",
+			  "contract_address": "%v",
+			  "function_selector": "name()"
+			}
+			`
+	query = fmt.Sprintf(query, userAddress, contractAddress)
+	resp, err := t.SendRequestToChainByHttp(host, token, query)
+	if err != nil {
+		return "", err
+	}
+	//log.Println(resp)
+	r := gjson.Parse(resp).Get("constant_result")
+	if r.Exists() {
+		name := r.Array()[0].String()
+		return util.ParseTRC20StringProperty(name)
+	}
+
+	return "", errors.New("no data")
+}
+
+func (t *Tron) GetTokenSymbolByHttp(host string, token string, contractAddress string, userAddress string) (string, error) {
+	//var query string
+	query := `
+			{
+			  "owner_address": "%v",
+			  "contract_address": "%v",
+			  "function_selector": "symbol()"
+			}
+			`
+	query = fmt.Sprintf(query, userAddress, contractAddress)
+	resp, err := t.SendRequestToChainByHttp(host, token, query)
+	if err != nil {
+		return "", err
+	}
+	//log.Println(resp)
+	r := gjson.Parse(resp).Get("constant_result")
+	if r.Exists() {
+		symbol := r.Array()[0].String()
+		return util.ParseTRC20StringProperty(symbol)
 	}
 
 	return "", errors.New("no data")
 }
 
 func (t *Tron) GetToken20(host string, key string, contractAddress string, userAddress string) (map[string]interface{}, error) {
-	return nil, nil
+	return nil, fmt.Errorf("not implement the method")
 }

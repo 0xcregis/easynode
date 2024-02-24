@@ -22,29 +22,28 @@ type XRP struct {
 }
 
 func (e *XRP) Token(chainCode int64, contractAddr string, abi string, eip string) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (e *XRP) GetCode(chainCode int64, address string) (string, error) {
-	return "", fmt.Errorf("blockchain:%v not implement the method", chainCode)
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (e *XRP) GetAddressType(chainCode int64, address string) (string, error) {
-	return "", fmt.Errorf("blockchain:%v not implement the method", chainCode)
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (e *XRP) SubscribePendingTx(chainCode int64, receiverCh chan string, sendCh chan string) (string, error) {
-	return "", fmt.Errorf("blockchain:%v not implement the method", chainCode)
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 // SubscribeLogs {"jsonrpc":"2.0","id": 1, "method": "eth_subscribe", "params": ["logs", {"address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", "topics": ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]}]}
 func (e *XRP) SubscribeLogs(chainCode int64, address string, topics []string, receiverCh chan string, sendCh chan string) (string, error) {
-	return "", fmt.Errorf("blockchain:%v not implement the method", chainCode)
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (e *XRP) UnSubscribe(chainCode int64, subId string) (string, error) {
-	return "", fmt.Errorf("blockchain:%v not implement the method", chainCode)
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (e *XRP) GetBlockReceiptByBlockNumber(chainCode int64, number string) (string, error) {
@@ -166,12 +165,16 @@ func (e *XRP) GetTransactionReceiptByHash(chainCode int64, hash string) (string,
 	r := make(map[string]any, 5)
 	account := root.Get("Account").String()
 	r["account"] = account
+	destination := root.Get("Destination").String()
+	r["destination"] = destination
 	hash = root.Get("hash").String()
 	r["hash"] = hash
 	ledgerIndex := root.Get("ledger_index").Int()
 	r["ledgerIndex"] = ledgerIndex
 	date := root.Get("date").Int()
 	r["date"] = date
+	fee := root.Get("Fee").Int()
+	r["fee"] = fee
 	transactionIndex := root.Get("meta.TransactionIndex").Int()
 	r["transactionIndex"] = transactionIndex
 	transactionResult := root.Get("meta.TransactionResult").String()
@@ -277,6 +280,7 @@ func (e *XRP) Balance(chainCode int64, address string, tag string) (string, erro
 	defer func() {
 		e.log.Printf("Balance,Duration=%v", time.Since(start))
 	}()
+	//tag may be current,validated,etc.
 	if len(tag) < 1 {
 		tag = "validated"
 	}
@@ -319,7 +323,7 @@ func (e *XRP) TokenBalance(chainCode int64, address string, contractAddr string,
 }
 
 func (e *XRP) Nonce(chainCode int64, address string, tag string) (string, error) {
-	return "", fmt.Errorf("blockchain:%v not implement the method", chainCode)
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (e *XRP) LatestBlock(chainCode int64) (string, error) {
@@ -346,7 +350,7 @@ func (e *XRP) SendRawTransaction(chainCode int64, signedTx string) (string, erro
 }
 
 func (e *XRP) SendReqByWs(blockChain int64, receiverCh chan string, sendCh chan string) (string, error) {
-	return "", fmt.Errorf("blockchain:%v not implement the method", blockChain)
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", blockChain)
 }
 
 func (e *XRP) SendReq(blockChain int64, reqBody string, trace bool) (resp string, err error) {

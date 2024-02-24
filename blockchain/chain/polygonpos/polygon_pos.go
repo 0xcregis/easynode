@@ -261,8 +261,7 @@ func (e *PolygonPos) Subscribe(host string, token string) (string, error) {
 }
 
 func (e *PolygonPos) UnSubscribe(host string, token string) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	return "", fmt.Errorf("not implement the method")
 }
 
 func NewChainClient() blockchain.ChainConn {
@@ -274,13 +273,11 @@ func NewNFTClient() blockchain.NFT {
 }
 
 func (e *PolygonPos) SendRequestToChainByHttp(host string, token string, query string) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	return "", fmt.Errorf("not implement the method")
 }
 
 func (e *PolygonPos) GetToken20ByHttp(host string, token string, contractAddress string, userAddress string) (map[string]interface{}, error) {
-	//TODO implement me
-	panic("implement me")
+	return nil, fmt.Errorf("not implement the method")
 }
 
 func (e *PolygonPos) SendRequestToChain(host string, token string, query string) (string, error) {

@@ -437,8 +437,23 @@ func (s *Service) reload() {
 		s.log.Warnf("ReloadMonitorAddress BlockChainName=%v,err=%v", s.chain.BlockChainName, err)
 	}
 
+	//format address
+	finalAddressList := make([]string, 0, len(addressList))
+	for _, addr := range addressList {
+		if !strings.HasPrefix(addr, "0x") && !strings.HasPrefix(addr, "41") && !strings.HasPrefix(addr, "0x41") {
+			base58Addr, err := util.Base58ToAddress(addr)
+			if err != nil {
+				continue
+			}
+			finalAddressList = append(finalAddressList, base58Addr.Hex())
+		} else {
+			finalAddressList = append(finalAddressList, addr)
+		}
+	}
+
+	activeAddress := rebuildAddr(finalAddressList)
 	s.lock.Lock()
-	s.monitorAddress = rebuildAddr(addressList)
+	s.monitorAddress = activeAddress
 	s.lock.Unlock()
 }
 

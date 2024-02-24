@@ -12,6 +12,7 @@ import (
 	"github.com/0xcregis/easynode/blockchain"
 	"github.com/0xcregis/easynode/blockchain/config"
 	"github.com/0xcregis/easynode/common/chain"
+	"github.com/0xcregis/easynode/common/ethtypes"
 	easyKafka "github.com/0xcregis/easynode/common/kafka"
 	"github.com/0xcregis/easynode/common/util"
 	"github.com/gin-gonic/gin"
@@ -322,6 +323,32 @@ func (h *HttpHandler) GetTokenBalance(ctx *gin.Context) {
 		return
 	}
 	res, err := h.blockChainClients[blockChainCode].TokenBalance(blockChainCode, addr, codeHash, abi)
+	if err != nil {
+		h.Error(ctx, r.String(), ctx.Request.RequestURI, err.Error())
+		return
+	}
+
+	h.Success(ctx, r.String(), res, ctx.Request.RequestURI)
+}
+
+// GetToken get token info
+func (h *HttpHandler) GetToken(ctx *gin.Context) {
+	b, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
+		return
+	}
+	r := gjson.ParseBytes(b)
+	blockChainCode := r.Get("chain").Int()
+	codeHash := r.Get("contract").String()
+	abi := r.Get("abi").String()
+	eip := r.Get("eip").String()
+
+	if _, ok := h.blockChainClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
+	res, err := h.blockChainClients[blockChainCode].Token(blockChainCode, codeHash, abi, eip)
 	if err != nil {
 		h.Error(ctx, r.String(), ctx.Request.RequestURI, err.Error())
 		return
@@ -657,6 +684,64 @@ func (h *HttpHandler) SendRawTx1(ctx *gin.Context) {
 			return
 		}
 
+	} else if chain.GetChainCode(blockChainCode, "FIL", nil) {
+		/**
+		{
+		  "/": "bafy2bzacea3wsdh6y3a36tb3skempjoxqpuyompjbmfeyf34fi3uy6uue42v4"
+		}
+		*/
+		hash := gjson.Parse(res).Get("/").String()
+		m["status"] = "SUCCESS"
+		m["hash"] = hash
+	} else if chain.GetChainCode(blockChainCode, "XRP", nil) {
+		/**
+		{
+		    "result": {
+		        "accepted": true,
+		        "account_sequence_available": 393,
+		        "account_sequence_next": 393,
+		        "applied": false,
+		        "broadcast": false,
+		        "engine_result": "tefPAST_SEQ",
+		        "engine_result_code": -190,
+		        "engine_result_message": "This sequence number has already passed.",
+		        "kept": true,
+		        "open_ledger_cost": "10",
+		        "queued": false,
+		        "status": "success",
+		        "tx_blob": "1200002280000000240000000361D4838D7EA4C6800000000000000000000000000055534400000000004B4E9C06F24296074F7BC48F92A97916C6DC5EA968400000000000000A732103AB40A0490F9B7ED8DF29D246BF2D6269820A0EE7742ACDD457BEA7C7D0931EDB74473045022100D184EB4AE5956FF600E7536EE459345C7BBCF097A84CC61A93B9AF7197EDB98702201CEA8009B7BEEBAA2AACC0359B41C427C1C5B550A4CA4B80CF2174AF2D6D5DCE81144B4E9C06F24296074F7BC48F92A97916C6DC5EA983143E9D4A2B8AA0780F682D136F7A56D6724EF53754",
+		        "tx_json": {
+		            "Account": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
+		            "Amount": {
+		                "currency": "USD",
+		                "issuer": "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn",
+		                "value": "1"
+		            },
+		            "Destination": "ra5nK24KXen9AHvsdFTKHSANinZseWnPcX",
+		            "Fee": "10",
+		            "Flags": 2147483648,
+		            "Sequence": 3,
+		            "SigningPubKey": "03AB40A0490F9B7ED8DF29D246BF2D6269820A0EE7742ACDD457BEA7C7D0931EDB",
+		            "TransactionType": "Payment",
+		            "TxnSignature": "3045022100D184EB4AE5956FF600E7536EE459345C7BBCF097A84CC61A93B9AF7197EDB98702201CEA8009B7BEEBAA2AACC0359B41C427C1C5B550A4CA4B80CF2174AF2D6D5DCE",
+		            "hash": "82230B9D489370504B39BC2CE46216176CAC9E752E5C1774A8CBEC9FBB819208"
+		        },
+		        "validated_ledger_index": 85447184
+		    }
+		}
+
+		*/
+
+		root := gjson.Parse(res)
+		status := root.Get("result.status").String()
+		if status == "success" {
+			m["status"] = "SUCCESS"
+		} else {
+			m["status"] = "FAILURE"
+		}
+
+		hash := root.Get("result.tx_json.hash").String()
+		m["hash"] = hash
 	} else {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return
@@ -708,6 +793,27 @@ func (h *HttpHandler) GetBlockByHash1(ctx *gin.Context) {
 		timestamp := root.Get("block_header.raw_data.timestamp").String()
 		m["timestamp"] = timestamp
 
+	} else if chain.GetChainCode(blockChainCode, "FIL", nil) {
+
+		root := gjson.Parse(res)
+		blockHash := root.Get("Cid").String()
+		m["blockHash"] = blockHash
+		head := root.Get("BlockHead").String()
+		timestamp := gjson.Parse(head).Get("Timestamp").String()
+		timestamp = fmt.Sprintf("%v000", timestamp)
+		m["timestamp"] = timestamp
+		Height := gjson.Parse(head).Get("Height").String()
+		m["blockNumber"] = Height
+
+	} else if chain.GetChainCode(blockChainCode, "XRP", nil) {
+		root := gjson.Parse(res).Get("result")
+		blockHash := root.Get("ledger_hash").String()
+		m["blockHash"] = blockHash
+		blockNumber := root.Get("ledger_index").String()
+		m["blockNumber"] = blockNumber
+		timestamp := root.Get("ledger.close_time").String()
+		timestamp = fmt.Sprintf("%v000", timestamp)
+		m["timestamp"] = timestamp
 	} else {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return
@@ -755,6 +861,61 @@ func (h *HttpHandler) GetBlockByNumber1(ctx *gin.Context) {
 		blockNumber := root.Get("block_header.raw_data.number").String()
 		m["blockNumber"] = blockNumber
 		timestamp := root.Get("block_header.raw_data.timestamp").String()
+		m["timestamp"] = timestamp
+
+	} else if chain.GetChainCode(blockChainCode, "FIL", nil) {
+
+		m["blockNumber"] = number
+		list := gjson.Parse(res).Array()
+		blocks := make([]any, 0, 2)
+		for _, v := range list {
+			mp := make(map[string]any, 2)
+			blockHash := v.Get("Cid").String()
+			mp["blockHash"] = blockHash
+			head := v.Get("BlockHead").String()
+			timestamp := gjson.Parse(head).Get("Timestamp").String()
+			timestamp = fmt.Sprintf("%v000", timestamp)
+			mp["timestamp"] = timestamp
+			blocks = append(blocks, mp)
+		}
+		m["blocks"] = blocks
+
+	} else if chain.GetChainCode(blockChainCode, "XRP", nil) {
+
+		/**
+		{
+		    "result":{
+		        "ledger":{
+		            "account_hash":"B3D7C8884773E0EA71EFD7637188DB0E284D1F17ABB15CA93B830F2B51FC3511",
+		            "close_flags":0,
+		            "close_time":758969601,
+		            "close_time_human":"2024-Jan-19 08:53:21.000000000 UTC",
+		            "close_time_iso":"2024-01-19T08:53:21Z",
+		            "close_time_resolution":10,
+		            "closed":true,
+		            "ledger_hash":"8AC92BF3FC88166143F5039154B900288189682E2FA28EA1373FB497BAC155A5",
+		            "ledger_index":"85379901",
+		            "parent_close_time":758969600,
+		            "parent_hash":"B60522E77C4ECCD0E936E091A020C813B8D32A159CDE52E5EB772777025CA98F",
+		            "total_coins":"99987964714422794",
+		            "transaction_hash":"A705F5EAB7DD7C610C239F86F16C6E721CA8C2422783A7329911B72E36C17000",
+		            "transactions":Array[170]
+		        },
+		        "ledger_hash":"8AC92BF3FC88166143F5039154B900288189682E2FA28EA1373FB497BAC155A5",
+		        "ledger_index":85379901,
+		        "status":"success",
+		        "validated":true
+		    }
+		}
+		*/
+
+		root := gjson.Parse(res).Get("result")
+		blockHash := root.Get("ledger_hash").String()
+		m["blockHash"] = blockHash
+		blockNumber := root.Get("ledger_index").String()
+		m["blockNumber"] = blockNumber
+		timestamp := root.Get("ledger.close_time").String()
+		timestamp = fmt.Sprintf("%v000", timestamp)
 		m["timestamp"] = timestamp
 
 	} else {
@@ -862,6 +1023,95 @@ func (h *HttpHandler) GetTxByHash1(ctx *gin.Context) {
 			m["status"] = 1
 		}
 
+	} else if chain.GetChainCode(blockChainCode, "FIL", nil) {
+
+		root := gjson.Parse(res).Get("result")
+		blockHash := root.Get("blockHash").String()
+		eth, _ := ethtypes.ParseEthHash(blockHash)
+		m["blockHash"] = eth.ToCid().String()
+		blockNumber := root.Get("blockNumber").String()
+		m["blockNumber"], _ = util.HexToInt(blockNumber)
+		transactionHash := root.Get("transactionHash").String()
+		eth, _ = ethtypes.ParseEthHash(transactionHash)
+		txHash := eth.ToCid().String()
+		m["txHash"] = txHash
+		from := root.Get("from").String()
+		addr, _ := ethtypes.ParseEthAddress(from)
+		fAddr, _ := addr.ToFilecoinAddress()
+		m["from"] = fAddr.String()
+		to := root.Get("to").String()
+		addr, _ = ethtypes.ParseEthAddress(to)
+		fAddr, _ = addr.ToFilecoinAddress()
+		m["to"] = fAddr.String()
+
+		status := root.Get("status").String()
+		if status == "0x1" {
+			m["status"] = 1
+		} else {
+			m["status"] = 0
+		}
+
+		gasUsed := root.Get("gasUsed").String()
+		gasPrice := root.Get("effectiveGasPrice").String()
+		bigPrice, b := new(big.Int).SetString(gasPrice, 0)
+		bigGas, b2 := new(big.Int).SetString(gasUsed, 0)
+		if b && b2 {
+			fee := bigPrice.Mul(bigPrice, bigGas)
+			m["fee"] = fee.String()
+		}
+
+		blockResp, err := h.blockChainClients[blockChainCode].GetBlockByHash(blockChainCode, hash, false)
+		if err == nil && len(blockResp) > 1 {
+			root := gjson.Parse(blockResp)
+			head := root.Get("BlockHead").String()
+			timestamp := gjson.Parse(head).Get("Timestamp").String()
+			timestamp = fmt.Sprintf("%v000", timestamp)
+			m["blockTime"] = timestamp
+			Height := gjson.Parse(head).Get("Height").String()
+			m["blockNumber"] = Height
+		}
+
+		m["energyUsageTotal"] = "0"
+
+	} else if chain.GetChainCode(blockChainCode, "XRP", nil) {
+		/**
+
+		{
+		    "account":"rMZH9Lqv3ASSBAnjLFEb9PRDGbbXRqpZsj",
+		    "date":758969601,
+		    "destination":"rxRpSNb1VktvzBz8JF2oJC6qaww6RZ7Lw",
+		    "fee":12,
+		    "hash":"A7E17BB97A75A2FEF8F47179EF9329F669C0A31019F950CBEF504277444A8C40",
+		    "ledgerIndex":85379901,
+		    "status":"success",
+		    "transactionIndex":0,
+		    "transactionResult":"tesSUCCESS"
+		}
+		*/
+		root := gjson.Parse(res)
+		blockHash := root.Get("blockHash").String()
+		m["blockHash"] = blockHash
+		blockNumber := root.Get("ledgerIndex").String()
+		m["blockNumber"], _ = util.HexToInt(blockNumber)
+		transactionHash := root.Get("hash").String()
+		m["txHash"] = transactionHash
+		from := root.Get("account").String()
+		m["from"] = from
+		to := root.Get("destination").String()
+		m["to"] = to
+
+		status := root.Get("status").String()
+		if status == "success" {
+			m["status"] = 1
+		} else {
+			m["status"] = 0
+		}
+
+		fee := root.Get("fee").String()
+		m["fee"] = fee
+		blockTime := root.Get("date").String()
+		m["blockTime"] = fmt.Sprintf("%v000", blockTime)
+		m["energyUsageTotal"] = "0"
 	} else {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return
@@ -909,6 +1159,25 @@ func (h *HttpHandler) GetBalance1(ctx *gin.Context) {
 		balance := gjson.Parse(res).Get("balance").String()
 		r["balance"] = balance
 		nonce = "0"
+	} else if chain.GetChainCode(blockChainCode, "FIL", nil) {
+		//\"jsonrpc\":\"2.0\",\"result\":\"1050000000000000000\",\"id\":1}
+		balance := gjson.Parse(res).Get("result").String()
+		balance, _ = util.HexToInt(balance)
+		r["balance"] = balance
+		resNonce, err := h.blockChainClients[blockChainCode].Nonce(blockChainCode, addr, "latest")
+		if err == nil && len(resNonce) > 1 {
+			nonce = gjson.Parse(resNonce).Get("result").String()
+			nonce, _ = util.HexToInt(nonce)
+		}
+
+	} else if chain.GetChainCode(blockChainCode, "XRP", nil) {
+
+		/**
+		{\"Account\":\"rKag74JVKyscABvLKLEvpQifHvuPVcx8xY\",\"Balance\":\"10598167\",\"Flags\":0,\"LedgerEntryType\":\"AccountRoot\",\"OwnerCount\":0,\"PreviousTxnID\":\"EE68D4341564502454166EF553D295E245375CFC948851CF5161AD1F81AA7ABE\",\"PreviousTxnLgrSeq\":85455870,\"Sequence\":84842028,\"index\":\"A78EFB04464466F56EC538BC5F4BCE4F928FD55EB4E0B62DB0FA51EAECC10CD0\"}
+		*/
+		balance := gjson.Parse(res).Get("Balance").String()
+		r["balance"] = balance
+
 	} else {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return
@@ -917,6 +1186,31 @@ func (h *HttpHandler) GetBalance1(ctx *gin.Context) {
 	r["nonce"] = nonce
 
 	h.Success(ctx, string(b), r, ctx.Request.RequestURI)
+}
+
+// GetToken1 get token info
+func (h *HttpHandler) GetToken1(ctx *gin.Context) {
+	b, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		h.Error(ctx, "", ctx.Request.RequestURI, err.Error())
+		return
+	}
+	r := gjson.ParseBytes(b)
+	blockChainCode := r.Get("chain").Int()
+	codeHash := r.Get("contract").String()
+	abi := r.Get("abi").String()
+	eip := r.Get("eip").String()
+
+	if _, ok := h.blockChainClients[blockChainCode]; !ok {
+		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
+		return
+	}
+	res, err := h.blockChainClients[blockChainCode].Token(blockChainCode, codeHash, abi, eip)
+	if err != nil {
+		h.Error(ctx, r.String(), ctx.Request.RequestURI, err.Error())
+		return
+	}
+	h.Success(ctx, r.String(), gjson.Parse(res).Value(), ctx.Request.RequestURI)
 }
 
 // GetTokenBalance1  ERC20协议代币余额，后期补充
@@ -962,6 +1256,10 @@ func (h *HttpHandler) GetTokenBalance1(ctx *gin.Context) {
 		balance := gjson.Parse(res).Get("balance").String()
 		m["balance"] = balance
 		nonce = "0"
+	} else if chain.GetChainCode(blockChainCode, "FIL", nil) {
+
+	} else if chain.GetChainCode(blockChainCode, "XRP", nil) {
+
 	} else {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return
@@ -1007,6 +1305,12 @@ func (h *HttpHandler) GetNonce1(ctx *gin.Context) {
 	} else if chain.GetChainCode(blockChainCode, "POLYGON", nil) {
 		nonce = gjson.Parse(res).Get("result").String()
 		nonce, _ = util.HexToInt(nonce)
+	} else if chain.GetChainCode(blockChainCode, "FIL", nil) {
+		//{\"jsonrpc\":\"2.0\",\"result\":38817,\"id\":1}
+		nonce = gjson.Parse(res).Get("result").String()
+		nonce, _ = util.HexToInt(nonce)
+	} else if chain.GetChainCode(blockChainCode, "XRP", nil) {
+		nonce = "0"
 	} else {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return
@@ -1051,6 +1355,20 @@ func (h *HttpHandler) GetLatestBlock1(ctx *gin.Context) {
 	} else if chain.GetChainCode(blockChainCode, "POLYGON", nil) {
 		number = gjson.Parse(res).Get("result").String()
 		number, err = util.HexToInt(number)
+
+	} else if chain.GetChainCode(blockChainCode, "FIL", nil) {
+
+		//{\"jsonrpc\":\"2.0\",\"result\":\"0x36c62f\",\"id\":1}
+		number = gjson.Parse(res).Get("result").String()
+		number, err = util.HexToInt(number)
+
+	} else if chain.GetChainCode(blockChainCode, "XRP", nil) {
+		/**
+		{\"result\":{\"ledger_hash\":\"A3B94654D20C6BE048DCBF77E90E90518BE193D45D6CA1C8487CA17BE0C06DD1\",\"ledger_index\":85467362,\"status\":\"success\"}}
+		*/
+		root := gjson.Parse(res).Get("result")
+		blockHash = root.Get("ledger_hash").String()
+		number = root.Get("ledger_index").String()
 
 	} else {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
@@ -1102,6 +1420,10 @@ func (h *HttpHandler) GasPrice1(ctx *gin.Context) {
 		gas = util.Div(gas, 9) //gwei
 	} else if chain.GetChainCode(blockChainCode, "TRON", nil) {
 		//sun
+	} else if chain.GetChainCode(blockChainCode, "FIL", nil) {
+
+	} else if chain.GetChainCode(blockChainCode, "XRP", nil) {
+
 	} else {
 		h.Error(ctx, string(b), ctx.Request.RequestURI, fmt.Sprintf("blockchain:%v is not supported", blockChainCode))
 		return

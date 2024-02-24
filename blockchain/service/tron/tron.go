@@ -23,7 +23,33 @@ type Tron struct {
 }
 
 func (t *Tron) Token(chainCode int64, contractAddr string, abi string, eip string) (string, error) {
-	return "", nil
+
+	cluster := t.BalanceCluster(false)
+	if cluster == nil {
+		//不存在节点
+		return "", errors.New("blockchain node has not found")
+	}
+
+	var resp map[string]any
+	var err error
+	if eip == "721" {
+		url := fmt.Sprintf("%v/%v", cluster.NodeUrl, "wallet/triggerconstantcontract")
+		resp, err = t.blockChainClient.GetToken721(url, cluster.NodeToken, contractAddr, contractAddr)
+	} else if eip == "1155" {
+		resp, err = t.blockChainClient.GetToken1155(cluster.NodeUrl, cluster.NodeToken, contractAddr, contractAddr)
+	} else if eip == "20" {
+		url := fmt.Sprintf("%v/%v", cluster.NodeUrl, "wallet/triggerconstantcontract")
+		resp, err = t.blockChainClient.GetToken20ByHttp(url, cluster.NodeToken, contractAddr, contractAddr)
+	} else {
+		return "", fmt.Errorf("unknow the eip:%v", eip)
+	}
+
+	if err != nil {
+		cluster.ErrorCount += 1
+	}
+
+	bs, _ := json.Marshal(resp)
+	return string(bs), err
 }
 
 func (t *Tron) StartWDT() {
@@ -70,18 +96,15 @@ func (t *Tron) GetAddressType(chainCode int64, address string) (string, error) {
 }
 
 func (t *Tron) SubscribePendingTx(chainCode int64, receiverCh chan string, sendCh chan string) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (t *Tron) SubscribeLogs(chainCode int64, address string, topics []string, receiverCh chan string, sendCh chan string) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (t *Tron) UnSubscribe(chainCode int64, subId string) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (t *Tron) GetBlockReceiptByBlockNumber(chainCode int64, number string) (string, error) {
@@ -327,7 +350,7 @@ func (t *Tron) TokenBalance(chainCode int64, address string, contractAddr string
 }
 
 func (t *Tron) Nonce(chainCode int64, address string, tag string) (string, error) {
-	return "", errors.New("unknown the method")
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (t *Tron) LatestBlock(chainCode int64) (string, error) {
@@ -354,8 +377,8 @@ func (t *Tron) SendRawTransaction(chainCode int64, signedTx string) (string, err
 	return t.SendReq(chainCode, req, "wallet/broadcasthex")
 }
 
-func (e *Tron) TraceTransaction(chainCode int64, address string) (string, error) {
-	return "", nil
+func (t *Tron) TraceTransaction(chainCode int64, address string) (string, error) {
+	return "", fmt.Errorf("blockchain:%v,the method has not been implemented", chainCode)
 }
 
 func (t *Tron) SendReq(blockChain int64, reqBody string, url string) (resp string, err error) {

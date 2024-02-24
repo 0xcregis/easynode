@@ -15,7 +15,7 @@ import (
 
 func main() {
 	var configPath string
-	flag.StringVar(&configPath, "blockchain", "./cmd/blockchain/config_xrp.json", "The system file of config")
+	flag.StringVar(&configPath, "blockchain", "./cmd/blockchain/config_ether.json", "The system file of config")
 	flag.Parse()
 	if len(configPath) < 1 {
 		panic("can not find config file")
@@ -53,6 +53,7 @@ func main() {
 	origin.POST("/tx/trace", srv.GetTraceTransaction)
 	origin.POST("/receipts/hash", srv.GetTxReceiptByHash)
 	origin.POST("/account/balance", srv.GetBalance)
+	origin.POST("/account/token", srv.GetToken)
 	origin.POST("/account/tokenBalance", srv.GetTokenBalance)
 	origin.POST("/account/nonce", srv.GetNonce)
 	origin.POST("/block/latest", srv.GetLatestBlock)
@@ -69,6 +70,7 @@ func main() {
 	myRoot.POST("/block/number", srv.GetBlockByNumber1)
 	myRoot.POST("/tx/hash", srv.GetTxByHash1)
 	myRoot.POST("/account/balance", srv.GetBalance1)
+	myRoot.POST("/account/token", srv.GetToken1)
 	myRoot.POST("/account/tokenBalance", srv.GetTokenBalance1)
 	myRoot.POST("/account/nonce", srv.GetNonce1)
 	myRoot.POST("/block/latest", srv.GetLatestBlock1)

@@ -182,14 +182,12 @@ func (t *Tron) GetTokenDecimalsByHttp(host string, token string, contractAddress
 func (t *Tron) GetTokenBalanceByHttp2(host string, token string, contractAddress string, userAddress string) (string, error) {
 
 	var query string
-	query = `
-			{
+	query = `{
 			  "owner_address": "%v",
 			  "contract_address": "%v",
 			  "function_selector": "balanceOf(address)",
-			  "parameter": "%v"
-			}
-			`
+			  "parameter": "%v",
+              "visible": false}`
 	var c2 string
 	if strings.HasPrefix(userAddress, "41") {
 		c2 = userAddress[2:]
@@ -212,8 +210,9 @@ func (t *Tron) GetTokenBalanceByHttp2(host string, token string, contractAddress
 		if err != nil {
 			return "", err
 		}
+		return fmt.Sprintf("%v", b.String()), nil
 		//balance, _ := strconv.ParseInt(r.Array()[0].String(), 16, 64)
-		return fmt.Sprintf("%v", b.Int64()), nil
+		//return fmt.Sprintf("%v", balance), nil
 	}
 
 	return "", errors.New("no data")

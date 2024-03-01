@@ -551,7 +551,7 @@ curl -X POST \
   -H 'Postman-Token: 709ff247-53e9-4c90-bccc-3e1c3a6f241a' \
   -H 'cache-control: no-cache' \
   -d '{
-    "chain": 1
+    "chain": 200
 }'
 
 response:

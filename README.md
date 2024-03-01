@@ -34,26 +34,15 @@ Allow all developers to use on-chain services without deploying nodes or knowing
 
 ## Blockchain for table
 
-  | blockchain      | chaincode |  desc   |
-  |:----------------|:---------:|:-------:|
-  | ethereum        |    200    |   ETH   |
-  | ethereum.Goerli |   20001   |   ETH   |
-  | tron            |    205    |   TRX   |
-  | tron.shasta     |   2051    |   TRX   |
-  | polygon-pos     |    201    | POLYGON |
-  | arbitrum        |    42161    |   ARB   |
-  | optimism        |    42162    |   OP    |
-  | base            |    8453    |  BASE   |
-  | avalanche-C     |    43114    |  AVAX   |
-  | bitcoin         |    300    |   BTC   |
-  | filecoin        |    301    |   FIL   |
-  | ripple          |    310    |   XRP   |
-  | bsc             |    202    |   BNB   |
-  | bsc.testnet     |   2021    |   BNB   |
-
-tips:
-
- *chaincode can set by clients*
+  | blockchain  | chaincode |  desc   |
+  |:------------|:---------:|:-------:|
+  | ethereum    |    200    |   ETH   |
+  | tron        |    205    |   TRX   |
+  | polygon-pos |    201    | POLYGON |
+  | bitcoin     |    300    |   BTC   |
+  | filecoin    |    301    |   FIL   |
+  | ripple      |    310    |   XRP   |
+  | bnb         |    202    |   BNB   |
 
 ## Getting Started
 

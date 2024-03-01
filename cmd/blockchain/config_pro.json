@@ -3,17 +3,17 @@
   "Port": 9002,
   "Nodes": [
     {
-      "BlockChain": 1,
-      "NodeUrl": "https://ethereum-mainnet-rpc.allthatnode.com",
+      "BlockChain": 200,
+      "NodeUrl": "https://eth.llamarpc.com",
       "NodeToken": ""
     },
     {
-      "BlockChain": 1,
-      "NodeUrl": "https://rpc.lokibuilder.xyz/wallet",
+      "BlockChain": 200,
+      "NodeUrl": "https://rpc.ankr.com/eth",
       "NodeToken": ""
     },
     {
-      "BlockChain": 5,
+      "BlockChain": 2001,
       "NodeUrl": "https://eth-goerli.public.blastapi.io",
       "NodeToken": ""
     },
@@ -23,27 +23,57 @@
       "NodeToken": ""
     },
     {
-      "BlockChain": 10,
+      "BlockChain": 42161,
+      "NodeUrl": "https://arbitrum-one.publicnode.com",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 42162,
       "NodeUrl": "https://optimism.meowrpc.com",
       "NodeToken": ""
     },
     {
-      "BlockChain": 56,
+      "BlockChain": 42162,
+      "NodeUrl": "https://optimism-rpc.publicnode.com",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 8453,
+      "NodeUrl": "https://base-rpc.publicnode.com",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 8453,
+      "NodeUrl": "https://base.llamarpc.com",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 43114,
+      "NodeUrl": "https://avalanche.public-rpc.com",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 43114,
+      "NodeUrl": "https://endpoints.omniatech.io/v1/avax/mainnet/public",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 202,
       "NodeUrl": "https://binance.llamarpc.com",
       "NodeToken": ""
     },
     {
-      "BlockChain": 56,
+      "BlockChain": 202,
       "NodeUrl": "https://bsc-dataseed1.defibit.io",
       "NodeToken": ""
     },
     {
-      "BlockChain": 97,
+      "BlockChain": 2021,
       "NodeUrl": "https://data-seed-prebsc-2-s2.bnbchain.org:8545",
       "NodeToken": ""
     },
     {
-      "BlockChain": 97,
+      "BlockChain": 2021,
       "NodeUrl": "https://endpoints.omniatech.io/v1/bsc/testnet/public",
       "NodeToken": ""
     }

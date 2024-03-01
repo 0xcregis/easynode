@@ -9,15 +9,15 @@ import (
 )
 
 // dev
-//var defaultChainCode = map[string]map[int64]int8{
-//	"ETH":     {200: 1, 2001: 1},
-//	"POLYGON": {201: 1, 2011: 1},
-//	"BSC":     {202: 1},
-//	"TRON":    {205: 1},
-//	"BTC":     {300: 1},
-//	"FIL":     {301: 1},
-//	"XRP":     {310: 1},
-//}
+var defaultChainCode = map[string]map[int64]int8{
+	"ETH":     {200: 1, 2001: 1},
+	"POLYGON": {201: 1, 42161: 1, 42162: 1, 8453: 1, 43114: 1},
+	"BSC":     {202: 1, 2021: 1},
+	"TRON":    {205: 1, 2051: 1},
+	"BTC":     {300: 1},
+	"FIL":     {301: 1},
+	"XRP":     {310: 1},
+}
 
 /**
   eth: 1: main,5:Goerli
@@ -31,15 +31,15 @@ import (
 */
 
 // main
-var defaultChainCode = map[string]map[int64]int8{
-	"ETH":     {1: 1, 5: 1},
-	"POLYGON": {137: 1, 42161: 1, 10: 1, 8453: 1, 43114: 1},
-	"BSC":     {56: 1, 97: 1},
-	"TRON":    {115: 1, 118: 1},
-	"BTC":     {198: 1, 199: 1},
-	"FIL":     {314: 1},
-	"XRP":     {144: 1},
-}
+//var defaultChainCode = map[string]map[int64]int8{
+//	"ETH":     {1: 1, 5: 1},
+//	"POLYGON": {137: 1, 42161: 1, 10: 1, 8453: 1, 43114: 1},
+//	"BSC":     {56: 1, 97: 1},
+//	"TRON":    {115: 1, 118: 1},
+//	"BTC":     {198: 1, 199: 1},
+//	"FIL":     {314: 1},
+//	"XRP":     {144: 1},
+//}
 
 func LoadConfig(path string) (string, error) {
 	f, err := os.OpenFile(path, os.O_RDONLY, os.ModeAppend)

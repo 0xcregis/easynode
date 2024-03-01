@@ -1,0 +1,51 @@
+{
+  "RootPath": "/api/chain",
+  "Port": 9002,
+  "Nodes": [
+    {
+      "BlockChain": 1,
+      "NodeUrl": "https://ethereum-mainnet-rpc.allthatnode.com",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 1,
+      "NodeUrl": "https://rpc.lokibuilder.xyz/wallet",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 5,
+      "NodeUrl": "https://eth-goerli.public.blastapi.io",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 42161,
+      "NodeUrl": "https://arbitrum.blockpi.network/v1/rpc/public",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 10,
+      "NodeUrl": "https://optimism.meowrpc.com",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 56,
+      "NodeUrl": "https://binance.llamarpc.com",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 56,
+      "NodeUrl": "https://bsc-dataseed1.defibit.io",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 97,
+      "NodeUrl": "https://data-seed-prebsc-2-s2.bnbchain.org:8545",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 97,
+      "NodeUrl": "https://endpoints.omniatech.io/v1/bsc/testnet/public",
+      "NodeToken": ""
+    }
+  ]
+}

@@ -20,21 +20,24 @@ import (
 //}
 
 /**
-
-  arb:63
-  op:64
-  aval:65
-  base:66
+  eth: 1: main,5:Goerli
+  L2： 42161：arb.main,10:op.main,8453:base.main 43114:aval.main
+  polygon:	137:main,
+  bsc: 	56:main,97:test
+  tron: 115:main,118:test
+  btc:198:main
+  fil:	314:main
+  xrp:	144:main
 */
 
 // main
 var defaultChainCode = map[string]map[int64]int8{
-	"ETH":     {60: 1, 6001: 1},
-	"POLYGON": {62: 1, 6201: 1, 63: 1, 64: 1, 65: 1, 66: 1},
-	"BSC":     {2510: 1, 2610: 1},
-	"TRON":    {195: 1, 198: 1},
-	"BTC":     {0: 1, 1: 1},
-	"FIL":     {2307: 1},
+	"ETH":     {1: 1, 5: 1},
+	"POLYGON": {137: 1, 42161: 1, 10: 1, 8453: 1, 43114: 1},
+	"BSC":     {56: 1, 97: 1},
+	"TRON":    {115: 1, 118: 1},
+	"BTC":     {198: 1, 199: 1},
+	"FIL":     {314: 1},
 	"XRP":     {144: 1},
 }
 

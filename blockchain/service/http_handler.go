@@ -35,17 +35,23 @@ type HttpHandler struct {
 
 func (h *HttpHandler) StartKafka(ctx context.Context) {
 	go func(ctx context.Context) {
-		broker := fmt.Sprintf("%v:%v", h.kafkaCfg.Host, h.kafkaCfg.Port)
-		kafkaCtx, cancel := context.WithCancel(ctx)
-		defer cancel()
-		h.kafkaClient.Write(easyKafka.Config{Brokers: []string{broker}}, h.sendCh, nil, kafkaCtx)
+		if h.kafkaCfg != nil {
+			broker := fmt.Sprintf("%v:%v", h.kafkaCfg.Host, h.kafkaCfg.Port)
+			kafkaCtx, cancel := context.WithCancel(ctx)
+			defer cancel()
+			h.kafkaClient.Write(easyKafka.Config{Brokers: []string{broker}}, h.sendCh, nil, kafkaCtx)
+		}
 	}(ctx)
 }
 
 func NewHttpHandler(cluster map[int64][]*config.NodeCluster, kafkaCfg *config.Kafka, xlog *xlog.XLog) *HttpHandler {
 	x := xlog.WithField("model", "httpSrv")
-	kafkaClient := easyKafka.NewEasyKafka2(x)
+
+	var kafkaClient *easyKafka.EasyKafka
 	sendCh := make(chan []*kafka.Message)
+	if kafkaCfg != nil {
+		kafkaClient = easyKafka.NewEasyKafka2(x)
+	}
 	return &HttpHandler{
 		log:                 x,
 		nodeCluster:         cluster,
@@ -545,9 +551,11 @@ func (h *HttpHandler) SendRawTx(ctx *gin.Context) {
 	}
 
 	defer func(backup map[string]any, chainCode int64) {
-		bs, _ := json.Marshal(backup)
-		msg := &kafka.Message{Topic: fmt.Sprintf("%v-%v", h.kafkaCfg.Topic, chainCode), Partition: h.kafkaCfg.Partition, Key: []byte(fmt.Sprintf("%v", time.Now().UnixNano())), Value: bs}
-		h.sendCh <- []*kafka.Message{msg}
+		if h.kafkaClient != nil {
+			bs, _ := json.Marshal(backup)
+			msg := &kafka.Message{Topic: fmt.Sprintf("%v-%v", h.kafkaCfg.Topic, chainCode), Partition: h.kafkaCfg.Partition, Key: []byte(fmt.Sprintf("%v", time.Now().UnixNano())), Value: bs}
+			h.sendCh <- []*kafka.Message{msg}
+		}
 	}(backup, blockChainCode)
 
 	res, err := h.blockChainClients[blockChainCode].SendRawTransaction(blockChainCode, signedTx)
@@ -610,9 +618,11 @@ func (h *HttpHandler) SendRawTx1(ctx *gin.Context) {
 	}
 
 	defer func(backup map[string]any, chainCode int64) {
-		bs, _ := json.Marshal(backup)
-		msg := &kafka.Message{Topic: fmt.Sprintf("%v-%v", h.kafkaCfg.Topic, chainCode), Partition: h.kafkaCfg.Partition, Key: []byte(fmt.Sprintf("%v", time.Now().UnixNano())), Value: bs}
-		h.sendCh <- []*kafka.Message{msg}
+		if h.kafkaClient != nil {
+			bs, _ := json.Marshal(backup)
+			msg := &kafka.Message{Topic: fmt.Sprintf("%v-%v", h.kafkaCfg.Topic, chainCode), Partition: h.kafkaCfg.Partition, Key: []byte(fmt.Sprintf("%v", time.Now().UnixNano())), Value: bs}
+			h.sendCh <- []*kafka.Message{msg}
+		}
 	}(backup, blockChainCode)
 
 	res, err := h.blockChainClients[blockChainCode].SendRawTransaction(blockChainCode, signedTx)

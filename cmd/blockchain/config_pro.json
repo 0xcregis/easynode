@@ -1,0 +1,81 @@
+{
+  "RootPath": "/api/chain",
+  "Port": 9002,
+  "Nodes": [
+    {
+      "BlockChain": 200,
+      "NodeUrl": "https://eth.llamarpc.com",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 200,
+      "NodeUrl": "https://rpc.ankr.com/eth",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 2001,
+      "NodeUrl": "https://eth-goerli.public.blastapi.io",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 42161,
+      "NodeUrl": "https://arbitrum.blockpi.network/v1/rpc/public",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 42161,
+      "NodeUrl": "https://arbitrum-one.publicnode.com",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 42162,
+      "NodeUrl": "https://optimism.meowrpc.com",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 42162,
+      "NodeUrl": "https://optimism-rpc.publicnode.com",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 8453,
+      "NodeUrl": "https://base-rpc.publicnode.com",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 8453,
+      "NodeUrl": "https://base.llamarpc.com",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 43114,
+      "NodeUrl": "https://avalanche.public-rpc.com",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 43114,
+      "NodeUrl": "https://endpoints.omniatech.io/v1/avax/mainnet/public",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 202,
+      "NodeUrl": "https://binance.llamarpc.com",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 202,
+      "NodeUrl": "https://bsc-dataseed1.defibit.io",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 2021,
+      "NodeUrl": "https://data-seed-prebsc-2-s2.bnbchain.org:8545",
+      "NodeToken": ""
+    },
+    {
+      "BlockChain": 2021,
+      "NodeUrl": "https://endpoints.omniatech.io/v1/bsc/testnet/public",
+      "NodeToken": ""
+    }
+  ]
+}

@@ -126,11 +126,15 @@ func (s *Service) CheckNodeTask() {
 					continue
 				}
 
-				tempList := make([]*kafka.Message, 0, 10)
+				log := s.log.WithField("Id", time.Now().UnixNano())
+				log.Printf("NodeTask|len:%v,chainCode:%v", len(list), chainCode)
 
+				tempList := make([]*kafka.Message, 0, 10)
+				expireCount := 0
 				for _, hash := range list {
 					count, task, err := store.GetNodeTask(chainCode, hash)
 					if err != nil || count >= 5 || task == nil {
+						expireCount++
 						continue
 					}
 
@@ -148,7 +152,7 @@ func (s *Service) CheckNodeTask() {
 					task.Id = time.Now().UnixNano()
 					task.TaskStatus = 0
 					task.NodeId = s.nodeId
-					s.log.Printf("NodeTask|task:%+v", task)
+					//s.log.Printf("NodeTask|task:%+v", task)
 
 					bs, _ := json.Marshal(task)
 					msg := &kafka.Message{Topic: fmt.Sprintf(NodeTaskTopic, chainCode), Partition: 0, Key: []byte(task.NodeId), Value: bs}
@@ -161,6 +165,8 @@ func (s *Service) CheckNodeTask() {
 				}
 
 				s.kafkaSender[chainCode] <- tempList
+
+				log.Printf("--------------NodeTask|End:%v,chainCode:%v,len:%v,expireCount:%v---------------", time.Now(), chainCode, len(list), expireCount)
 			}
 
 		}
@@ -225,11 +231,15 @@ func (s *Service) CheckErrTx() {
 					continue
 				}
 
-				tempList := make([]*kafka.Message, 0, 10)
+				log := s.log.WithField("Id", time.Now().UnixNano())
+				log.Printf("ErrTx|len:%v,chainCode:%v", len(list), chainCode)
 
+				tempList := make([]*kafka.Message, 0, 10)
+				expireCount := 0
 				for _, hash := range list {
 					count, task, err := store.GetErrTxNodeTask(chainCode, hash)
 					if err != nil || count >= 5 {
+						expireCount++
 						continue
 					}
 
@@ -251,7 +261,7 @@ func (s *Service) CheckErrTx() {
 					}
 					task.Id = time.Now().UnixNano()
 					task.TaskStatus = 0
-					s.log.Printf("ErrTx|task:%+v", task)
+					//s.log.Printf("ErrTx|task:%+v", task)
 
 					bs, _ := json.Marshal(task)
 					msg := &kafka.Message{Topic: fmt.Sprintf(NodeTaskTopic, chainCode), Partition: 0, Key: []byte(task.NodeId), Value: bs}
@@ -264,6 +274,8 @@ func (s *Service) CheckErrTx() {
 				}
 
 				s.kafkaSender[chainCode] <- tempList
+
+				log.Printf("--------------ErrTx|End:%v,chainCode:%v,len:%v,expireCount:%v---------------", time.Now(), chainCode, len(list), expireCount)
 			}
 
 		}

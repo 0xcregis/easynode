@@ -178,15 +178,15 @@ func (s *Service) CheckContract() {
 	go func() {
 
 		for {
-			//var l int64
-			//if s.cfg.Retry == nil || s.cfg.Retry.Contract == 0 {
-			//	l = 120
-			//} else {
-			//	l = s.cfg.Retry.Contract
-			//}
-			//l = l * int64(time.Second)
+			var l int64
+			if s.cfg.Retry == nil || s.cfg.Retry.Contract == 0 {
+				l = 1 * int64(time.Hour)
+			} else {
+				l = s.cfg.Retry.Contract
+			}
 
-			<-time.After(30 * time.Minute)
+			l = l * int64(time.Second)
+			<-time.After(time.Duration(l))
 			for chainCode, store := range s.taskStore {
 
 				list, err := store.GetAllKeyForContract(chainCode)

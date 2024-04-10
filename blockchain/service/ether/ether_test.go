@@ -16,7 +16,7 @@ func Init() blockchain.API {
 
 func Init2() blockchain.NftApi {
 	cfg := config.LoadConfig("./../../../cmd/blockchain/config_ether.json")
-	return NewNftEth(cfg.Cluster[200], 200, xlog.NewXLogger())
+	return NewNftEth(cfg.Cluster[60], 60, xlog.NewXLogger())
 }
 
 func Init3() blockchain.ExApi {
@@ -36,7 +36,7 @@ func TestEther_Token(t *testing.T) {
 
 func TestEther_BalanceOf(t *testing.T) {
 	s := Init2()
-	resp, err := s.BalanceOf(200, "0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d", "0xE093b32E23646248990d121aA02d2B493B538E41", "2095", 721)
+	resp, err := s.BalanceOf(60, "0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d", "0xE093b32E23646248990d121aA02d2B493B538E41", "2095", 721)
 	if err != nil {
 		t.Error(err)
 	} else {

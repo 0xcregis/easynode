@@ -1,0 +1,284 @@
+{
+  "RootPath": "/api/store",
+  "Port": 9003,
+  "BaseDb": {
+    "Addr": "172.18.0.1",
+    "Port": 9000,
+    "User": "test",
+    "Password": "test",
+    "DbName": "base",
+    "AddressTable": "address",
+    "TokenTable": "token",
+    "FilterTable": "sub_filter"
+  },
+  "Chains": [
+    {
+      "BlockChain": 63,
+      "BlockStore": true,
+      "TxStore": false,
+      "ReceiptStore": false,
+      "SubStore": true,
+      "BackupTxStore": true,
+      "Kafka": {
+	    "BackupTx": {
+          "Host": "172.18.0.1",
+          "Port": 9092,
+          "Topic": "backup_tx",
+          "Group": "2",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "SubTx": {
+          "Host": "172.18.0.1",
+          "Port": 9092,
+          "Topic": "arb_sub_tx",
+          "Group": "2",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "Tx": {
+          "Host": "172.18.0.1",
+          "Port": 9092,
+          "Topic": "arb_tx",
+          "Group": "2",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "Block": {
+          "Host": "172.18.0.1",
+          "Port": 9092,
+          "Topic": "arb_block",
+          "Group": "2",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "Receipt": {
+          "Host": "172.18.0.1",
+          "Port": 9092,
+          "Topic": "arb_receipt",
+          "Group": "2",
+          "StartOffset": -1,
+          "Partition": 0
+        }
+      },
+      "ChainDb": {
+        "Addr": "172.18.0.1",
+        "Port": 9000,
+        "User": "test",
+        "Password": "test",
+        "DbName": "polygon_pos",
+        "TxTable": "tx",
+        "BlockTable": "block",
+        "ReceiptTable": "receipt",
+        "SubTxTable": "sub_tx",
+        "BackupTxTable": "backup_tx"
+      },
+      "Redis": {
+        "Addr": "172.18.0.1",
+        "Port": 6379,
+        "DB": 0
+      }      
+    },
+    {
+      "BlockChain": 64,
+      "BlockStore": true,
+      "TxStore": false,
+      "ReceiptStore": false,
+      "SubStore": true,
+      "BackupTxStore": true,
+      "Kafka": {
+	    "BackupTx": {
+          "Host": "172.18.0.1",
+          "Port": 9092,
+          "Topic": "backup_tx",
+          "Group": "2",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "SubTx": {
+          "Host": "172.18.0.1",
+          "Port": 9092,
+          "Topic": "op_sub_tx",
+          "Group": "2",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "Tx": {
+          "Host": "172.18.0.1",
+          "Port": 9092,
+          "Topic": "op_tx",
+          "Group": "2",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "Block": {
+          "Host": "172.18.0.1",
+          "Port": 9092,
+          "Topic": "op_block",
+          "Group": "2",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "Receipt": {
+          "Host": "172.18.0.1",
+          "Port": 9092,
+          "Topic": "op_receipt",
+          "Group": "2",
+          "StartOffset": -1,
+          "Partition": 0
+        }
+      },
+      "ChainDb": {
+        "Addr": "172.18.0.1",
+        "Port": 9000,
+        "User": "test",
+        "Password": "test",
+        "DbName": "polygon_pos",
+        "TxTable": "tx",
+        "BlockTable": "block",
+        "ReceiptTable": "receipt",
+        "SubTxTable": "sub_tx",
+        "BackupTxTable": "backup_tx"
+      },
+      "Redis": {
+        "Addr": "172.18.0.1",
+        "Port": 6379,
+        "DB": 0
+      }      
+    },
+   {
+      "BlockChain": 65,
+      "BlockStore": true,
+      "TxStore": false,
+      "ReceiptStore": false,
+      "SubStore": true,
+      "BackupTxStore": true,
+      "Kafka": {
+	    "BackupTx": {
+          "Host": "172.18.0.1",
+          "Port": 9092,
+          "Topic": "backup_tx",
+          "Group": "2",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "SubTx": {
+          "Host": "172.18.0.1",
+          "Port": 9092,
+          "Topic": "aval_sub_tx",
+          "Group": "2",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "Tx": {
+          "Host": "172.18.0.1",
+          "Port": 9092,
+          "Topic": "aval_tx",
+          "Group": "2",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "Block": {
+          "Host": "172.18.0.1",
+          "Port": 9092,
+          "Topic": "aval_block",
+          "Group": "2",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "Receipt": {
+          "Host": "172.18.0.1",
+          "Port": 9092,
+          "Topic": "aval_receipt",
+          "Group": "2",
+          "StartOffset": -1,
+          "Partition": 0
+        }
+      },
+      "ChainDb": {
+        "Addr": "172.18.0.1",
+        "Port": 9000,
+        "User": "test",
+        "Password": "test",
+        "DbName": "polygon_pos",
+        "TxTable": "tx",
+        "BlockTable": "block",
+        "ReceiptTable": "receipt",
+        "SubTxTable": "sub_tx",
+        "BackupTxTable": "backup_tx"
+      },
+      "Redis": {
+        "Addr": "172.18.0.1",
+        "Port": 6379,
+        "DB": 0
+      }      
+    } ,
+    {
+      "BlockChain": 66,
+      "BlockStore": true,
+      "TxStore": false,
+      "ReceiptStore": false,
+      "SubStore": true,
+      "BackupTxStore": true,
+      "Kafka": {
+        "BackupTx": {
+          "Host": "172.18.0.1",
+          "Port": 9092,
+          "Topic": "backup_tx",
+          "Group": "2",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "SubTx": {
+          "Host": "172.18.0.1",
+          "Port": 9092,
+          "Topic": "base_sub_tx",
+          "Group": "2",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "Tx": {
+          "Host": "172.18.0.1",
+          "Port": 9092,
+          "Topic": "base_tx",
+          "Group": "2",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "Block": {
+          "Host": "172.18.0.1",
+          "Port": 9092,
+          "Topic": "base_block",
+          "Group": "2",
+          "StartOffset": -1,
+          "Partition": 0
+        },
+        "Receipt": {
+          "Host": "172.18.0.1",
+          "Port": 9092,
+          "Topic": "base_receipt",
+          "Group": "2",
+          "StartOffset": -1,
+          "Partition": 0
+        }
+      },
+      "ChainDb": {
+        "Addr": "172.18.0.1",
+        "Port": 9000,
+        "User": "test",
+        "Password": "test",
+        "DbName": "polygon_pos",
+        "TxTable": "tx",
+        "BlockTable": "block",
+        "ReceiptTable": "receipt",
+        "SubTxTable": "sub_tx",
+        "BackupTxTable": "backup_tx"
+      },
+      "Redis": {
+        "Addr": "172.18.0.1",
+        "Port": 6379,
+        "DB": 0
+      }
+    }
+  ]
+}
